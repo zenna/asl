@@ -1,9 +1,6 @@
-import theano
-from ig.util import *
-import ig.io
-from adt import *
-from train import *
-from common import *
+from dddt.types import *
+from dddt.train import *
+from dddt.common import *
 
 # theano.config.optimizer = 'None'
 # theano.config.optimizer = 'fast_compile'

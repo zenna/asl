@@ -1,5 +1,5 @@
-from ig.util import *
-from ig.io import *
+# Functions common for examples
+from dddt.io import *
 from train import *
 import theano.tensor as T
 from templates.conv_net import *
@@ -14,10 +14,6 @@ def gen_sfx_key(keys, options):
     sfx = stringy_dict(sfx_dict)
     print("sfx:", sfx)
     return sfx
-
-
-def repeat_to_batch(x, batch_size, tnp=T):
-    return tnp.repeat(x, batch_size, axis=0)
 
 
 def parse_template(template):
