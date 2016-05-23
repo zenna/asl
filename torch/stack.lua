@@ -10,8 +10,8 @@ local AbstractDataType = dddt.AbstractDataType
 
 -- Example
 local function stack_adt(stack_shape, item_shape, push_args, pop_args)
-  local Stack = Type(stack_shape)
-  local Item = Type(item_shape)
+  local Stack = Type(stack_shape, 'Stack')
+  local Item = Type(item_shape, 'Item')
 
   local push = Interface({Stack, Item}, {Stack}, 'push', push_args)
   local pop = Interface({Stack}, {Stack, Item}, 'pop', pop_args)
@@ -19,8 +19,8 @@ local function stack_adt(stack_shape, item_shape, push_args, pop_args)
   local consts = {}
 
   -- random variables
-  local stack1 = RandVar(Stack)
-  local item1 = RandVar(Item)
+  local stack1 = RandVar(Stack, 'stack1')
+  local item1 = RandVar(Item, 'item1')
   local randvars = {stack1, item1}
 
   -- axioms
@@ -34,34 +34,67 @@ local function stack_adt(stack_shape, item_shape, push_args, pop_args)
   -- Push an item to it
 
   -- Extensional axioms
-  local ex_axiom = function(stack, nitems)
-    for i = 1, nitems.get_value() do
-      local stack = push(stack, items[i].input_var)
-      local pop_stack = stack
-      for j = i, 1, -1 do
-        pop_stack, pop_item = pop(pop_stack)
-        axiom = Axiom({pop_item}, {items[j].input_var})
-        axioms.append(axiom)
-      end
-    end
-  end
+  -- local ex_axiom = function(stack, nitems)
+  --   for i = 1, nitems.get_value() do
+  --     local stack = push(stack, items[i].input_var)
+  --     local pop_stack = stack
+  --     for j = i, 1, -1 do
+  --       pop_stack, pop_item = pop(pop_stack)
+  --       axiom = Axiom({pop_item}, {items[j].input_var})
+  --       axioms.append(axiom)
+  --     end
+  --   end
+  -- end
 
   -- Intensional Axiom
-  -- local axiom1 = Axiom(pop(push(stack1, item1)), {stack1, item1})
-  -- local axioms = {axiom1}
-  local axioms = {}
+  local axiom1 = Axiom(pop:call(push:call({stack1, item1})), {stack1, item1})
+  local axioms = {axiom1}
   local adt = AbstractDataType(funcs, consts, randvars, axioms, "stack")
   return adt
 end
 
-
-local function test()
-  local template_kwargs = {template = res_net.nnet, gen_params = res_net.net_params}
-  local n_adt = stack_adt(util.shape({10}), util.shape({10}), template_kwargs, template_kwargs)
-
-  -- local x = t.randn(1,100)
-  -- local op = n_adt.funcs[1]:call(x)
-  -- print(op)
+function mse_loss(x, y)
+  print("x", x)
+  print("y", y)
+  return x - y
 end
 
-test()
+mm = require "nn"
+
+
+-- grad = require "autograd"
+-- local function test()
+template_kwargs = {template = res_net.nnet, gen_params = res_net.net_params}
+n_adt = stack_adt(util.shape({10}), util.shape({10}), template_kwargs, template_kwargs)
+-- mse = grad.nn.MSECriterion()
+mse = mse_loss
+
+-- test()
+
+
+function rand_gen(shape)
+  local gen = function()
+    return t.rand(shape)
+  end
+  return gen
+end
+
+function gen_generators(randvars)
+  local generators = {}
+  for i = 1, #randvars do
+    print(i)
+    print(randvars[i].type.shape)
+    table.insert(generators, rand_gen(randvars[i].type.shape))
+  end
+  return generators
+end
+
+function assign(adt, generators)
+  for i = 1, #adt.randvars do
+    adt.randvars[i].get_value = generators[i]
+  end
+end
+
+generators = gen_generators(n_adt.randvars)
+assign(n_adt, generators)
+loss = dddt.get_losses(n_adt.axioms[1], mse)
