@@ -16,117 +16,28 @@ from theano import config
 sys.setrecursionlimit(40000)
 
 
-def circular_indices(lb, ub, thresh):
-    indices = []
-    while True:
-        stop = min(ub, thresh)
-        ix = np.arange(lb, stop)
-        indices.append(ix)
-        if stop != ub:
-            diff = ub - stop
-            lb = 0
-            ub = diff
-        else:
-            break
+def typed_arg_name(type_name, arg_name):
+    return "%s::%s" % (arg_name, type_name)
 
-    return np.concatenate(indices)
-
-
-# Minibatching
-def infinite_samples(sampler, batchsize, shape):
-    while True:
-        to_sample_shape = (batchsize,)+shape
-        yield lasagne.utils.floatX(sampler(*to_sample_shape))
-
-
-def infinite_batches(inputs, batchsize, f=identity, shuffle=False):
-    start_idx = 0
-    nelements = len(inputs)
-    indices = np.arange(nelements)
-    if shuffle:
-        indices = np.arange(len(inputs))
-        np.random.shuffle(indices)
-    while True:
-        end_idx = start_idx + batchsize
-        if end_idx > nelements:
-            diff = end_idx - nelements
-            excerpt = np.concatenate([indices[start_idx:nelements], indices[0:diff]])
-            start_idx = diff
-            if shuffle:
-                indices = np.arange(len(inputs))
-                np.random.shuffle(indices)
-        else:
-            excerpt = indices[start_idx:start_idx + batchsize]
-            start_idx = start_idx + batchsize
-        yield f(inputs[excerpt])
-
-#
-# def infinite_batches(inputs, batchsize, f, shuffle=False):
-#     start_idx = 0
-#     nelements = len(inputs)
-#     indices = np.arange(nelements)
-#     if shuffle:
-#         indices = np.arange(len(inputs))
-#         np.random.shuffle(indices)
-#     while True:
-#         data = yield
-#         end_idx = start_idx + batchsize
-#         if end_idx > nelements:
-#             diff = end_idx - nelements
-#             excerpt = np.concatenate([indices[start_idx:nelements],
-#                                       indices[0:diff]])
-#             start_idx = diff
-#             if shuffle:
-#                 indices = np.arange(len(inputs))
-#                 np.random.shuffle(indices)
-#         else:
-#             excerpt = indices[start_idx:start_idx + batchsize]
-#             start_idx = start_idx + batchsize
-#         yield f(inputs[excerpt], data)
-
-
-def constant_batches(x, f):
-    while True:
-        data = yield
-        yield f(x, data)
-
-
-def iterate_batches(inputs, batchsize, shuffle=False):
-    if shuffle:
-        indices = np.arange(len(inputs))
-        np.random.shuffle(indices)
-    for start_idx in range(0, len(inputs) - batchsize + 1, batchsize):
-        if shuffle:
-            excerpt = indices[start_idx:start_idx + batchsize]
-        else:
-            excerpt = slice(start_idx, start_iiteratedx + batchsize)
-        yield inputs[excerpt]
-
-
-def upper_div(x, y):
-    a, b = divmod(x, y)
-    if b == 0:
-        return a
-    else:
-        return a + 1
 
 class Type():
     def __init__(self, shape, dtype=T.config.floatX, name=''):
         self.shape = shape
         self.dtype = dtype
-        self.tensor_id = 0
         self.name = name
 
-    def tensor(self, name=None, add_batch=False):
-        if name is None:
-            name = "%s_%s" % (self.name, self.tensor_id)
-            self.tensor_id += 1
+    def tensor(self, name='', add_batch=False):
+        tensor_name = typed_arg_name(self.name, name)
         # Create a tensor for this shape
         ndims = len(self.shape)
         if add_batch:
             ndims += 1
         return T.TensorType(dtype=self.dtype,
                             broadcastable=(False,)*ndims)(name)
+
+    def tensor_tf(self, name='', add_batch=False):
+        tensor_name = typed_arg_name(self.name, name)
+        return tf.placeholder(tf.float32, shape=self.shape, name=tensor_name)
 
     def get_shape(self, add_batch=False, batch_size=None):
         if add_batch:
