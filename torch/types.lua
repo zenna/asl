@@ -1,22 +1,14 @@
 local dddt = {}
 -- libraries:
 local t = require "torch"
-local util = "util"
--- grad = require 'autograd'
+local util = require "util"
+local constructor = util.constructor
 
+-- Type
+------
+local Type = {}
+Type.__index = Type
 
-local function constructor(atype)
-  setmetatable(atype, {
-    __call = function (cls, ...)
-      return cls.new(...)
-    end,
-  })
-end
-
-local Type = {} -- the table representing the class, which will double as the metatable for the instances
-Type.__index = Type -- failed table lookups on the instances should fallback to the class table, to get methods
-
--- syntax equivalent to "MyClass.new = function..."
 function Type.new(shape, name)
   local self = setmetatable({}, Type)
   self.shape = shape
@@ -26,7 +18,23 @@ end
 constructor(Type)
 dddt.Type = Type
 
+local function types(typed_vals)
+  local types = {}
+  for u = 1, #typed_vals do
+    table.insert(types, typed_vals[i].type)
+  end
+  return types
+end
+
+local function type_check(randvars, types)
+  assert(#randvars == #types)
+  for i = 1, #randvars do
+    assert(randvars[i].type == types[i])
+  end
+end
+
 -- Interface
+------------
 local Interface = {}
 Interface.__index = Interface
 
@@ -42,52 +50,48 @@ function Interface.new(lhs, rhs, name, template_kwargs)
 end
 constructor(Interface)
 
-function type_check(randvars, types)
-  assert(#randvars == #types)
-  for i = 1, #randvars do
-    assert(randvars[i].type == types[i])
-  end
-end
-
--- function type_check(lhs, rhs)
---   print(lhs, rhs)
---   assert(#lhs == #rhs)
---   for i = 1, #lhs do
---     assert(lhs[i].type == rhs[i].type)
---   end
--- end
-
-function types(typed_vals)
-  local types = {}
-  for u = 1, #typed_vals do
-    table.insert(types, typed_vals[i].type)
-  end
-  return types
-end
 
 function Interface:call(inp_randvars)
+  -- Applying an interface function a random variable yields a (set of)
+  -- random variables
   print("Applying function %s" % self.name)
   local randvars = {}
   type_check(inp_randvars, self.lhs)
-  print("before inp_randvars", inp_randvars)
-  for i = 1,#self.rhs do
+  for i = 1, #self.rhs do
     local r = dddt.RandVar(self.rhs[i])
-    r.get_value = function()
-      inp_randvars_vals = {}
+    r.gen = function()
+      local inps_changed = false
       for j = 1, #inp_randvars do
-        local q = inp_randvars[j].get_value()
-        table.insert(inp_randvars_vals, q)
+        inps_changed = inps_changed or inp_randvars[j].is_stale
       end
-      print("adada", inp_randvars_vals)
-      return self.template(inp_randvars_vals, self.params)
+      -- Only recompute if I'm not initialised (is_stale) or inputs have changed
+      if inps_changed or r:is_stale() then
+        inp_randvars_vals = {}
+        for j = 1, #inp_randvars do
+          local q = inp_randvars[j].gen()
+          table.insert(inp_randvars_vals, q)
+        end
+        local val = self.template(inp_randvars_vals, self.params)
+        r:set_value(val)
+        print("regenerating", self.value)
+        return val
+      else
+        print("Using Cache", r:value())
+        return r:value()
+      end
     end
     table.insert(randvars, r)
   end
   return randvars
 end
+
+function Interface:get_params()
+  return self.params
+end
 dddt.Interface = Interface
 
 -- Abstract Data Type
+---------------------
 local AbstractDataType = {}
 AbstractDataType.__index = AbstractDataType
 
@@ -103,6 +107,23 @@ end
 constructor(AbstractDataType)
 dddt.AbstractDataType = AbstractDataType
 
+function AbstractDataType:get_params()
+  local params = {}
+  for i = 1, #self.funcs do
+    local func = self.funcs[i]
+    assert(params[func.name] == nil)
+    params[func.name] = func:get_params()
+  end
+  for i = 1, #self.consts do
+    local const = self.consts[i]
+    assert(params[const.name] == nil)
+    params[const.name] = const:get_params()
+  end
+  return params
+end
+
+-- Random Variable
+------------------
 local RandVar = {}
 RandVar.__index = RandVar
 
@@ -110,7 +131,8 @@ function RandVar.new(type, name)
   local self = setmetatable({}, RandVar)
   self.type = type
   self.name = name
-  self.get_value = function()
+  self.is_stale = true
+  self.gen = function()
     error("No distribution assigned to $s::$s" % {self.type.name, self.name})
   end
   return self
@@ -118,18 +140,21 @@ end
 constructor(RandVar)
 dddt.RandVar = RandVar
 
-local function distribution_rand_var(type, sampler)
-  local rv = RandVar(type)
-  rv.get_value = sampler
+function RandVar:value()
+  if self.is_stable then
+    error("Pulling stale value")
+  else
+    return self.val
+  end
 end
 
-local function constant_rand_var(type, constant)
-  local rv = RandVar(type)
-  rv.get_value = function() return constant end
-  return rv
+function RandVar:set_value(val)
+  self.val = val
+  self.is_stable = false
 end
 
--- axioms
+-- Axioms
+---------
 local Axiom = {}
 Axiom.__index = Axiom
 function Axiom.new(lhs, rhs, name)
@@ -153,12 +178,30 @@ function dddt.get_losses(axiom, dist)
   local losses = {}
   for i = 1, axiom:naxioms() do
     print("EYE",  i)
-    print(axiom.lhs[i].get_value())
-    print(axiom.rhs[i].get_value())
-    table.insert(losses, dist(axiom.lhs[i].get_value(),
-                              axiom.rhs[i].get_value()))
+    local lhs_val = axiom.lhs[i].gen()
+    local rhs_val  = axiom.rhs[i].gen()
+    -- assert(lhs_co_valid)
+    -- assert(rhs_co_valid)
+    print("left", axiom.lhs[i])
+    print("left_val", lhs_val)
+    print("right", axiom.rhs[i])
+    print("right_val", rhs_val)
+    table.insert(losses, dist(lhs_val, rhs_val))
   end
   return losses
+end
+
+function dddt.get_loss_fn(axioms, dist)
+  -- Returns a loss function loss(params)
+  local loss_fn = function(params)
+    local losses = {}
+    for i = 1, #axioms do
+      local loss = dddt.get_losses(axioms[i], dist)
+      table.insert(losses, loss)
+    end
+    return t.Tensor(losses):sum()
+  end
+  return loss_fn
 end
 
 return dddt

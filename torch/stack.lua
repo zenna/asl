@@ -2,11 +2,15 @@ local t = require "torch"
 local dddt = require "types"
 local util = require "util"
 local res_net = require "res_net"
+local gen = require "generators"
 local Type = dddt.Type
 local Interface = dddt.Interface
 local RandVar = dddt.RandVar
 local Axiom = dddt.Axiom
 local AbstractDataType = dddt.AbstractDataType
+
+nn = require "nn"
+
 
 -- Example
 local function stack_adt(stack_shape, item_shape, push_args, pop_args)
@@ -22,16 +26,6 @@ local function stack_adt(stack_shape, item_shape, push_args, pop_args)
   local stack1 = RandVar(Stack, 'stack1')
   local item1 = RandVar(Item, 'item1')
   local randvars = {stack1, item1}
-
-  -- axioms
-  -- Different ways we could do it.
-  -- Either we could unroll it like I did in the theano
-  -- Or I just evaluate it on different stack inputs
-  -- The latter approach is conceptually better
-  -- But we don't want to repeat acomputation
-  -- Mechanically,
-  -- We want to start with the empty stack
-  -- Push an item to it
 
   -- Extensional axioms
   -- local ex_axiom = function(stack, nitems)
@@ -53,48 +47,27 @@ local function stack_adt(stack_shape, item_shape, push_args, pop_args)
   return adt
 end
 
-function mse_loss(x, y)
-  print("x", x)
-  print("y", y)
-  return x - y
+function mse(a, b)
+  print(a:size(),b:size())
+  local a_b = a - b
+  return t.cmul(a_b, a_b):sum()
 end
 
-mm = require "nn"
+item_shape = util.shape({1, 32, 32})
+stack_shape = util.shape({1, 50, 50})
 
+template_kwargs = {template = res_net.nnet, gen_params = res_net.net_params}
+adt = stack_adt(util.shape({10}), util.shape({10}), template_kwargs, template_kwargs)
+
+-- Training
+batchsize = 1
+trainData, testData, classes = require('./get_mnist.lua')()
+coroutines = {gen.infinite_samples(item_shape, t.rand, batchsize),
+              gen.infinite_minibatches(trainData.x, batchsize,  true)}
 
 -- grad = require "autograd"
--- local function test()
-template_kwargs = {template = res_net.nnet, gen_params = res_net.net_params}
-n_adt = stack_adt(util.shape({10}), util.shape({10}), template_kwargs, template_kwargs)
 -- mse = grad.nn.MSECriterion()
-mse = mse_loss
+training = require "train"
+gen.assign(adt.randvars, coroutines)
 
--- test()
-
-
-function rand_gen(shape)
-  local gen = function()
-    return t.rand(shape)
-  end
-  return gen
-end
-
-function gen_generators(randvars)
-  local generators = {}
-  for i = 1, #randvars do
-    print(i)
-    print(randvars[i].type.shape)
-    table.insert(generators, rand_gen(randvars[i].type.shape))
-  end
-  return generators
-end
-
-function assign(adt, generators)
-  for i = 1, #adt.randvars do
-    adt.randvars[i].get_value = generators[i]
-  end
-end
-
-generators = gen_generators(n_adt.randvars)
-assign(n_adt, generators)
-loss = dddt.get_losses(n_adt.axioms[1], mse)
+training.train(adt, 10, 5, "testing", "mysavedir")
