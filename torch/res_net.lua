@@ -20,8 +20,6 @@ local function batch_flatten(x)
 end
 
 local function concatenate_inputs(inputs)
-  print("inputs")
-  print(inputs)
   local flat_inputs = map(batch_flatten, inputs)
   local flat_input = t.cat(flat_inputs, 2)
   return flat_input
@@ -44,9 +42,11 @@ local function flat_shapes(shape)
 end
 
 local function get_batch_size(inputs)
+  local data_input_sizes = map(function(x) return t.LongTensor(x:size()) end, inputs)
   local batch_sizes = map(function(x) return x:size()[1] end, inputs)
   local b = batch_sizes[1]
   for i, v in ipairs(batch_sizes) do
+    print(batch_sizes)
     assert(v == b)
   end
   return b

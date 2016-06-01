@@ -191,8 +191,9 @@ function dddt.get_losses(axiom, dist)
   print("axiom", axiom)
   local losses = {}
   for i = 1, axiom:naxioms() do
-    print("EYE",  i)
+    print("evaluating axiom: %s" %i)
     local lhs_val = axiom.lhs[i].gen()
+    print("And Right hand side")
     local rhs_val  = axiom.rhs[i].gen()
     -- assert(lhs_co_valid)
     -- assert(rhs_co_valid)

@@ -39,14 +39,14 @@ function gen.infinite_minibatches(inputs, batchsize, shuffle)
   local co = coroutine.create(function ()
     local end_idx
     while true do
-      end_idx = start_idx + batchsize
+      end_idx = start_idx + batchsize - 1
       local batch_indices = util.circular_indices(start_idx, end_idx, nelements)
       if shuffle then
         batch_indices = indices:index(1, batch_indices)
       end
       local minibatch = inputs:index(1, batch_indices)
       coroutine.yield(minibatch)
-      start_idx = end_idx
+      start_idx = end_idx + 1
     end
   end)
   return co
