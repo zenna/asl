@@ -9,8 +9,8 @@ local RandVar = dddt.RandVar
 local Axiom = dddt.Axiom
 local AbstractDataType = dddt.AbstractDataType
 
-nn = require "nn"
-
+local nn = require "nn"
+local distances = require "distances"
 
 -- Example
 local function stack_adt(stack_shape, item_shape, push_args, pop_args)
@@ -47,27 +47,26 @@ local function stack_adt(stack_shape, item_shape, push_args, pop_args)
   return adt
 end
 
-function mse(a, b)
-  print(a:size(),b:size())
-  local a_b = a - b
-  return t.cmul(a_b, a_b):sum()
-end
 
 item_shape = util.shape({1, 32, 32})
 stack_shape = util.shape({1, 50, 50})
 
-template_kwargs = {template = res_net.nnet, gen_params = res_net.net_params}
+template_kwargs = {}
+template_kwargs['layer_width'] = 10
+template_kwargs['block_size'] = 2
+template_kwargs['nblocks'] = 2
+template_kwargs['template'] = gen_res_net
+template_kwargs['template_gen'] = res_net.gen_res_net
 adt = stack_adt(stack_shape, item_shape, template_kwargs, template_kwargs)
 
 -- Training
-batchsize = 1
+batchsize = 3
 trainData, testData, classes = require('./get_mnist.lua')()
 coroutines = {gen.infinite_samples(item_shape, t.rand, batchsize),
-              gen.infinite_minibatches(trainData.x, batchsize,  true)}
+              gen.infinite_minibatches(trainData.x:double(), batchsize,  true)}
 
 -- grad = require "autograd"
--- mse = grad.nn.MSECriterion()
 training = require "train"
 gen.assign(adt.randvars, coroutines)
 
-training.train(adt, 10, 5, "testing", "mysavedir")
+-- training.train(adt, 10, 5, "testing", "mysavedir")

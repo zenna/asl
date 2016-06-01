@@ -18,6 +18,14 @@ end
 constructor(Type)
 dddt.Type = Type
 
+function Type:get_shape(add_batch, batch_size)
+  if add_batch then
+    util.add_batch(self.shape, batch_size)
+  else
+    return self.shape
+  end
+end
+
 local function types(typed_vals)
   local types = {}
   for u = 1, #typed_vals do
@@ -43,8 +51,14 @@ function Interface.new(lhs, rhs, name, template_kwargs)
   self.lhs = lhs
   self.rhs = rhs
   self.name = name
-  self.template = template_kwargs.template
-  self.params = template_kwargs.gen_params()
+  -- Add shapes to templates for function/param generators
+  local inp_shapes = util.map(function (x) return x:get_shape(false) end, self.lhs)
+  local out_shapes = util.map(function (x) return x:get_shape(false) end, self.rhs)
+  local update_template_kwargs = util.update(template_kwargs,
+    {inp_shapes = inp_shapes, out_shapes = out_shapes})
+  template, params = template_kwargs.template_gen(update_template_kwargs)
+  self.template = template
+  self.params = params
   self.template_kwargs = template_kwargs
   return self
 end
@@ -66,7 +80,7 @@ function Interface:call(inp_randvars)
       end
       -- Only recompute if I'm not initialised (is_stale) or inputs have changed
       if inps_changed or r:is_stale() then
-        inp_randvars_vals = {}
+        local inp_randvars_vals = {}
         for j = 1, #inp_randvars do
           local q = inp_randvars[j].gen()
           table.insert(inp_randvars_vals, q)

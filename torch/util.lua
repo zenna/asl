@@ -41,18 +41,46 @@ function util.circular_indices(lb, ub, thresh)
   return indices, stop
 end
 
-function util.add_batch(shape, batchsize)
-  local new_shp = t.LongStorage(#shape + 1)
-  new_shp[1] = batchsize
-  for i = 2, #new_shp do
-    new_shp[i] = shape[i-1]
-  end
-  return new_shp
+-- function util.add_batch(shape, batchsize)
+--   local new_shp = t.LongStorage(#shape + 1)
+--   new_shp[1] = batchsize
+--   for i = 2, #new_shp do
+--     new_shp[i] = shape[i-1]
+--   end
+--   return new_shp
+-- end
+
+function util.add_batch(shape, batch_size)
+  print("here")
+  print(shape)
+  print(batch_size)
+  return t.cat(t.LongTensor({batch_size}), t.LongTensor(shape)):storage()
 end
+
 
 -- Fun little functions
 function util.identity(x)
   return x
+end
+
+function util.get(tbl, key)
+  return tbl[key]
+end
+
+function util.dotget(tbl, key)
+  return tbl.key
+end
+
+-- functional update
+function util.update(tbl1, tbl2)
+  local new_tbl = {}
+  for key, value in pairs(tbl1) do
+    new_tbl[key] = value
+  end
+  for key, value in pairs(tbl2) do
+    new_tbl[key] = value
+  end
+  return new_tbl
 end
 
 -- Functional Stuff

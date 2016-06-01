@@ -1,3 +1,7 @@
+local t = require("torch")
+local util = require("util")
+local templates = {}
+
 -- Param
 local function parsename(x)
   -- Expects parameter name in form name_1,2,3,
@@ -16,7 +20,7 @@ local function default_index(tbl, k)
   return new_val
 end
 
-local function gen_param()
+function templates.gen_param()
   local param = {}
   setmetatable(param,{
     __index = function(param,k) return default_index(param, k) end
@@ -25,6 +29,8 @@ local function gen_param()
 end
 
 
-local function param_str(id, shape)
+function templates.param_str(id, shape)
   return "%s_%s" % {id, util.tostring(shape)}
 end
+
+return templates

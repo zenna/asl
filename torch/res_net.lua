@@ -8,6 +8,7 @@ local res_net = {}
 local t = require("torch")
 local util = require("util")
 local templates = require("templates")
+local param_str = templates.param_str
 local map = util.map
 
 local function batch_flatten(x)
@@ -19,17 +20,15 @@ local function batch_flatten(x)
 end
 
 local function concatenate_inputs(inputs)
+  print("inputs")
+  print(inputs)
   local flat_inputs = map(batch_flatten, inputs)
   local flat_input = t.cat(flat_inputs, 2)
   return flat_input
 end
 
 local function dense_layer(input, ninputs, noutputs, params, sfx)
-  -- print("inp", input:size())
-  -- print("weight", params[param_str('W-%s' % sfx, {ninputs, noutputs})]:size())
   local matmul = input * params[param_str('W-%s' % sfx, {ninputs, noutputs})]
-  -- print("mm", matmul:size())
-  -- print("bias", params[param_str('b-%s' % sfx, {1, noutputs})]:size())
   local bias = matmul + params[param_str('b-%s' % sfx, {1, noutputs})]:expandAs(matmul)
   return t.sigmoid(bias)
 end
@@ -42,6 +41,15 @@ end
 local function flat_shapes(shape)
   return map(function(v)
      return t.prod(t.LongTensor(v)[{{2,-1}}]) end, shape)
+end
+
+local function get_batch_size(inputs)
+  local batch_sizes = map(function(x) return x:size()[1] end, inputs)
+  local b = batch_sizes[1]
+  for i, v in ipairs(batch_sizes) do
+    assert(v == b)
+  end
+  return b
 end
 
 function res_net.gen_res_net(kwargs)
@@ -61,6 +69,7 @@ function res_net.gen_res_net(kwargs)
 
   local res_net_func = function(inputs, params)
     -- Flatten and concatenate inputs
+    local batch_size = get_batch_size(inputs)
     local flat_input = concatenate_inputs(inputs)
     local data_input_width = flat_input:size()[2]
     assert(data_input_width == input_width)
@@ -101,14 +110,19 @@ function res_net.gen_res_net(kwargs)
       -- FIXME, make this work with views and no copying
       local ub = lb + flat_output_shapes[i] - 1
       local out = output_product[{{},{lb,ub}}]
-      local rout = t.reshape(out, out_shapes[i])
+      local rout = t.reshape(out, util.add_batch(out_shapes[i], batch_size))
       table.insert(outputs, rout)
       lb = ub + 1
     end
 
     return outputs
   end
-  return res_net_func
+  local batch_inp_shapes = map(function(x) return util.add_batch(x,1) end,
+                               inp_shapes)
+  local faux_inputs = map(t.rand, batch_inp_shapes)
+  local params = templates.gen_param()
+  res_net_func(faux_inputs, params)
+  return res_net_func, params
 end
 
 local function test_rest_net()
@@ -133,6 +147,6 @@ local function test_rest_net()
   print(result)
 end
 
-test_rest_net()
+-- test_rest_net()
 
 return res_net
