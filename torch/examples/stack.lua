@@ -69,4 +69,4 @@ coroutines = {gen.infinite_samples(item_shape, t.rand, batchsize),
 training = require "train"
 gen.assign(adt.randvars, coroutines)
 
--- training.train(adt, 10, 5, "testing", "mysavedir")
+training.train(adt, 10, 5, "testing", "mysavedir")
