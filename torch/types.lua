@@ -204,4 +204,49 @@ function dddt.get_loss_fn(axioms, dist)
   return loss_fn
 end
 
+-- Param
+local function parsename(x)
+  -- Expects parameter name in form name_1,2,3,
+  local splitted = util.split(x,"_")
+  assert(#splitted == 2)
+  local id = splitted[1]
+  local shape_str = util.split(splitted[2], ",")
+  local shape = util.map(tonumber, shape_str)
+  return id, shape
+end
+
+
+function default_index(tbl, k)
+  local id, shape = parsename(k)
+  local new_val = t.rand(t.LongStorage(shape))
+  tbl[k] = new_val
+  return new_val
+end
+
+function dddt.gen_param()
+  local param = {}
+  setmetatable(param,{
+  __index = function(param,k) return default_index(param, k) end
+  })
+  return param
+end
+
+--
+-- local Param = {}
+-- Param.__index = Param
+-- function Param.new()
+--   local self = setmetatable({}, Param)
+--   return self
+-- end
+-- -- constructor(Param)
+-- setmetatable(Param,{
+--   __call = function (cls, ...)
+--     return cls.new(...)
+--   end,
+--   __index = function(t,k) return 0 end,
+--   -- __index = default_index
+-- })
+-- dddt.Param = Param
+
+
 return dddt

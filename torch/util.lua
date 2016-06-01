@@ -1,6 +1,7 @@
 local t = require "torch"
 local util = {}
 
+-- Type Stuff
 function util.constructor(atype)
   setmetatable(atype, {
     __call = function (cls, ...)
@@ -9,12 +10,9 @@ function util.constructor(atype)
   })
 end
 
+-- Torch Stuff
 function util.shape(shape_tbl)
   return t.LongStorage(shape_tbl)
-end
-
-function util.identity(x)
-  return x
 end
 
 function util.circular_indices(lb, ub, thresh)
@@ -51,5 +49,97 @@ function util.add_batch(shape, batchsize)
   end
   return new_shp
 end
+
+-- Fun little functions
+function util.identity(x)
+  return x
+end
+
+-- Functional Stuff
+function util.map(func, array)
+  local new_array = {}
+  for i,v in ipairs(array) do
+    new_array[i] = func(v)
+  end
+  return new_array
+end
+
+function util.mapn(func, ...)
+  local new_array = {}
+  local i=1
+  local arg_length = table.getn(arg)
+  while true do
+    local arg_lis t = map(function(arr) return arr[i] end, arg)
+    if table.getn(arg_list) < arg_length then return new_array end
+    new_array[i] = func(unpack(arg_list))
+    i = i+1
+  end
+end
+
+function util.lua_remove_if(func, arr)
+  local new_array = {}
+  for _,v in arr do
+    if not func(v) then table.insert(new_array, v) end
+  end
+  return new_array
+end
+
+-- String
+function util.split(str, pat)
+   local t = {}  -- NOTE: use {n = 0} in Lua-5.0
+   local fpat = "(.-)" .. pat
+   local last_end = 1
+   local s, e, cap = str:find(fpat, 1)
+   while s do
+      if s ~= 1 or cap ~= "" then
+	 table.insert(t,cap)
+      end
+      last_end = e+1
+      s, e, cap = str:find(fpat, last_end)
+   end
+   if last_end <= #str then
+      cap = str:sub(last_end)
+      table.insert(t, cap)
+   end
+   return t
+end
+
+-- Table
+function util.val_to_str ( v )
+  if "string" == type( v ) then
+    v = string.gsub( v, "\n", "\\n" )
+    if string.match( string.gsub(v,"[^'\"]",""), '^"+$' ) then
+      return "'" .. v .. "'"
+    end
+    return '"' .. string.gsub(v,'"', '\\"' ) .. '"'
+  else
+    return "table" == type( v ) and util.tostring( v ) or
+      tostring( v )
+  end
+end
+
+function util.key_to_str ( k )
+  if "string" == type( k ) and string.match( k, "^[_%a][_%a%d]*$" ) then
+    return k
+  else
+    return "[" .. util.val_to_str( k ) .. "]"
+  end
+end
+
+function util.tostring( tbl )
+  local result, done = {}, {}
+  for k, v in ipairs( tbl ) do
+    table.insert( result, util.val_to_str( v ) )
+    done[ k ] = true
+  end
+  for k, v in pairs( tbl ) do
+    if not done[ k ] then
+      table.insert( result,
+        util.key_to_str( k ) .. "=" .. util.val_to_str( v ) )
+    end
+  end
+  return table.concat( result, "," )
+end
+
 
 return util

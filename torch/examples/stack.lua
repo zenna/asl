@@ -57,7 +57,7 @@ item_shape = util.shape({1, 32, 32})
 stack_shape = util.shape({1, 50, 50})
 
 template_kwargs = {template = res_net.nnet, gen_params = res_net.net_params}
-adt = stack_adt(util.shape({10}), util.shape({10}), template_kwargs, template_kwargs)
+adt = stack_adt(stack_shape, item_shape, template_kwargs, template_kwargs)
 
 -- Training
 batchsize = 1
