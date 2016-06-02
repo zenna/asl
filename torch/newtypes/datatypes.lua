@@ -6,12 +6,6 @@ local constructor = util.constructor
 local AbstractDataType = {}
 AbstractDataType.__index = AbstractDataType
 
-local function all_unique(tbl)
-  for i, v in ipairs(tbl) do
-    assert(false)
-  end
-end
-
 function AbstractDataType.new(typenames, interfaces, constants, name)
   local self = setmetatable({}, AbstractDataType)
   self.typenames = typenames
@@ -19,8 +13,12 @@ function AbstractDataType.new(typenames, interfaces, constants, name)
   self.constants = constants
   self.name = name
   -- All typenames should be unique
-  all_unique(typenames)
-  assert(#interfaces)
+  local typename_names = util.map(function(x) return x.name end, typenames)
+  local interface_names = util.map(function(x) return x.name end, interfaces)
+  local constant_names = util.map(function(x) return x.name end, constants)
+  assert(util.all_unique(typename_names))
+  assert(util.all_unique(interface_names))
+  assert(util.all_unique(constant_names))
   return self
 end
 constructor(AbstractDataType)
@@ -29,12 +27,6 @@ constructor(AbstractDataType)
 ---------------------
 local DataType = {}
 DataType.__index = DataType
-
-local function all_unique(tbl)
-  for i, v in ipairs(tbl) do
-    assert(false)
-  end
-end
 
 -- A DataType assigns shapes to the types. Stack : Shape = {1, 10}
 -- But for a function like push, it seems less like a data type
@@ -56,7 +48,7 @@ ConcreteDataType.__index = ConcreteDataType
 function ConcreteDataType.new(adt, funcs, constants)
   local self = setmetatable({}, ConcreteDataType)
   assert(#funcs == #adt.interfaces)
-  assert(#constants == $adt.constants)
+  assert(#constants == #adt.constants)
   self.funcs = funcs
   self.consts = consts
   return self

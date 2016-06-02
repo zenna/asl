@@ -1,6 +1,6 @@
 local util = require "util"
 local constructor = util.constructor
-local randvar = require("randvar")
+local randvar = require("./randvar")
 local ParamRandVar = randvar.ParamRandVar
 
 -- Interface
@@ -23,7 +23,8 @@ constructor(Interface)
 function Interface:call(inp_randvars)
   print("Applying function %s" % self.name)
   local randvars = {}
-  type_check(inp_randvars, self.lhs)
+  -- Type check
+  assert(util.all_eq(util.extract('type', inp_randvars), self.lhs))
 
   -- For every output construct a random variable
   for i = 1, #self.rhs do

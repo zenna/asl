@@ -68,6 +68,41 @@ function util.dotget(tbl, key)
   return tbl.key
 end
 
+-- Are all the values in this table unique
+function util.all_unique(tbl)
+  local keys = {}
+  for i, v in ipairs(tbl) do
+    if keys[v] ~= nil then
+      return false
+    end
+    keys[v] = 1
+  end
+  return true
+end
+
+-- Check whether a set of values which have field type
+function util.all_eq(a, b)
+  assert(#a == #b, "%s ~= %s" % {#a, #b})
+  for i = 1, #a do
+    if a[i] ~= a[i] then
+      return false
+    end
+  end
+  return true
+end
+
+-- Functional Stuff
+-------------------
+
+
+function util.map(func, array)
+  local new_array = {}
+  for i,v in ipairs(array) do
+    new_array[i] = func(v)
+  end
+  return new_array
+end
+
 -- functional update
 function util.update(tbl1, tbl2)
   local new_tbl = {}
@@ -78,15 +113,6 @@ function util.update(tbl1, tbl2)
     new_tbl[key] = value
   end
   return new_tbl
-end
-
--- Functional Stuff
-function util.map(func, array)
-  local new_array = {}
-  for i,v in ipairs(array) do
-    new_array[i] = func(v)
-  end
-  return new_array
 end
 
 function util.mapn(func, ...)
@@ -127,6 +153,11 @@ function util.split(str, pat)
       table.insert(t, cap)
    end
    return t
+end
+
+-- From a list of tables contruct a table which extracts keys
+function util.extract(k, xs)
+  return util.map(function(x) return x[k] end, xs)
 end
 
 -- Table

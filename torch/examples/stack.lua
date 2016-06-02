@@ -11,6 +11,8 @@ local Interface = dddt.types.Interface
 local RandVar = dddt.types.RandVar
 local AbstractDataType = dddt.types.AbstractDataType
 local DataType = dddt.types.DataType
+local Spec = dddt.types.Spec
+local gen = dddt.generators
 
 local function stack_adt()
   local Stack = Type('Stack')
@@ -28,7 +30,7 @@ end
 local function stack_adt_axioms(stack_shape, item_shape, push_args, pop_args)
   local adt = stack_adt()
   local Stack, Item = unpack(adt.typenames)
-  local pop, push = unpack(adt.interface_names)
+  local push, pop = unpack(adt.interfaces)
   local data_type = DataType(stack_adt, {stack_shape, item_shape})
 
   -- Intensional Axiomitisation
@@ -66,6 +68,6 @@ coroutines = {gen.infinite_samples(stack_shape, t.rand, batchsize),
               gen.infinite_samples(item_shape, t.rand, batchsize)}
 -- grad = require "autograd"
 training = require "train"
-gen.assign(adt.randvars, coroutines)
+-- gen.assign(adt.randvars, coroutines)
 
 -- training.train(adt, 10, 5, "testing", "mysavedir")
