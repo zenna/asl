@@ -74,6 +74,7 @@ function Interface:call(inp_randvars)
   for i = 1, #self.rhs do
     local r = dddt.RandVar(self.rhs[i])
     r.gen = function()
+      -- Check whether any of my inputs have changed (if not I needn't change)
       local inps_changed = false
       for j = 1, #inp_randvars do
         inps_changed = inps_changed or inp_randvars[j].is_stale
@@ -85,12 +86,12 @@ function Interface:call(inp_randvars)
           local q = inp_randvars[j].gen()
           table.insert(inp_randvars_vals, q)
         end
-        local val = self.template(inp_randvars_vals, self.params)
+        local val = self.template(inp_randvars_vals, self.params)[i]
         r:set_value(val)
-        print("regenerating", self.value)
+        print("regenerating")
         return val
       else
-        print("Using Cache", r:value())
+        print("Using Cache")
         return r:value()
       end
     end
@@ -193,20 +194,16 @@ function dddt.get_losses(axiom, dist)
   for i = 1, axiom:naxioms() do
     print("evaluating axiom: %s" %i)
     local lhs_val = axiom.lhs[i].gen()
-    print("And Right hand side")
     local rhs_val  = axiom.rhs[i].gen()
-    -- assert(lhs_co_valid)
-    -- assert(rhs_co_valid)
-    print("left", axiom.lhs[i])
-    print("left_val", lhs_val)
-    print("right", axiom.rhs[i])
-    print("right_val", rhs_val)
-    table.insert(losses, dist(lhs_val, rhs_val))
+    local loss = dist(lhs_val, rhs_val)
+    print("loss", loss)
+    table.insert(losses, loss)
   end
   return losses
 end
 
 function dddt.get_loss_fn(axioms, dist)
+  print("dist", dist)
   -- Returns a loss function loss(params)
   local loss_fn = function(params)
     local losses = {}

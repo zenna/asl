@@ -8,6 +8,7 @@ local Interface = dddt.Interface
 local RandVar = dddt.RandVar
 local Axiom = dddt.Axiom
 local AbstractDataType = dddt.AbstractDataType
+local grad = require "autograd"
 
 local nn = require "nn"
 local distances = require "distances"
@@ -62,7 +63,7 @@ adt = stack_adt(stack_shape, item_shape, template_kwargs, template_kwargs)
 -- Training
 batchsize = 3
 trainData, testData, classes = require('./get_mnist.lua')()
-coroutines = {gen.infinite_samples(item_shape, t.rand, batchsize),
+coroutines = {gen.infinite_samples(stack_shape, t.rand, batchsize),
               gen.infinite_minibatches(trainData.x:double(), batchsize,  true)}
 
 -- grad = require "autograd"

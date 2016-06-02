@@ -36,17 +36,16 @@ end
 -- to be able to generate the parameters From the function
 -- Somewhere we need to specfiy the initialisation
 
-local function flat_shapes(shape)
+local function flat_shapes(shapes)
   return map(function(v)
-     return t.prod(t.LongTensor(v)[{{2,-1}}]) end, shape)
+     return t.prod(t.LongTensor(v)) end, shapes)
 end
 
 local function get_batch_size(inputs)
-  local data_input_sizes = map(function(x) return t.LongTensor(x:size()) end, inputs)
   local batch_sizes = map(function(x) return x:size()[1] end, inputs)
   local b = batch_sizes[1]
   for i, v in ipairs(batch_sizes) do
-    print(batch_sizes)
+    -- print(batch_sizes)
     assert(v == b)
   end
   return b
@@ -72,7 +71,16 @@ function res_net.gen_res_net(kwargs)
     local batch_size = get_batch_size(inputs)
     local flat_input = concatenate_inputs(inputs)
     local data_input_width = flat_input:size()[2]
-    assert(data_input_width == input_width)
+    local data_input_sizes = map(function(x) return t.LongTensor(x:size()) end, inputs)
+    -- for i, v in ipairs(data_input_sizes) do
+    --   print("data input %s" %i, v)
+    -- end
+    -- for i, v in ipairs(inp_shapes) do
+    --   print("input %s" %i, v)
+    -- end
+
+
+    assert(data_input_width == input_width, "%s ~= %s" % {data_input_width, input_width})
     assert(#inputs == ninputs)
 
     -- Project input into inner layer widths
@@ -126,12 +134,12 @@ function res_net.gen_res_net(kwargs)
 end
 
 local function test_rest_net()
-  local s1 = util.shape({5,10,23})
-  local s2 = util.shape({5,100})
-  local s3 = util.shape({5,5,5,5})
+  local s1 = util.shape({10,23})
+  local s2 = util.shape({100})
+  local s3 = util.shape({5,5,5})
   local inp_shapes = {s1, s2, s3}
-  local o1 = util.shape({5,6})
-  local o2 = util.shape({5,10,3})
+  local o1 = util.shape({10,3})
+  local o2 = util.shape({10,3})
   local out_shapes = {o1, o2}
   local kwargs = {}
   kwargs['inp_shapes'] = inp_shapes
@@ -141,12 +149,16 @@ local function test_rest_net()
   kwargs['nblocks'] = 2
 
   local func = res_net.gen_res_net(kwargs)
-  local inputs = map(t.rand, inp_shapes)
+  local batch_inp_shapes = map(function(x) return util.add_batch(x,1) end,
+                               inp_shapes)
+  local inputs = map(t.rand, batch_inp_shapes)
   local params = templates.gen_param()
   local result = func(inputs, params)
-  print(result)
+  local grad = require "autograd"
+  local distances = require "distances"
+  local loss_fn = function(params, inputs) return distances.mse(unpack(func(inputs, params))) end
+  local loss_fn_grad = grad(loss_fn)
+  print(loss_fn_grad(params, inputs))
 end
-
--- test_rest_net()
 
 return res_net
