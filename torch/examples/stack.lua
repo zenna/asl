@@ -1,51 +1,44 @@
 local t = require "torch"
-local dddt = require "types"
-local util = require "util"
-local res_net = require "res_net"
-local gen = require "generators"
-local Type = dddt.Type
-local Interface = dddt.Interface
-local RandVar = dddt.RandVar
-local Axiom = dddt.Axiom
-local AbstractDataType = dddt.AbstractDataType
-local grad = require "autograd"
+local dddt = require "dddt"
+local util = dddt.util
+local res_net = dddt.templates.res_net
+local gen = dddt.generators
+-- local Spec = dddt.types.Spec
+local Type = dddt.types.Type
+local ConjAxiom = dddt.types.ConjAxiom
+local EqAxiom = dddt.types.EqAxiom
+local Interface = dddt.types.Interface
+local RandVar = dddt.types.RandVar
+local AbstractDataType = dddt.types.AbstractDataType
+local DataType = dddt.types.DataType
 
-local nn = require "nn"
-local distances = require "distances"
-
--- Example
-local function stack_adt(stack_shape, item_shape, push_args, pop_args)
-  local Stack = Type(stack_shape, 'Stack')
-  local Item = Type(item_shape, 'Item')
-
-  local push = Interface({Stack, Item}, {Stack}, 'push', push_args)
-  local pop = Interface({Stack}, {Stack, Item}, 'pop', pop_args)
+local function stack_adt()
+  local Stack = Type('Stack')
+  local Item = Type('Item')
+  local types = {Stack, Item}
+  local push = Interface({Stack, Item}, {Stack}, 'push')
+  local pop = Interface({Stack}, {Stack, Item}, 'pop')
   local funcs = {push, pop}
   local consts = {}
+  stack_adt = AbstractDataType(types, funcs, consts, "Stack")
+  return stack_adt
+end
 
-  -- random variables
+-- Example
+local function stack_adt_axioms(stack_shape, item_shape, push_args, pop_args)
+  local adt = stack_adt()
+  local Stack, Item = unpack(adt.typenames)
+  local pop, push = unpack(adt.interface_names)
+  local data_type = DataType(stack_adt, {stack_shape, item_shape})
+
+  -- Intensional Axiomitisation
   local stack1 = RandVar(Stack, 'stack1')
   local item1 = RandVar(Item, 'item1')
   local randvars = {stack1, item1}
-
-  -- Extensional axioms
-  -- local ex_axiom = function(stack, nitems)
-  --   for i = 1, nitems.get_value() do
-  --     local stack = push(stack, items[i].input_var)
-  --     local pop_stack = stack
-  --     for j = i, 1, -1 do
-  --       pop_stack, pop_item = pop(pop_stack)
-  --       axiom = Axiom({pop_item}, {items[j].input_var})
-  --       axioms.append(axiom)
-  --     end
-  --   end
-  -- end
-
-  -- Intensional Axiom
-  local axiom1 = Axiom(pop:call(push:call({stack1, item1})), {stack1, item1})
-  local axioms = {axiom1}
-  local adt = AbstractDataType(funcs, consts, randvars, axioms, "stack")
-  return adt
+  local axiom1 = EqAxiom(pop:call(push:call({stack1, item1})), {stack1, item1})
+  local axiom = ConjAxiom({axiom1})
+  local spec = Spec(randvars, axioms)
+  return adt, data_type, axiom, spec
 end
 
 item_shape = util.shape({1, 32, 32})
@@ -61,7 +54,7 @@ template_kwargs['block_size'] = 2
 template_kwargs['nblocks'] = 2
 template_kwargs['template'] = gen_res_net
 template_kwargs['template_gen'] = res_net.gen_res_net
-adt = stack_adt(stack_shape, item_shape, template_kwargs, template_kwargs)
+adt = stack_adt_axioms(stack_shape, item_shape, template_kwargs, template_kwargs)
 
 -- Training
 batchsize = 2
@@ -75,4 +68,4 @@ coroutines = {gen.infinite_samples(stack_shape, t.rand, batchsize),
 training = require "train"
 gen.assign(adt.randvars, coroutines)
 
-training.train(adt, 10, 5, "testing", "mysavedir")
+-- training.train(adt, 10, 5, "testing", "mysavedir")

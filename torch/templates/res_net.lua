@@ -4,14 +4,13 @@
 
 -- Ways to do this.  We make a function generator which takes hyper parameters
 -- and returns a function
-local dbg = require("debugger")
 local res_net = {}
 local grad = require("autograd")
 local gradcheck = require 'autograd.gradcheck' {randomizeInput = true}
 local t = require("torch")
 local util = require("util")
-local templates = require("templates")
-local param_str = templates.param_str
+local common = require("./common")
+local param_str = common.param_str
 local map = util.map
 
 local function batch_flatten(x)
@@ -133,7 +132,7 @@ function res_net.gen_res_net(kwargs)
   local batch_inp_shapes = map(function(x) return util.add_batch(x,1) end,
                                inp_shapes)
   local faux_inputs = map(t.rand, batch_inp_shapes)
-  local d_params = templates.gen_param()
+  local d_params = common.gen_param()
   local result = res_net_func(faux_inputs, d_params)
   local params = util.update({}, d_params)
   -- Do gradient check
