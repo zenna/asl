@@ -2,7 +2,30 @@ local dddt = {}
 -- libraries:
 local t = require "torch"
 local util = require "util"
+local gradcheck = require 'autograd.gradcheck' {randomizeInput = true}
 local constructor = util.constructor
+
+
+
+-- We need a simple implementation of a concrete data type and a separation
+-- of concerns
+-- An interface should specify: the types of the input and output
+-- There's an assignment of a function space
+-- And then there's an assignment of a function
+-- Currently it also specifies a function space
+
+-- Types
+-- Type: A data type.  Pretty much just a name
+-- Interface: a functional type specification for a name
+-- Constant: a functional type specification for a constant
+-- ADT = ({T}, {O}, {F})
+
+-- Should a type contain shape information?
+
+-- Then we need something which assigns a function space to an face
+-- and a value space to constants
+
+-- Then we need concrete implementation
 
 -- Type
 ------
@@ -48,6 +71,7 @@ Interface.__index = Interface
 
 function Interface.new(lhs, rhs, name, template_kwargs)
   local self = setmetatable({}, dddt.Interface)
+  print("Creating interface %s" % name)
   self.lhs = lhs
   self.rhs = rhs
   self.name = name
@@ -56,9 +80,8 @@ function Interface.new(lhs, rhs, name, template_kwargs)
   local out_shapes = util.map(function (x) return x:get_shape(false) end, self.rhs)
   local update_template_kwargs = util.update(template_kwargs,
     {inp_shapes = inp_shapes, out_shapes = out_shapes})
-  template, params = template_kwargs.template_gen(update_template_kwargs)
+  local template, params = template_kwargs.template_gen(update_template_kwargs)
   self.template = template
-  self.params = params
   self.template_kwargs = template_kwargs
   return self
 end
@@ -71,6 +94,16 @@ function Interface:call(inp_randvars)
   print("Applying function %s" % self.name)
   local randvars = {}
   type_check(inp_randvars, self.lhs)
+
+  -- For every output construct a random variable
+  -- A random variable has a gen function which draws a value from its
+  -- distribution.
+  -- The output of a call will be a "functional" random variable.
+  -- That is, if X is a random variable, this will be f(X).
+  -- However if f is a parameterised function, we need these parameters
+  -- to generate f(x)
+  -- Option 1. Let gen take parameter values.  Problem not all generators
+  --   need paramaters
   for i = 1, #self.rhs do
     local r = dddt.RandVar(self.rhs[i])
     r.gen = function()
@@ -86,7 +119,7 @@ function Interface:call(inp_randvars)
           local q = inp_randvars[j].gen()
           table.insert(inp_randvars_vals, q)
         end
-        local val = self.template(inp_randvars_vals, self.params)[i]
+        local val = self.template(inp_randvars_vals, r:params())[i]
         r:set_value(val)
         print("regenerating")
         return val
@@ -168,6 +201,14 @@ function RandVar:set_value(val)
   self.is_stable = false
 end
 
+function RandVar:set_params(params)
+  self.params = params
+end
+
+function RandVar:params()
+  return self.params
+end
+
 -- Axioms
 ---------
 local Axiom = {}
@@ -206,6 +247,7 @@ function dddt.get_loss_fn(axioms, dist)
   print("dist", dist)
   -- Returns a loss function loss(params)
   local loss_fn = function(params)
+    print("params here", params)
     local losses = {}
     for i = 1, #axioms do
       local loss = dddt.get_losses(axioms[i], dist)
@@ -216,49 +258,6 @@ function dddt.get_loss_fn(axioms, dist)
   return loss_fn
 end
 
--- Param
-local function parsename(x)
-  -- Expects parameter name in form name_1,2,3,
-  local splitted = util.split(x,"_")
-  assert(#splitted == 2)
-  local id = splitted[1]
-  local shape_str = util.split(splitted[2], ",")
-  local shape = util.map(tonumber, shape_str)
-  return id, shape
-end
-
-
-function default_index(tbl, k)
-  local id, shape = parsename(k)
-  local new_val = t.rand(t.LongStorage(shape))
-  tbl[k] = new_val
-  return new_val
-end
-
-function dddt.gen_param()
-  local param = {}
-  setmetatable(param,{
-  __index = function(param,k) return default_index(param, k) end
-  })
-  return param
-end
-
---
--- local Param = {}
--- Param.__index = Param
--- function Param.new()
---   local self = setmetatable({}, Param)
---   return self
--- end
--- -- constructor(Param)
--- setmetatable(Param,{
---   __call = function (cls, ...)
---     return cls.new(...)
---   end,
---   __index = function(t,k) return 0 end,
---   -- __index = default_index
--- })
--- dddt.Param = Param
 
 
 return dddt

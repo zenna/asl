@@ -48,9 +48,12 @@ local function stack_adt(stack_shape, item_shape, push_args, pop_args)
   return adt
 end
 
-
 item_shape = util.shape({1, 32, 32})
 stack_shape = util.shape({1, 50, 50})
+
+item_shape = util.shape({1, 5, 5})
+stack_shape = util.shape({1, 5, 5})
+
 
 template_kwargs = {}
 template_kwargs['layer_width'] = 10
@@ -61,11 +64,13 @@ template_kwargs['template_gen'] = res_net.gen_res_net
 adt = stack_adt(stack_shape, item_shape, template_kwargs, template_kwargs)
 
 -- Training
-batchsize = 3
+batchsize = 2
 trainData, testData, classes = require('./get_mnist.lua')()
-coroutines = {gen.infinite_samples(stack_shape, t.rand, batchsize),
-              gen.infinite_minibatches(trainData.x:double(), batchsize,  true)}
+-- coroutines = {gen.infinite_samples(stack_shape, t.rand, batchsize),
+--               gen.infinite_minibatches(trainData.x:double(), batchsize,  true)}
 
+coroutines = {gen.infinite_samples(stack_shape, t.rand, batchsize),
+              gen.infinite_samples(item_shape, t.rand, batchsize)}
 -- grad = require "autograd"
 training = require "train"
 gen.assign(adt.randvars, coroutines)

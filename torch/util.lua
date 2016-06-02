@@ -51,9 +51,6 @@ end
 -- end
 
 function util.add_batch(shape, batch_size)
-  print("here")
-  print(shape)
-  print(batch_size)
   return t.cat(t.LongTensor({batch_size}), t.LongTensor(shape)):storage()
 end
 
