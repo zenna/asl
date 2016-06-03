@@ -8,6 +8,7 @@ types = util.update(types, require("newtypes/datatypes"))
 types = util.update(types, require("newtypes/randvar"))
 types = util.update(types, require("newtypes/axioms"))
 types = util.update(types, require("newtypes/spec"))
+types = util.update(types, require("newtypes/paramfunc"))
 
 return types
 -- return types

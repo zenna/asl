@@ -34,6 +34,17 @@ function Interface:call(inp_randvars)
   return randvars
 end
 
+function constrain_interface(interface, type_to_constrained)
+  local replace = function(type)
+    local constrained_type = type_to_constrained[type.name]
+    assert(constrained_type ~= nil)
+    return constrained_type
+  end
+  local lhs = util.map(replace, interface.lhs)
+  local rhs = util.map(replace, interface.rhs)
+  return Interface(lhs, rhs, interface.name)
+end
+
 -- Concrete Interface
 ---------------------
 
