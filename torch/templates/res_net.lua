@@ -5,8 +5,8 @@
 -- Ways to do this.  We make a function generator which takes hyper parameters
 -- and returns a function
 local res_net = {}
-local grad = require("autograd")
-local gradcheck = require 'autograd.gradcheck' {randomizeInput = true}
+-- local grad = require("autograd")
+-- local gradcheck = require 'autograd.gradcheck' {randomizeInput = true}
 local t = require("torch")
 local util = require("util")
 local common = require("./common")
@@ -53,10 +53,12 @@ local function get_batch_size(inputs)
   return b
 end
 
-function res_net.gen_res_net(kwargs)
-  -- A residual network of n inputs and moutputs
-  local inp_shapes = kwargs['inp_shapes']
-  local out_shapes = kwargs['out_shapes']
+-- A residual network of n inputs and moutputs
+function res_net.gen_res_net(interface, kwargs)
+  local inp_shapes = interface:inp_shapes()
+  local out_shapes = interface:out_shapes()
+
+  -- Parameters
   local layer_width = kwargs['layer_width']
   local nblocks = kwargs['nblocks']
   local block_size = kwargs['block_size']
@@ -128,24 +130,24 @@ function res_net.gen_res_net(kwargs)
 
     return outputs
   end
-  -- Generate Parameters by running function with default_dict param
-  local batch_inp_shapes = map(function(x) return util.add_batch(x,1) end,
-                               inp_shapes)
-  local faux_inputs = map(t.rand, batch_inp_shapes)
-  local d_params = common.gen_param()
-  local result = res_net_func(faux_inputs, d_params)
-  local params = util.update({}, d_params)
-  -- Do gradient check
-  local loss_fn = function(params, inputs)
-    return t.sum(res_net_func(inputs, params)[1])
-  end
-  print("Test on inputs", loss_fn(params, faux_inputs))
-  print("Doing gradcheck")
-  -- dbg()
-  local gd = gradcheck(loss_fn, params, faux_inputs)
-  print("gd", gd)
-  assert(gd)
-  return res_net_func, util.update({}, params)
+  -- -- Generate Parameters by running function with default_dict param
+  -- local batch_inp_shapes = map(function(x) return util.add_batch(x,1) end,
+  --                              inp_shapes)
+  -- local faux_inputs = map(t.rand, batch_inp_shapes)
+  -- local d_params = common.gen_param()
+  -- local result = res_net_func(faux_inputs, d_params)
+  -- local params = util.update({}, d_params)
+  -- -- Do gradient check
+  -- local loss_fn = function(params, inputs)
+  --   return t.sum(res_net_func(inputs, params)[1])
+  -- end
+  -- print("Test on inputs", loss_fn(params, faux_inputs))
+  -- print("Doing gradcheck")
+  -- -- dbg()
+  -- local gd = gradcheck(loss_fn, params, faux_inputs)
+  -- print("gd", gd)
+  -- assert(gd)
+  return res_net_func
 end
 
 return res_net

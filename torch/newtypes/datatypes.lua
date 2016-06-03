@@ -6,6 +6,16 @@ local constructor = util.constructor
 local AbstractDataType = {}
 AbstractDataType.__index = AbstractDataType
 
+-- For table of tables which have 'name' param, return named table
+-- {{data = me, name='smelly'}}
+local function named_table(xs)
+  local tbl = {}
+  for i, v in ipairs(xs) do
+    tbl[v.name] = v
+  end
+  return tbl
+end
+
 function AbstractDataType.new(interfaces, constants, name)
   local self = setmetatable({}, AbstractDataType)
   self.interfaces = interfaces
@@ -20,10 +30,10 @@ function AbstractDataType.new(interfaces, constants, name)
 end
 constructor(AbstractDataType)
 
-function AbstractDataType:types()
-  -- Get typenames
-  assert(false)
-end
+-- function AbstractDataType:types()
+--   -- Get typenames
+--   assert(false)
+-- end
 
 -- Concrete Data Type
 ---------------------

@@ -13,6 +13,7 @@ local Interface = dddt.types.Interface
 local RandVar = dddt.types.RandVar
 local AbstractDataType = dddt.types.AbstractDataType
 local Spec = dddt.types.Spec
+local ParamFunc = dddt.types.ParamFunc
 
 -- Genereates the stack abstract data type
 local function stack_adt()
@@ -36,8 +37,8 @@ end
 -- Generates a stack parameterised interface
 local function stack_constrained(adt, stack_shape, stack_dtype, item_shape, item_dtype)
   -- Give a shape and type to Stack and Items and construct a new Data Type
-  local CStack = ConstrainedType('Stack', {shape=stack_shape,dtype=stack_dtype})
-  local CItem = ConstrainedType('Item', {shape=item_shape,dtype=item_dtype})
+  local CStack = ConstrainedType('Stack', stack_shape, stack_dtype)
+  local CItem = ConstrainedType('Item', item_shape, item_dtype)
   local type_to_constrained = {Stack=CStack, Item=CItem}
   local ok = function(x) return constrain_interface(x, type_to_constrained) end
   local cinterface = map(ok, adt.interfaces)
@@ -45,19 +46,21 @@ local function stack_constrained(adt, stack_shape, stack_dtype, item_shape, item
 end
 
 -- Generates a stack parameterised interface
-local function stack_param(cdt, push_args, pop_args)
-  -- We expect the function to take values
-  -- So the template takes in the constrained functio nspace as an argument
-  -- and some options and returns a function space
+local function stack_param(cdt, push_args, push_template, pop_args, pop_template)
+  local push, pop = unpack(cdt.interfaces)
+  local push_pf = ParamFunc(push, push_template(push, push_args))
+  local pop_pf = ParamFunc(pop, pop_template(pop, pop_args))
+  return {push_pf, pop_pf}
 end
 
 
 -- Example
-local function stack(stack_shape, stack_dtype, item_shape, item_dtype, push_args, pop_args)
+local function stack(stack_shape, stack_dtype, item_shape, item_dtype,
+                     push_args, push_template, pop_args, pop_template)
   local adt = stack_adt()
   local spec = stack_spec(adt)
   local cdt = stack_constrained(adt, stack_shape, stack_dtype, item_shape, item_dtype)
-  local pdt = stack_param(cdt, push_args, pop_args)
+  local pdt = stack_param(cdt, push_args, push_template, pop_args, pop_template)
   return adt, spec, cdt, pdt
 end
 
@@ -65,14 +68,17 @@ item_shape = util.shape({1, 32, 32})
 stack_shape = util.shape({1, 50, 50})
 stack_dtype = torch.getdefaulttensortype()
 item_dtype = torch.getdefaulttensortype()
+push_template = res_net.gen_res_net
+pop_template =  res_net.gen_res_net
 batchsize = 2
 template_kwargs = {}
 template_kwargs['layer_width'] = 10
 template_kwargs['block_size'] = 2
 template_kwargs['nblocks'] = 2
-template_kwargs['template'] = gen_res_net
-template_kwargs['template_gen'] = res_net.gen_res_net
-adt, spec, cdt, pdt = stack(stack_shape, stack_dtype, item_shape, item_dtype, template_kwargs, template_kwargs)
+push_args = template_kwargs
+pop_args = template_kwargs
+adt, spec, cdt, pdt = stack(stack_shape, stack_dtype, item_shape, item_dtype,
+                            push_args, push_template, pop_args, pop_template)
 
 -- Training
 trainData, testData, classes = require('./get_mnist.lua')()

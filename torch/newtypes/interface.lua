@@ -34,6 +34,14 @@ function Interface:call(inp_randvars)
   return randvars
 end
 
+function Interface:inp_shapes()
+  return util.map(function(x) return x.shape end, self.lhs)
+end
+
+function Interface:out_shapes()
+  return util.map(function(x) return x.shape end, self.rhs)
+end
+
 function constrain_interface(interface, type_to_constrained)
   local replace = function(type)
     local constrained_type = type_to_constrained[type.name]

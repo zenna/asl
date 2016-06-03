@@ -19,25 +19,22 @@ module.Type = Type
 local ConstrainedType = {}
 ConstrainedType.__index = ConstrainedType
 
-function ConstrainedType.new(name, constraints)
+function ConstrainedType.new(name, shape, dtype)
   local self = setmetatable({}, ConstrainedType)
   self.name = name
-  self.constraints = constraints
+  self.shape = shape
+  self.dtype = dtype
   return self
 end
 constructor(ConstrainedType)
 module.ConstrainedType = ConstrainedType
 
 function ConstrainedType:sample(sampler)
-  assert(self.constraints.shape ~= nil, "Need a shape to sample")
-  assert(self.constraints.dtype ~= nil, "Need a dtype to sample")
+  assert(self.shape ~= nil, "Need a shape to sample")
+  assert(self.dtype ~= nil, "Need a dtype to sample")
   local sample = sampler(self.shape)
-  assert(sample:type() == self.constraints.dtype)
+  assert(sample:type() == self.dtype)
   return sample
-end
-
-function module.constrain_type_shape_dtype(Type, shape, dtype)
-  return ConstrainedType(Type.name, {shape=shape, dtype=dtype})
 end
 
 return module
