@@ -89,18 +89,26 @@ params = util.map(function(pf) return pf:gen_params() end, pdt)
 -- Concrete Functions
 cfs = util.mapn(function(pf, param) return ConcreteFunc.fromParamFunc(pf, param) end, pdt, params)
 
--- Test
-inp_shapes = cdt.interfaces[1]:inp_shapes()
-faux_inputs = util.map(t.rand, inp_shapes)
--- cfs[1]:call(faux_inputs)
-
-
--- Training
+-- Generators
 trainData, testData, classes = require('./get_mnist.lua')()
 coroutines = {gen.infinite_samples(stack_shape, t.rand, batchsize),
               gen.infinite_minibatches(trainData.x:double(), batchsize,  true)}
 
 -- grad = require "autograd"
 gen.assign(spec.randvars, coroutines)
+
+-- Test
+distances = require "distances"
+loss_fn = spec.axiom:losses_fn(distances.mse, pdt)
+total_loss = loss_fn(params)
+print(total_loss)
+
+
+-- Test Grad
+grad = require "autograd"
+df_loss_fn = grad(loss_fn)
+d_params = df_loss_fn(params)
+print(d_params)
+
 -- spec.axiom:losses(distances.mse)
 -- training.train(adt, 10, 5, "testing", "mysavedir")

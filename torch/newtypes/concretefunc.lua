@@ -25,7 +25,9 @@ end
 
 -- Can I overload call?
 function ConcreteFunc:call(input)
-  return self.func(input)
+  local g = self.func(input)
+  print("local g", g)
+  return g
 end
 
 return {ConcreteFunc=ConcreteFunc}
