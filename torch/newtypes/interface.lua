@@ -1,7 +1,7 @@
 local util = require "util"
 local constructor = util.constructor
 local randvar = require("./randvar")
-local ParamRandVar = randvar.ParamRandVar
+local TransformedRandVar = randvar.TransformedRandVar
 
 -- Interface
 ------------
@@ -19,6 +19,16 @@ function Interface.new(lhs, rhs, name)
 end
 constructor(Interface)
 
+local function cartprodstring(types)
+  return table.concat(util.extract('name', types), " × ")
+end
+
+function Interface:__tostring()
+  return "%s :: %s -> %s" % {self.name, cartprodstring(self.lhs),
+                             cartprodstring(self.rhs)}
+end
+
+
 -- Applying an interface to a randvar yields a (set of) randvars(s)
 function Interface:call(inp_randvars)
   print("Applying function %s" % self.name)
@@ -28,7 +38,8 @@ function Interface:call(inp_randvars)
 
   -- For every output construct a random variable
   for i = 1, #self.rhs do
-    local r = ParamRandVar(self.rhs[i], inp_randvars, i)
+    print("heres")
+    local r = TransformedRandVar(self, inp_randvars, i)
     table.insert(randvars, r)
   end
   return randvars
@@ -53,24 +64,4 @@ function constrain_interface(interface, type_to_constrained)
   return Interface(lhs, rhs, interface.name)
 end
 
--- Concrete Interface
----------------------
-
-local ConcreteInterface = {}
-ConcreteInterface.__index = Interface
-
--- An interface is an actual functions
-function ConcreteInterface.new(interface, func, params)
-  local self = setmetatable({}, ConcreteInterface)
-  self.interface = interface
-  self.func = func
-  self.params = params
-  return self
-end
-constructor(ConcreteInterface)
-
-function ConcreteInterface:call(input)
-  return self.func(input, self.params)
-end
-
-return {ConcreteInterface=ConcreteInterface, Interface=Interface}
+return {Interface=Interface}

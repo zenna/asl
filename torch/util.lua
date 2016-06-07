@@ -116,11 +116,12 @@ function util.update(tbl1, tbl2)
 end
 
 function util.mapn(func, ...)
+  local arg = {...}
   local new_array = {}
   local i=1
   local arg_length = table.getn(arg)
   while true do
-    local arg_lis t = map(function(arr) return arr[i] end, arg)
+    local arg_list = util.map(function(arr) return arr[i] end, arg)
     if table.getn(arg_list) < arg_length then return new_array end
     new_array[i] = func(unpack(arg_list))
     i = i+1

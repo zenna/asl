@@ -10,7 +10,7 @@ Spec.__index = Spec
 function Spec.new(randvars, axiom)
   local self = setmetatable({}, Spec)
   self.randvars = randvars
-  self.spec = spec
+  self.axiom = axiom
   return self
 end
 constructor(Spec)

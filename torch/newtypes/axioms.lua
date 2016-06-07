@@ -9,16 +9,21 @@ local EqAxiom = {}
 EqAxiom.__index = EqAxiom
 function EqAxiom.new(lhs, rhs, name)
   local self = setmetatable({}, EqAxiom)
+  assert(#lhs == #rhs)
   self.lhs = lhs
   self.rhs = rhs
   self.name = name
-  assert(#lhs == #rhs)
   return self
 end
 constructor(EqAxiom)
 
 function EqAxiom:naxioms()
   return #self.lhs
+end
+
+-- For axiom a = b return dist(a,b)
+function EqAxiom:losses(dist)
+  return util.mapn(function(x,y) return dist(x:gen(),y:gen()) end, self.lhs, self.rhs)
 end
 
 -- Conjunction of Axioms: axiom1 and axiom2 and axiom3

@@ -14,6 +14,8 @@ local RandVar = dddt.types.RandVar
 local AbstractDataType = dddt.types.AbstractDataType
 local Spec = dddt.types.Spec
 local ParamFunc = dddt.types.ParamFunc
+-- training = require "train"
+
 
 -- Genereates the stack abstract data type
 local function stack_adt()
@@ -82,13 +84,10 @@ adt, spec, cdt, pdt = stack(stack_shape, stack_dtype, item_shape, item_dtype,
 
 -- Training
 trainData, testData, classes = require('./get_mnist.lua')()
--- coroutines = {gen.infinite_samples(stack_shape, t.rand, batchsize),
---               gen.infinite_minibatches(trainData.x:double(), batchsize,  true)}
-
 coroutines = {gen.infinite_samples(stack_shape, t.rand, batchsize),
-              gen.infinite_samples(item_shape, t.rand, batchsize)}
--- grad = require "autograd"
--- training = require "train"
--- gen.assign(adt.randvars, coroutines)
+              gen.infinite_minibatches(trainData.x:double(), batchsize,  true)}
 
+-- grad = require "autograd"
+gen.assign(spec.randvars, coroutines)
+-- spec.axiom:losses(distances.mse)
 -- training.train(adt, 10, 5, "testing", "mysavedir")

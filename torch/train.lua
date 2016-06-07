@@ -24,7 +24,7 @@ function training.train(adt, num_epochs, save_every, sfx, save_dir)
     for i = 1, #adt.randvars do
       adt.randvars[i].gen()
     end
-    -- local loss = loss_fn(params)
+    local loss = loss_fn(params)
     -- print("loss", loss)
     print("Computing df")
     print(loss_fn_grad(params))
