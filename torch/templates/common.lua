@@ -15,7 +15,7 @@ end
 local function default_index(tbl, k)
   print("generating paramter values")
   local id, shape = parsename(k)
-  local new_val = t.rand(t.LongStorage(shape))
+  local new_val = t.rand(t.LongStorage(shape)) * 0.1
   tbl[k] = new_val
   return new_val
 end

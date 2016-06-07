@@ -6,6 +6,7 @@ local function wrap(co)
   return function()
     local co_is_good, val = coroutine.resume(co)
     assert(co_is_good, "coroutine fail %s" % val)
+    print("Generating", torch.sum(val))
     return val
   end
 end

@@ -53,14 +53,13 @@ local function add(x, y) return x + y end
 function EqAxiom:losses_fn(dist, pdt)
   return function(params)
     -- Contruct concrete functs from
-    print("pdt", pdt)
-    print("params", params)
     local funcs = {}
     for i, pf in ipairs(pdt) do
       local name = pf.interface.name
       funcs[name] = ConcreteFunc.fromParamFunc(pf, params[i])
     end
     local losses = self:losses(dist, funcs)
+    -- print("losses", losses)
     return reduce(add, losses)
   end
 end

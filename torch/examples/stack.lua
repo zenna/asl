@@ -104,6 +104,13 @@ total_loss = loss_fn(params)
 print(total_loss)
 
 
+-- Test
+inp_shapes = cdt.interfaces[2]:inp_shapes()
+faux_inputs = util.map(torch.rand, inp_shapes)
+print(torch.sum(faux_inputs[1]))
+torch.sum(cfs[2]:call(faux_inputs)[1])
+
+
 -- Test Grad
 grad = require "autograd"
 df_loss_fn = grad(loss_fn)

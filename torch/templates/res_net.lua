@@ -27,10 +27,14 @@ local function concatenate_inputs(inputs)
   return flat_input
 end
 
+local function relu(x)
+  return torch.cmax(x, 0.0)
+end
+
 local function dense_layer(input, ninputs, noutputs, params, sfx)
   local matmul = input * params[param_str('W-%s' % sfx, {ninputs, noutputs})]
   local bias = matmul + params[param_str('b-%s' % sfx, {1, noutputs})]:expandAs(matmul)
-  return t.sigmoid(bias)
+  return relu(bias)
 end
 
 -- Want:
@@ -86,6 +90,7 @@ function res_net.gen_res_net(interface, kwargs)
     -- Project input into inner layer widths
     local prev_layer = flat_input
     local wx
+    print("Debug1,", torch.sum(flat_input))
     if layer_width ~= input_width then
       -- print("input projection")
       wx = dense_layer(flat_input, input_width, layer_width, params, 'wxinpproj')
@@ -102,6 +107,7 @@ function res_net.gen_res_net(interface, kwargs)
         prev_layer = dense_layer(prev_layer, layer_width, layer_width, params, sfx)
       end
       prev_layer = wx + prev_layer
+      print("Debug2,", torch.sum(prev_layer))
     end
 
     -- Output Projection
@@ -114,6 +120,7 @@ function res_net.gen_res_net(interface, kwargs)
       -- print("no output projection")
       output_product = prev_layer
     end
+    print("output product,", torch.sum(output_product))
 
     -- Output Slicing
     local outputs = {}

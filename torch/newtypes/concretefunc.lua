@@ -16,7 +16,7 @@ end
 constructor(ConcreteFunc)
 
 function ConcreteFunc.fromParamFunc(param_func, params)
-  print(param_func, params)
+  -- print(param_func, params)
   local func = function(input)
     return param_func.param_func(input, params)
   end
@@ -25,8 +25,8 @@ end
 
 -- Can I overload call?
 function ConcreteFunc:call(input)
+  print("Calling %s" % self.interface.name)
   local g = self.func(input)
-  print("local g", g)
   return g
 end
 

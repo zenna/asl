@@ -29,6 +29,7 @@ constructor(ParamFunc)
 
 -- Can I overload call?
 function ParamFunc:call(input, params)
+  print("Calling %s" % self.interface.name)
   return self.param_func(input, params)
 end
 
