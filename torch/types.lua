@@ -16,7 +16,7 @@
 -- This is not quite right, theres a difference between two types which represent the same
 -- set of values.  Like an immutable Image x::Float64 end is different from Float64.
 
-
+util = require("util")
 
 local types = {}
 types = util.update(types, require("newtypes/type"))

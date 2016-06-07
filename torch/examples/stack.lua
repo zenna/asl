@@ -14,6 +14,7 @@ local RandVar = dddt.types.RandVar
 local AbstractDataType = dddt.types.AbstractDataType
 local Spec = dddt.types.Spec
 local ParamFunc = dddt.types.ParamFunc
+local ConcreteFunc = dddt.types.ConcreteFunc
 -- training = require "train"
 
 
@@ -81,6 +82,18 @@ push_args = template_kwargs
 pop_args = template_kwargs
 adt, spec, cdt, pdt = stack(stack_shape, stack_dtype, item_shape, item_dtype,
                             push_args, push_template, pop_args, pop_template)
+
+push_pf, pop_pf = pdt
+-- Get params from every interface function
+params = util.map(function(pf) return pf:gen_params() end, pdt)
+-- Concrete Functions
+cfs = util.mapn(function(pf, param) return ConcreteFunc.fromParamFunc(pf, param) end, pdt, params)
+
+-- Test
+inp_shapes = cdt.interfaces[1]:inp_shapes()
+faux_inputs = util.map(t.rand, inp_shapes)
+-- cfs[1]:call(faux_inputs)
+
 
 -- Training
 trainData, testData, classes = require('./get_mnist.lua')()

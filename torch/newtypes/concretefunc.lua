@@ -16,8 +16,9 @@ end
 constructor(ConcreteFunc)
 
 function ConcreteFunc.fromParamFunc(param_func, params)
-  local func = fuction(input)
-    return param_func(input, params)
+  print(param_func, params)
+  local func = function(input)
+    return param_func.param_func(input, params)
   end
   return ConcreteFunc(param_func.interface, func)
 end
