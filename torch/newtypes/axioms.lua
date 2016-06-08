@@ -2,6 +2,18 @@ local util = require "util"
 local ConcreteFunc = require "newtypes/concretefunc".ConcreteFunc
 local constructor = util.constructor
 
+local module = {}
+-- Helpers
+local function reduce(func, tbl)
+  assert(#tbl > 1)
+  local accum = tbl[1]
+  for i = 2, #tbl do
+    accum = func(accum, tbl[i])
+  end
+  return accum
+end
+
+local function add(x, y) return x + y end
 -- Axioms
 ---------
 
@@ -17,61 +29,27 @@ local constructor = util.constructor
 -- an object and it maps "push(randvar)"
 
 -- (Set of) Equational Axiom: a1 = b2, a2 = b2
-local EqAxiom = {}
-EqAxiom.__index = EqAxiom
-function EqAxiom.new(lhs, rhs, name)
-  local self = setmetatable({}, EqAxiom)
-  assert(#lhs == #rhs)
-  self.lhs = lhs
-  self.rhs = rhs
-  self.name = name
-  return self
-end
-constructor(EqAxiom)
 
-function EqAxiom:naxioms()
-  return #self.lhs
+function module.eq_axiom(lhs, rhs, name, opt)
+  local dist = opt[name]
+  local dists = util.mapn(dist, lhs, rhs)
+  return reduce(add, dists)
 end
 
--- For axiom a = b return dist(a,b)
-function EqAxiom:losses(dist, funcs)
-  return util.mapn(function(x,y) return dist(x:gen(funcs),y:gen(funcs)) end,
-                   self.lhs, self.rhs)
-end
-
-local function reduce(func, tbl)
-  assert(#tbl > 1)
-  local accum = tbl[1]
-  for i = 2, #tbl do
-    accum = func(accum, tbl[i])
-  end
-  return accum
-end
-
-local function add(x, y) return x + y end
-
-function EqAxiom:losses_fn(dist, pdt)
-  return function(params)
+function module.loss_fn(axiom, pdt)
+  return function(params, randvars, opt)
     -- Contruct concrete functs from
     local funcs = {}
     for i, pf in ipairs(pdt) do
       local name = pf.interface.name
       funcs[name] = ConcreteFunc.fromParamFunc(pf, params[i])
     end
-    local losses = self:losses(dist, funcs)
-    -- print("losses", losses)
-    return reduce(add, losses)
+    local axiom_losses = axiom(funcs, randvars, opt)
+    print("Aye curumba")
+    print(axiom_losses)
+    return axiom_losses
+    -- return reduce(add, axiom_losses)
   end
 end
 
--- Conjunction of Axioms: axiom1 and axiom2 and axiom3
-local ConjAxiom = {}
-ConjAxiom.__index = ConjAxiom
-function ConjAxiom.new(axioms)
-  local self = setmetatable({}, ConjAxiom)
-  self.axioms = axioms
-  return self
-end
-constructor(ConjAxiom)
-
-return {EqAxiom=EqAxiom, ConjAxiom=ConjAxiom}
+return module

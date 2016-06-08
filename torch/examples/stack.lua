@@ -7,8 +7,8 @@ local gen = dddt.generators
 -- local Spec = dddt.types.Spec
 local Type = dddt.types.Type
 local ConstrainedType = dddt.types.ConstrainedType
-local ConjAxiom = dddt.types.ConjAxiom
-local EqAxiom = dddt.types.EqAxiom
+local loss_fn = dddt.types.loss_fn
+local eq_axiom = dddt.types.eq_axiom
 local Interface = dddt.types.Interface
 local RandVar = dddt.types.RandVar
 local AbstractDataType = dddt.types.AbstractDataType
@@ -33,7 +33,18 @@ local function stack_spec(adt)
   -- Intensional Axiomitisation
   local stack1 = RandVar(Type('Stack'), 'stack1')
   local item1 = RandVar(Type('Item'), 'item1')
-  local axiom = EqAxiom(pop:call(push:call({stack1, item1})), {stack1, item1})
+  -- local axiom = EqAxiom(pop:call(push:call({stack1, item1})), {stack1, item1})
+  -- An axiom is a function
+  local function axiom(funcs, randvars, constants, opt)
+    local push, pop = funcs['push'], funcs['pop']
+    local stack1, item1 = randvars['stack1'], randvars['item1']
+    print("randvars", randvars)
+    print("stack1", stack1)
+    print("item1", item1)
+    -- local axiom1 = EqAxiom(isempty(empty_stack), 1)
+    local axiom2 = eq_axiom(pop:call(push:call({stack1, item1})), {stack1, item1}, 'axiom1', opt)
+    return {axiom2}
+  end
   return Spec({stack1, item1}, axiom)
 end
 
@@ -99,23 +110,24 @@ gen.assign(spec.randvars, coroutines)
 
 -- Test
 distances = require "distances"
-loss_fn = spec.axiom:losses_fn(distances.mse, pdt)
-total_loss = loss_fn(params)
+opt = {}
+opt['axiom1'] = distances.mse
+loss_func = loss_fn(spec.axiom, pdt)
+params = util.map(function(pf) return pf:gen_params() end, pdt)
+
+randvars = {}
+coroutineok, value = coroutine.resume(coroutines[1])
+randvars['stack1'] = value
+coroutineok, value = coroutine.resume(coroutines[2])
+randvars['item1'] = value
+total_loss = loss_func(params, randvars, opt)
 print(total_loss)
 
-
--- Test
-inp_shapes = cdt.interfaces[2]:inp_shapes()
-faux_inputs = util.map(torch.rand, inp_shapes)
-print(torch.sum(faux_inputs[1]))
-torch.sum(cfs[2]:call(faux_inputs)[1])
-
-
--- Test Grad
+-- -- Test Grad
 grad = require "autograd"
-df_loss_fn = grad(loss_fn)
-d_params = df_loss_fn(params)
-print(d_params)
+df_loss_fn = grad(loss_func)
+d_params = df_loss_fn(params, randvars, opt)
+-- print(d_params)
 
 -- spec.axiom:losses(distances.mse)
 -- training.train(adt, 10, 5, "testing", "mysavedir")
