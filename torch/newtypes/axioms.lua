@@ -1,6 +1,8 @@
 local util = require "util"
 local ConcreteFunc = require "newtypes/concretefunc".ConcreteFunc
-local constructor = util.constructor
+-- local constructor = util.constructor
+local distances = require "distances"
+local mse = distances.mse
 
 local module = {}
 -- Helpers
@@ -30,9 +32,8 @@ local function add(x, y) return x + y end
 
 -- (Set of) Equational Axiom: a1 = b2, a2 = b2
 
-function module.eq_axiom(lhs, rhs, name, opt)
-  local dist = opt[name]
-  local dists = util.mapn(dist, lhs, rhs)
+function module.eq_axiom(lhs, rhs)
+  local dists = util.mapn(mse, lhs, rhs)
   return reduce(add, dists)
 end
 
@@ -44,10 +45,8 @@ function module.loss_fn(axiom, pdt)
       local name = pf.interface.name
       funcs[name] = ConcreteFunc.fromParamFunc(pf, params[i])
     end
-    local axiom_losses = axiom(funcs, randvars, opt)
-    print("Aye curumba")
-    print(axiom_losses)
-    return axiom_losses
+    local axiom_losses = axiom(funcs, randvars)
+    return axiom_losses[1]
     -- return reduce(add, axiom_losses)
   end
 end

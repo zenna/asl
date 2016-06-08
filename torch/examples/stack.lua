@@ -35,14 +35,10 @@ local function stack_spec(adt)
   local item1 = RandVar(Type('Item'), 'item1')
   -- local axiom = EqAxiom(pop:call(push:call({stack1, item1})), {stack1, item1})
   -- An axiom is a function
-  local function axiom(funcs, randvars, constants, opt)
-    local push, pop = funcs['push'], funcs['pop']
-    local stack1, item1 = randvars['stack1'], randvars['item1']
-    print("randvars", randvars)
-    print("stack1", stack1)
-    print("item1", item1)
-    -- local axiom1 = EqAxiom(isempty(empty_stack), 1)
-    local axiom2 = eq_axiom(pop:call(push:call({stack1, item1})), {stack1, item1}, 'axiom1', opt)
+  local function axiom(funcs, randvars)
+    local pushy, poppy = funcs['push'], funcs['pop']
+    local stacky1, itemy1 = randvars['stack1'], randvars['item1']
+    local axiom2 = eq_axiom(poppy:call(pushy:call({stacky1, itemy1})), {stacky1, itemy1})
     return {axiom2}
   end
   return Spec({stack1, item1}, axiom)
@@ -94,40 +90,31 @@ pop_args = template_kwargs
 adt, spec, cdt, pdt = stack(stack_shape, stack_dtype, item_shape, item_dtype,
                             push_args, push_template, pop_args, pop_template)
 
-push_pf, pop_pf = pdt
--- Get params from every interface function
-params = util.map(function(pf) return pf:gen_params() end, pdt)
--- Concrete Functions
 cfs = util.mapn(function(pf, param) return ConcreteFunc.fromParamFunc(pf, param) end, pdt, params)
 
 -- Generators
 trainData, testData, classes = require('./get_mnist.lua')()
-coroutines = {gen.infinite_samples(stack_shape, t.rand, batchsize),
-              gen.infinite_minibatches(trainData.x:double(), batchsize,  true)}
+coroutines = {stack1=gen.infinite_samples(stack_shape, t.rand, batchsize),
+              item1=gen.infinite_minibatches(trainData.x:double(), batchsize,  true)}
 
--- grad = require "autograd"
-gen.assign(spec.randvars, coroutines)
+function train(adt, spec, params, num_epochs, save_every, sfx, save_dir)
+  grad = require "autograd"
+  print("Starting Training")
+  loss_func = loss_fn(spec.axiom, pdt)
+  df_loss_func = grad(loss_func)
+  stats = {loss_vars = {}, loss_sums = {}}
+  -- print(params)
+  for epoch = 1, num_epochs do
+    randvars = {}
+    for k,v in pairs(spec.randvars) do
+      coroutineok, value = coroutine.resume(coroutines[v.name])
+      randvars[v.name] = value
+    end
+    -- print(params)
+    dfparams, loss = df_loss_func(params, randvars)
+    print("Loss:", loss)
+  end
+end
 
--- Test
-distances = require "distances"
-opt = {}
-opt['axiom1'] = distances.mse
-loss_func = loss_fn(spec.axiom, pdt)
 params = util.map(function(pf) return pf:gen_params() end, pdt)
-
-randvars = {}
-coroutineok, value = coroutine.resume(coroutines[1])
-randvars['stack1'] = value
-coroutineok, value = coroutine.resume(coroutines[2])
-randvars['item1'] = value
-total_loss = loss_func(params, randvars, opt)
-print(total_loss)
-
--- -- Test Grad
-grad = require "autograd"
-df_loss_fn = grad(loss_func)
-d_params = df_loss_fn(params, randvars, opt)
--- print(d_params)
-
--- spec.axiom:losses(distances.mse)
--- training.train(adt, 10, 5, "testing", "mysavedir")
+train(pdt, spec, params, 10)
