@@ -25,7 +25,7 @@ end
 
 -- Can I overload call?
 function ConcreteFunc:call(input)
-  print("Calling %s" % self.interface.name)
+  -- print("Calling %s" % self.interface.name)
   local g = self.func(input)
   return g
 end

@@ -1,8 +1,11 @@
+dbg = require "debugger"
 local t = torch
 distances = {}
 function distances.mse(a, b)
   local a_b = a - b
-  return t.mean(t.cmul(a_b, a_b))
+  z = t.mean(t.abs(a_b))
+  -- dbg()
+  return z
 end
 
 return distances

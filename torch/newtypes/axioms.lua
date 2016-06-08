@@ -34,7 +34,7 @@ local function add(x, y) return x + y end
 
 function module.eq_axiom(lhs, rhs)
   local dists = util.mapn(mse, lhs, rhs)
-  return reduce(add, dists)
+  return reduce(add, dists)/#dists
 end
 
 function module.loss_fn(axiom, pdt)

@@ -75,7 +75,7 @@ function res_net.gen_res_net(interface, kwargs)
   local output_width = t.sum(t.LongTensor(flat_output_shapes))
 
   local res_net_func = function(inputs, params)
-    print("Calling ResNet")
+    -- print("Calling ResNet")
     -- Flatten and concatenate inputs
     local batch_size = get_batch_size(inputs)
     local flat_input = concatenate_inputs(inputs)
