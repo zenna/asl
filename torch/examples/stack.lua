@@ -15,7 +15,8 @@ local AbstractDataType = dddt.types.AbstractDataType
 local Spec = dddt.types.Spec
 local ParamFunc = dddt.types.ParamFunc
 local ConcreteFunc = dddt.types.ConcreteFunc
--- training = require "train"
+local train = require("train").train
+
 
 
 -- Genereates the stack abstract data type
@@ -74,61 +75,31 @@ local function stack(stack_shape, stack_dtype, item_shape, item_dtype,
   return adt, spec, cdt, pdt
 end
 
+local function main()
+  local item_shape = util.shape({1, 32, 32})
+  local stack_shape = util.shape({1, 50, 50})
+  local stack_dtype = t.getdefaulttensortype()
+  local item_dtype = t.getdefaulttensortype()
+  local push_template = res_net.gen_res_net
+  local pop_template =  res_net.gen_res_net
+  local batchsize = 2
+  local template_kwargs = {}
+  template_kwargs['layer_width'] = 10
+  template_kwargs['block_size'] = 2
+  template_kwargs['nblocks'] = 1
+  local push_args = template_kwargs
+  local pop_args = template_kwargs
+  local adt, spec, cdt, pdt = stack(stack_shape, stack_dtype, item_shape, item_dtype,
+                              push_args, push_template, pop_args, pop_template)
 
-item_shape = util.shape({1, 32, 32})
-stack_shape = util.shape({1, 50, 50})
-stack_dtype = torch.getdefaulttensortype()
-item_dtype = torch.getdefaulttensortype()
-push_template = res_net.gen_res_net
-pop_template =  res_net.gen_res_net
-batchsize = 2
-template_kwargs = {}
-template_kwargs['layer_width'] = 10
-template_kwargs['block_size'] = 2
-template_kwargs['nblocks'] = 1
-push_args = template_kwargs
-pop_args = template_kwargs
-adt, spec, cdt, pdt = stack(stack_shape, stack_dtype, item_shape, item_dtype,
-                            push_args, push_template, pop_args, pop_template)
+  -- Generators
+  local trainData = require('./get_mnist.lua')()
+  local coroutines = {stack1=gen.infinite_samples(stack_shape, t.rand, batchsize),
+          item1=gen.infinite_minibatches(trainData.x:double(), batchsize,  true)}
 
-cfs = util.mapn(function(pf, param) return ConcreteFunc.fromParamFunc(pf, param) end, pdt, params)
-
--- Generators
-trainData, testData, classes = require('./get_mnist.lua')()
-coroutines = {stack1=gen.infinite_samples(stack_shape, t.rand, batchsize),
-              item1=gen.infinite_minibatches(trainData.x:double(), batchsize,  true)}
-
--- function sgd_update(params, delta_params, learning_rate)
-
-function generate_randvars(randvars, coroutines)
-  local randvars_samples = {}
-  for k, v in pairs(randvars) do
-    local coroutineok, value = coroutine.resume(coroutines[v.name])
-    randvars_samples[v.name] = value
-  end
-  return randvars_samples
+  -- Generate initial parameters
+  local params = util.map(function(pf) return pf:gen_params() end, pdt)
+  train(pdt, spec, params, coroutines, 10000)
 end
 
-
-function train(pdt, spec, params, coroutines, num_epochs, save_every, sfx, save_dir)
-  local grad = require "autograd"
-  print("Starting Training")
-  local loss_func = loss_fn(spec.axiom, pdt)
-  local df_loss_func = grad(loss_func)
-  local stats = {loss_vars = {}, loss_sums = {}}
-  local optimfn, states = grad.optim.sgd(df_loss_func, state, params)
-  local val_randvars = generate_randvars(spec.randvars, coroutines)
-  -- print(params)
-  for epoch = 1, num_epochs do
-    print("Validate", loss_func(params, val_randvars))
-    randvars = generate_randvars(spec.randvars, coroutines)
-    -- print(params)
-    -- local delta_params, loss = df_loss_func(params, randvars)
-    local state = { learningRate = 0.00001 }
-    params, loss = optimfn(randvars)
-    print("Loss:", loss)
-  end
-end
-
-params = util.map(function(pf) return pf:gen_params() end, pdt)
-train(pdt, spec, params, coroutines, 10000)
+main()
