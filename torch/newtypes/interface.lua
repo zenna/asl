@@ -53,15 +53,15 @@ function Interface:out_shapes()
   return util.map(function(x) return x.shape end, self.rhs)
 end
 
-function constrain_interface(interface, type_to_constrained)
+function Interface:constrain(type_to_constrained)
   local replace = function(type)
     local constrained_type = type_to_constrained[type.name]
     assert(constrained_type ~= nil)
     return constrained_type
   end
-  local lhs = util.map(replace, interface.lhs)
-  local rhs = util.map(replace, interface.rhs)
-  return Interface(lhs, rhs, interface.name)
+  local lhs = util.map(replace, self.lhs)
+  local rhs = util.map(replace, self.rhs)
+  return Interface(lhs, rhs, self.name)
 end
 
 return {Interface=Interface}

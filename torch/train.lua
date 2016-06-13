@@ -13,22 +13,25 @@ local function generate_randvars(randvars, coroutines)
 end
 
 
-function training.train(pdt, spec, params, coroutines, num_epochs, save_every, sfx, save_dir)
+function training.train(param_funcs, axiom, params, constants, generator,
+                        batch_size, num_epochs, save_every, sfx, save_dir)
   print("Starting Training")
-  local loss_func = loss_fn(spec.axiom, pdt)
+  print("CCC", constants)
+  local loss_func = loss_fn(axiom, param_funcs, constants, batch_size)
   local df_loss_func = grad(loss_func)
   -- local stats = {loss_vars = {}, loss_sums = {}}
-  local state = { learningRate = 0.00001 }
-  local optimfn, states = grad.optim.sgd(df_loss_func, state, params)
-  local val_randvars = generate_randvars(spec.randvars, coroutines)
+  local state = { learningRate = 0.001 }
+  local optimfn, states = grad.optim.adam(df_loss_func, state, params)
+  local val_randvars = generator()
   -- print(params)
   for epoch = 1, num_epochs do
-    print("Validate", loss_func(params, val_randvars))
-    local randvars = generate_randvars(spec.randvars, coroutines)
-    -- print(params)
-    -- local delta_params, loss = df_loss_func(params, randvars)
+    -- print("Validate", loss_func(params, val_randvars))
+    if epoch > 310 then
+      -- dbg()
+    end
+    local randvars = generator()
     local params, loss = optimfn(randvars)
-    print("Loss:", loss)
+    print("epoch:", epoch, "Loss:", loss)
   end
 end
 

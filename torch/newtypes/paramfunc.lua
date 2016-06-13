@@ -17,15 +17,10 @@ ParamFunc.__index = ParamFunc
 function ParamFunc.new(interface, param_func)
   local self = setmetatable({}, ParamFunc)
   self.interface = interface
-  self.param_func = param_func -- f: X x theta -> Y
+  self.param_func = param_func -- f: theta x X -> Y
   return self
 end
 constructor(ParamFunc)
-
--- -- -- Generated a parameterised type from a set of types
--- function ParamFunc.fromTypes()
---   ...
--- end
 
 -- Can I overload call?
 function ParamFunc:call(input, params)
@@ -42,4 +37,20 @@ function ParamFunc:gen_params()
   return util.update({}, params)
 end
 
-return {ParamFunc=ParamFunc}
+-- Generates a stack parameterised interface
+local function gen_param_funcs(interfaces, constrained_types, templates, template_args)
+  local param_funcs = {}
+  local params = {}
+  for i, interface in ipairs(interfaces) do
+    local name = interface.name
+    local constrained_interface = interface:constrain(constrained_types)
+    -- Generate the function
+    local concrete_func, interface_params = templates[name](constrained_interface, template_args[name])
+    local param_func = ParamFunc(constrained_interface, concrete_func)
+    param_funcs[name] = param_func
+    params[name] = interface_params
+  end
+  return param_funcs, params
+end
+
+return {ParamFunc=ParamFunc, gen_param_funcs=gen_param_funcs}

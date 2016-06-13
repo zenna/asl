@@ -18,8 +18,8 @@ function gen.assign(randvars, coroutines)
   end
 end
 
-function gen.infinite_samples(shape, sampler, batchsize)
-  local batched_shape = util.add_batch(shape, batchsize)
+function gen.infinite_samples(shape, sampler, batch_size)
+  local batched_shape = util.add_batch(shape, batch_size)
   local co = coroutine.create(function()
     while true do
       coroutine.yield(sampler(batched_shape))
@@ -28,7 +28,7 @@ function gen.infinite_samples(shape, sampler, batchsize)
   return co
 end
 
-function gen.infinite_minibatches(inputs, batchsize, shuffle)
+function gen.infinite_minibatches(inputs, batch_size, shuffle)
   local start_idx = 1
   local nelements = inputs:size()[1]
   local indices
@@ -38,16 +38,17 @@ function gen.infinite_minibatches(inputs, batchsize, shuffle)
     indices = t.range(1, nelements):long()
   end
   local co = coroutine.create(function ()
-    local end_idx
     while true do
-      end_idx = start_idx + batchsize - 1
-      local batch_indices = util.circular_indices(start_idx, end_idx, nelements)
+      local batch_indices = util.circular_indices(1, nelements, start_idx, batch_size)
+      start_idx = batch_indices[-1] + 1
+      if start_idx > nelements then
+        start_idx = 1
+      end
       if shuffle then
         batch_indices = indices:index(1, batch_indices)
       end
       local minibatch = inputs:index(1, batch_indices)
       coroutine.yield(minibatch)
-      start_idx = end_idx + 1
     end
   end)
   return co

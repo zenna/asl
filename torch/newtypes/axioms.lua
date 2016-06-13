@@ -7,7 +7,10 @@ local mse = distances.mse
 local module = {}
 -- Helpers
 local function reduce(func, tbl)
-  assert(#tbl > 1)
+  -- assert(#tbl > 1)
+  if #tbl == 1 then
+    return tbl[1]
+  end
   local accum = tbl[1]
   for i = 2, #tbl do
     accum = func(accum, tbl[i])
@@ -34,20 +37,30 @@ local function add(x, y) return x + y end
 
 function module.eq_axiom(lhs, rhs)
   local dists = util.mapn(mse, lhs, rhs)
+  -- dbg()
   return reduce(add, dists)/#dists
 end
 
-function module.loss_fn(axiom, pdt)
-  return function(params, randvars, opt)
+function module.loss_fn(axiom, param_funcs, constants, batch_size)
+  -- Loss function accepts
+  return function(params, randvars)
     -- Contruct concrete functs from
     local funcs = {}
-    for i, pf in ipairs(pdt) do
-      local name = pf.interface.name
-      funcs[name] = ConcreteFunc.fromParamFunc(pf, params[i])
+    for name, pf in pairs(param_funcs) do
+      funcs[name] = ConcreteFunc.fromParamFunc(pf, params[name])
     end
-    local axiom_losses = axiom(funcs, randvars)
-    return axiom_losses[1]
-    -- return reduce(add, axiom_losses)
+    -- TODO, extrat constants from params
+    local constant_vals = {}
+    for k, v in pairs(constants) do
+      local constant = params[k]
+      local new_shape1 = util.add_batch(constant:size(), 1)
+      local new_shape2 = util.add_batch(constant:size(), batch_size)
+      assert(constant ~= nil)
+      constant_vals[k] = constant:view(new_shape1):expand(new_shape2)
+    end
+    local axiom_losses = axiom(funcs, randvars, constant_vals)
+
+    return reduce(add, axiom_losses)
   end
 end
 

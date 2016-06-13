@@ -3,21 +3,23 @@ local dddt = require "dddt"
 local util = dddt.util
 local map = util.map
 local res_net = dddt.templates.res_net
+local conv_res_net = dddt.templates.conv_res_net
 local gen = dddt.generators
 -- local Spec = dddt.types.Spec
 local Type = dddt.types.Type
-local ConstrainedType = dddt.types.ConstrainedType
-local loss_fn = dddt.types.loss_fn
 local eq_axiom = dddt.types.eq_axiom
 local Interface = dddt.types.Interface
 local RandVar = dddt.types.RandVar
 local AbstractDataType = dddt.types.AbstractDataType
 local Spec = dddt.types.Spec
-local ParamFunc = dddt.types.ParamFunc
-local ConcreteFunc = dddt.types.ConcreteFunc
+local Constant = dddt.types.Constant
+local constrain_types = dddt.types.constrain_types
+local gen_param_funcs = dddt.types.gen_param_funcs
 local train = require("train").train
-
-
+if not cutorch then
+   require 'cutorch'
+   runtests = true
+end
 
 -- Genereates the stack abstract data type
 local function stack_adt()
@@ -25,81 +27,121 @@ local function stack_adt()
   local Item = Type('Item')
   local push = Interface({Stack, Item}, {Stack}, 'push')
   local pop = Interface({Stack}, {Stack, Item}, 'pop')
-  return AbstractDataType({push, pop}, {}, "Stack")
+  local empty_stack = Constant(Stack, 'empty_stack')
+  return AbstractDataType({push, pop}, {empty_stack=empty_stack}, "Stack")
 end
 
 -- Genereates the stack specification
-local function stack_spec(adt)
-  local push, pop = unpack(adt.interfaces)
+local function stack_spec()
   -- Intensional Axiomitisation
   local stack1 = RandVar(Type('Stack'), 'stack1')
   local item1 = RandVar(Type('Item'), 'item1')
-  -- local axiom = EqAxiom(pop:call(push:call({stack1, item1})), {stack1, item1})
   -- An axiom is a function
-  local function axiom(funcs, randvars)
-    local pushy, poppy = funcs['push'], funcs['pop']
-    local stacky1, itemy1 = randvars['stack1'], randvars['item1']
-    local axiom2 = eq_axiom(poppy:call(pushy:call({stacky1, itemy1})), {stacky1, itemy1})
-    return {axiom2}
+  local function axiom(funcs, randvars, constants)
+    -- print("funcs", funcs)
+    -- print("rvs", randvars)
+    -- print("constants", constants)
+    local push, pop = funcs['push'], funcs['pop']
+    local items, nitems = randvars['items'], randvars['nitems']
+    local stack = constants['empty_stack']
+    local axioms = {}
+    -- Extensional axioms
+    for i = 1, nitems do
+      local stack = push:call({stack, items[i]})
+      local pop_stack = stack
+      for j = i, 1, -1 do
+        local pop_stack, pop_item = unpack(pop:call(pop_stack))
+        local axiom = eq_axiom({pop_item}, {items[j]})
+        table.insert(axioms, axiom)
+      end
+    end
+    return axioms
   end
   return Spec({stack1, item1}, axiom)
 end
 
--- Generates a stack parameterised interface
-local function stack_constrained(adt, stack_shape, stack_dtype, item_shape, item_dtype)
-  -- Give a shape and type to Stack and Items and construct a new Data Type
-  local CStack = ConstrainedType('Stack', stack_shape, stack_dtype)
-  local CItem = ConstrainedType('Item', item_shape, item_dtype)
-  local type_to_constrained = {Stack=CStack, Item=CItem}
-  local ok = function(x) return constrain_interface(x, type_to_constrained) end
-  local cinterface = map(ok, adt.interfaces)
-  return AbstractDataType(cinterface, {}, adt.name)
-end
-
--- Generates a stack parameterised interface
-local function stack_param(cdt, push_args, push_template, pop_args, pop_template)
-  local push, pop = unpack(cdt.interfaces)
-  local push_pf = ParamFunc(push, push_template(push, push_args))
-  local pop_pf = ParamFunc(pop, pop_template(pop, pop_args))
-  return {push_pf, pop_pf}
-end
-
-
 -- Example
-local function stack(stack_shape, stack_dtype, item_shape, item_dtype,
-                     push_args, push_template, pop_args, pop_template)
+local function stack(shapes, dtypes, templates, template_args)
   local adt = stack_adt()
   local spec = stack_spec(adt)
-  local cdt = stack_constrained(adt, stack_shape, stack_dtype, item_shape, item_dtype)
-  local pdt = stack_param(cdt, push_args, push_template, pop_args, pop_template)
-  return adt, spec, cdt, pdt
+  local constrained_types = constrain_types(shapes, dtypes)
+  local param_funcs, interface_params = gen_param_funcs(adt.interfaces, constrained_types, templates, template_args)
+  return adt, spec, constrained_types, param_funcs, interface_params
+end
+
+local function gen_gen(batch_size, cuda)
+  -- Generators
+  local trainData = require('./get_mnist.lua')()
+  local item_coroutine = gen.infinite_minibatches(trainData.x:double(), batch_size,  true)
+  return function()
+    local nitems = 3
+    local items = {}
+    for i = 1, nitems do
+      local coroutine_ok, value = coroutine.resume(item_coroutine)
+      if cuda then
+        value = value:cuda()
+      end
+      assert(coroutine_ok)
+      -- dbg()
+      table.insert(items, value)
+    end
+    return {nitems=nitems, items=items}
+  end
 end
 
 local function main()
-  local item_shape = util.shape({1, 32, 32})
-  local stack_shape = util.shape({1, 50, 50})
-  local stack_dtype = t.getdefaulttensortype()
-  local item_dtype = t.getdefaulttensortype()
-  local push_template = res_net.gen_res_net
-  local pop_template =  res_net.gen_res_net
-  local batchsize = 2
+  local shapes = {Item=util.shape({1, 32, 32}), Stack=util.shape({1, 50, 50})}
+  local dtypes = {Item=t.getdefaulttensortype(), Stack=t.getdefaulttensortype()}
+  local batch_size = 2
+  local templates = {push=res_net.gen_res_net, pop=res_net.gen_res_net}
   local template_kwargs = {}
   template_kwargs['layer_width'] = 10
   template_kwargs['block_size'] = 2
   template_kwargs['nblocks'] = 1
-  local push_args = template_kwargs
-  local pop_args = template_kwargs
-  local adt, spec, cdt, pdt = stack(stack_shape, stack_dtype, item_shape, item_dtype,
-                              push_args, push_template, pop_args, pop_template)
+  local template_args = {push=template_kwargs, pop=template_kwargs}
+  local adt, spec, constrained_types, param_funcs, interface_params = stack(shapes, dtypes, templates, template_args)
 
-  -- Generators
-  local trainData = require('./get_mnist.lua')()
-  local coroutines = {stack1=gen.infinite_samples(stack_shape, t.rand, batchsize),
-          item1=gen.infinite_minibatches(trainData.x:double(), batchsize,  true)}
+  -- Generator
+  local generator = gen_gen(batch_size)
 
-  -- Generate initial parameters
-  local params = util.map(function(pf) return pf:gen_params() end, pdt)
-  train(pdt, spec, params, coroutines, 10000)
+  -- Constants: Generate constant params
+  local constant_params = {empty_stack=constrained_types['Stack']:sample(t.rand)}
+
+  -- Generate interface params
+  local interface_params = map(function(pf) return pf:gen_params() end, param_funcs)
+  local all_params = util.update(constant_params, interface_params)
+  train(param_funcs, spec.axiom, all_params, adt.constants, generator, batch_size, 10000)
 end
 
-main()
+local function conv_main()
+  local shapes = {Item=util.shape({1, 32, 32}), Stack=util.shape({1, 32, 32})}
+  local dtypes = {Item=t.getdefaulttensortype(), Stack=t.getdefaulttensortype()}
+  local batch_size = 256
+  local templates = {push=conv_res_net.gen_conv_res_net,
+                     pop=conv_res_net.gen_conv_res_net}
+  local template_kwargs = {}
+  local cuda_on = true
+  template_kwargs['layer_width'] = 10
+  template_kwargs['block_size'] = 2
+  template_kwargs['activation'] = 'ReLU'
+  template_kwargs['kernelSize'] = 3
+  template_kwargs['pooling'] = 0
+  template_kwargs['cuda'] = cuda_on
+  template_kwargs['hiddenFeatures'] = {12}
+
+  local template_args = {push=template_kwargs, pop=template_kwargs}
+  local adt, spec, constrained_types, param_funcs, interface_params = stack(shapes, dtypes, templates, template_args)
+
+  -- Generator
+  local generator = gen_gen(batch_size ,cuda_on )
+
+  -- Constants: Generate constant params
+  local constant_params = {empty_stack=constrained_types['Stack']:sample(t.rand, cuda_on)}
+
+  -- Generate interface params
+  local all_params = util.update(constant_params, interface_params)
+  -- dbg()
+  train(param_funcs, spec.axiom, all_params, adt.constants, generator, batch_size, 10000)
+end
+
+conv_main()

@@ -14,8 +14,8 @@ local param_str = common.param_str
 local map = util.map
 
 local function batch_flatten(x)
-  -- Converts a tensor of size (batchsize, d2, d3, d4, ...) to
-  -- (batchsize, d3 * d3 * d4 * ...)
+  -- Converts a tensor of size (batch_size, d2, d3, d4, ...) to
+  -- (batch_size, d3 * d3 * d4 * ...)
   assert(x:nDimension() > 1)
   local batch_size = x:size()[1]
   return x:view(batch_size, -1)
@@ -75,7 +75,8 @@ function res_net.gen_res_net(interface, kwargs)
   local output_width = t.sum(t.LongTensor(flat_output_shapes))
 
   local res_net_func = function(inputs, params)
-    -- print("Calling ResNet")
+    print("Calling ResNet")
+    print("INPS", inputs)
     -- Flatten and concatenate inputs
     local batch_size = get_batch_size(inputs)
     local flat_input = concatenate_inputs(inputs)

@@ -36,10 +36,8 @@ function TransformedRandVar:gen(funcs)
   local func = funcs[self.interface.name]
   assert(func ~= nil)
   local values = util.map(function(rv) return rv:gen(funcs) end, self.inp_randvars)
-  print("index", self.out_index)
   local result = func:call(values)[self.out_index]
   assert(result ~= nil)
-  print("resultsum", torch.sum(result))
   return result
 end
 

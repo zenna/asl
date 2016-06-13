@@ -15,35 +15,67 @@ function util.shape(shape_tbl)
   return t.LongStorage(shape_tbl)
 end
 
-function util.circular_indices(lb, ub, thresh)
-  local indices
-  local curr_lb = lb
+
+-- return nitegers [start, start+1, start+2, ..., start+n-1]
+-- where
+function util.circular_indices(lb, ub, start, ntake)
+  assert(start <= ub)
+  assert(start >= lb)
+  local curr = start
   local stop
   local i = 1
+  local indices
   while true do
-    stop = math.min(ub, thresh)
-    print(curr_lb, stop, ub)
-    local ix = t.range(curr_lb, stop):long()
-    if i == 1 then -- ew
-      indices = ix
+    -- dbg()
+    local desired_stop = curr + ntake - 1
+    stop = math.min(ub, desired_stop)
+    local subrange = torch.range(curr, stop):long()
+    if i == 1 then -- dont know how to create concattable empty tensor so hack
+      indices = subrange
     else
-      indices = t.cat(indices, ix)
+      indices = torch.cat(indices, subrange)
     end
     i = i + 1
-    if stop ~= ub then
-      local diff = ub - stop
-      curr_lb = lb
-      ub = diff + lb - 1
+    if desired_stop > ub then
+      local diff = desired_stop - stop
+      curr = lb
+      ntake = diff
     else
       break
     end
   end
-  return indices, stop
+  return indices
 end
+--
+-- -- lb, ub, start point, bounds
+-- function util.circular_indices(lb, ub, thresh)
+--   local indices
+--   local curr_lb = lb
+--   local stop
+--   local i = 1
+--   while true do
+--     stop = math.min(ub, thresh)
+--     local ix = t.range(curr_lb, stop):long()
+--     if i == 1 then -- ew
+--       indices = ix
+--     else
+--       indices = t.cat(indices, ix)
+--     end
+--     i = i + 1
+--     if stop ~= ub then
+--       local diff = ub - stop
+--       curr_lb = lb
+--       ub = diff + lb - 1
+--     else
+--       break
+--     end
+--   end
+--   return indices, stop
+-- end
 
--- function util.add_batch(shape, batchsize)
+-- function util.add_batch(shape, batch_size)
 --   local new_shp = t.LongStorage(#shape + 1)
---   new_shp[1] = batchsize
+--   new_shp[1] = batch_size
 --   for i = 2, #new_shp do
 --     new_shp[i] = shape[i-1]
 --   end
@@ -51,11 +83,20 @@ end
 -- end
 
 function util.add_batch(shape, batch_size)
+  -- print("Sh", shape)
   return t.cat(t.LongTensor({batch_size}), t.LongTensor(shape)):storage()
 end
 
 
 -- Fun little functions
+function util.keys(tbl)
+  local keyset={}
+  for k, v in pairs(tbl) do
+    table.insert(keyset, k)
+  end
+  return keyset
+end
+
 function util.identity(x)
   return x
 end
@@ -93,7 +134,18 @@ end
 
 -- Functional Stuff
 -------------------
-
+function util.all(tbl)
+  if #tbl == 1 then
+    return tbl[1]
+  else
+    for i, v in ipairs(tbl) do
+      if v == false then
+        return false
+      end
+    end
+  end
+  return true
+end
 
 function util.map(func, array)
   local new_array = {}

@@ -18,7 +18,7 @@ constructor(ConcreteFunc)
 function ConcreteFunc.fromParamFunc(param_func, params)
   -- print(param_func, params)
   local func = function(input)
-    return param_func.param_func(input, params)
+    return param_func.param_func(params, input)
   end
   return ConcreteFunc(param_func.interface, func)
 end

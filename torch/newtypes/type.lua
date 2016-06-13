@@ -29,12 +29,27 @@ end
 constructor(ConstrainedType)
 module.ConstrainedType = ConstrainedType
 
-function ConstrainedType:sample(sampler)
+function ConstrainedType:sample(sampler, cuda_on)
   assert(self.shape ~= nil, "Need a shape to sample")
   assert(self.dtype ~= nil, "Need a dtype to sample")
-  local sample = sampler(self.shape)
+  local shape = self.shape
+  -- if add_batch then shape = util.add_batch(shape, batch_size) end
+  local sample = sampler(shape)
   assert(sample:type() == self.dtype)
-  return sample
+  if cuda_on then
+    return sample:cuda()
+  else
+    return sample
+  end
+end
+
+function module.constrain_types(shapes, dtypes)
+  -- Convert types into constrained types
+  local constrained_types = {}
+  for k, v in pairs(shapes) do
+    constrained_types[k] = ConstrainedType(k, shapes[k], dtypes[k])
+  end
+  return constrained_types
 end
 
 return module
