@@ -16,6 +16,7 @@ local Constant = dddt.types.Constant
 local constrain_types = dddt.types.constrain_types
 local gen_param_funcs = dddt.types.gen_param_funcs
 local train = require("train").train
+require "cunn"
 if not cutorch then
    require 'cutorch'
    runtests = true
@@ -45,13 +46,16 @@ local function stack_spec()
     local items, nitems = randvars['items'], randvars['nitems']
     local stack = constants['empty_stack']
     local axioms = {}
+    local pop_stack
     -- Extensional axioms
     for i = 1, nitems do
-      local stack = push:call({stack, items[i]})
-      local pop_stack = stack
+      stack = push:call({stack, items[i]})[1]
+      print("STACKSUM", torch.sum(stack).value)
+      pop_stack = stack
       for j = i, 1, -1 do
-        local pop_stack, pop_item = unpack(pop:call(pop_stack))
+        pop_stack, pop_item = unpack(pop:call({pop_stack}))
         local axiom = eq_axiom({pop_item}, {items[j]})
+        print("i:%s, j:%s: loss: %s" % {i, j, axiom.value})
         table.insert(axioms, axiom)
       end
     end
@@ -126,8 +130,9 @@ local function conv_main()
   template_kwargs['activation'] = 'ReLU'
   template_kwargs['kernelSize'] = 3
   template_kwargs['pooling'] = 0
+  template_kwargs['batchNormalization'] = true
   template_kwargs['cuda'] = cuda_on
-  template_kwargs['hiddenFeatures'] = {12}
+  template_kwargs['hiddenFeatures'] = {12, 12}
 
   local template_args = {push=template_kwargs, pop=template_kwargs}
   local adt, spec, constrained_types, param_funcs, interface_params = stack(shapes, dtypes, templates, template_args)
@@ -141,7 +146,7 @@ local function conv_main()
   -- Generate interface params
   local all_params = util.update(constant_params, interface_params)
   -- dbg()
-  train(param_funcs, spec.axiom, all_params, adt.constants, generator, batch_size, 10000)
+  train(param_funcs, spec.axiom, all_params, adt.constants, generator, batch_size, 100000)
 end
 
 conv_main()

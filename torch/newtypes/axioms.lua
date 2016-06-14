@@ -37,6 +37,7 @@ local function add(x, y) return x + y end
 
 function module.eq_axiom(lhs, rhs)
   local dists = util.mapn(mse, lhs, rhs)
+  -- print(util.extract('value', dists))
   -- dbg()
   return reduce(add, dists)/#dists
 end
