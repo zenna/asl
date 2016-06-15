@@ -1,7 +1,8 @@
 -- Standard Templates
 local templates = {
-  res_net = require 'dddt.templates.conv_res_net'
+  conv_res_net = require('dddt.templates.conv_res_net')
 }
+
 
 -- -- Gather templates
 -- templates.res_net = require "templates/res_net"

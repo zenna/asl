@@ -10,7 +10,7 @@ local Spec = dddt.types.Spec
 local Constant = dddt.types.Constant
 local constrain_types = dddt.types.constrain_types
 local gen_param_funcs = dddt.types.gen_param_funcs
-local train = require("train").train
+local train = dddt.train
 
 require "cunn"
 if not cutorch then
@@ -140,7 +140,7 @@ local function conv_main()
   -- Generate interface params
   local all_params = util.update(constant_params, interface_params)
   -- dbg()
-  train(param_funcs, spec.axiom, all_params, adt.constants, generator, batch_size, 100000)
+  train.train(param_funcs, spec.axiom, all_params, adt.constants, generator, batch_size, 100000)
 end
 
 conv_main()

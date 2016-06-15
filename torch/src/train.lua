@@ -1,6 +1,6 @@
 local training = {}
 local grad = require "autograd"
-local loss_fn = require("newtypes/axioms").loss_fn
+local loss_fn = require("dddt.types.axioms").loss_fn
 
 
 local function generate_randvars(randvars, coroutines)

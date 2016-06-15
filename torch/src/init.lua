@@ -7,9 +7,13 @@ dddt.LICENSE = 'MIT'
 
 -- Sub packages:
 dddt.util = require "dddt.util"
--- dddt.templates = require "dddt.templates"
+dddt.templates = require "dddt.templates"
 dddt.types = require "dddt.types"
-dddt.generators = require "generators"
-dbg = require "debugger"
+dddt.generators = require "dddt.generators"
+dddt.distances = require "dddt.distances"
+dddt.train = require "dddt.train"
+
+
+-- dbg = require "debugger"
 
 return dddt

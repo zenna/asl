@@ -1,6 +1,6 @@
 local util = require "dddt.util"
 local constructor = util.constructor
-local common = require "templates.common"
+local common = require "dddt.templates.common"
 local t = require "torch"
 
 --A parameterised function (space)

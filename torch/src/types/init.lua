@@ -19,16 +19,16 @@
 local util = require("dddt.util")
 
 local types = {}
-types = util.update(types, require("dddt.newtypes.type"))
-types = util.update(types, require("dddt.newtypes.interface"))
-types = util.update(types, require("dddt.newtypes.constant"))
-types = util.update(types, require("dddt.newtypes.interface"))
-types = util.update(types, require("dddt.newtypes.datatypes"))
-types = util.update(types, require("dddt.newtypes.randvar"))
-types = util.update(types, require("dddt.newtypes.axioms"))
-types = util.update(types, require("dddt.newtypes.spec"))
-types = util.update(types, require("dddt.newtypes.paramfunc"))
-types = util.update(types, require("dddt.newtypes.concretefunc"))
+types = util.update(types, require("dddt.types.type"))
+types = util.update(types, require("dddt.types.interface"))
+types = util.update(types, require("dddt.types.constant"))
+types = util.update(types, require("dddt.types.interface"))
+types = util.update(types, require("dddt.types.datatypes"))
+types = util.update(types, require("dddt.types.randvar"))
+types = util.update(types, require("dddt.types.axioms"))
+types = util.update(types, require("dddt.types.spec"))
+types = util.update(types, require("dddt.types.paramfunc"))
+types = util.update(types, require("dddt.types.concretefunc"))
 
 
 return types

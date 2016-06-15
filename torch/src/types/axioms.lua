@@ -1,7 +1,6 @@
 local util = require "dddt.util"
-local ConcreteFunc = require "newtypes/concretefunc".ConcreteFunc
--- local constructor = util.constructor
-local distances = require "distances"
+local ConcreteFunc = require("dddt.types.concretefunc").ConcreteFunc
+local distances = require("dddt.distances")
 local mse = distances.mse
 
 local module = {}
