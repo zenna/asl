@@ -16,19 +16,19 @@
 -- This is not quite right, theres a difference between two types which represent the same
 -- set of values.  Like an immutable Image x::Float64 end is different from Float64.
 
-util = require("util")
+local util = require("dddt.util")
 
 local types = {}
-types = util.update(types, require("newtypes/type"))
-types = util.update(types, require("newtypes/interface"))
-types = util.update(types, require("newtypes/constant"))
-types = util.update(types, require("newtypes/interface"))
-types = util.update(types, require("newtypes/datatypes"))
-types = util.update(types, require("newtypes/randvar"))
-types = util.update(types, require("newtypes/axioms"))
-types = util.update(types, require("newtypes/spec"))
-types = util.update(types, require("newtypes/paramfunc"))
-types = util.update(types, require("newtypes/concretefunc"))
+types = util.update(types, require("dddt.newtypes.type"))
+types = util.update(types, require("dddt.newtypes.interface"))
+types = util.update(types, require("dddt.newtypes.constant"))
+types = util.update(types, require("dddt.newtypes.interface"))
+types = util.update(types, require("dddt.newtypes.datatypes"))
+types = util.update(types, require("dddt.newtypes.randvar"))
+types = util.update(types, require("dddt.newtypes.axioms"))
+types = util.update(types, require("dddt.newtypes.spec"))
+types = util.update(types, require("dddt.newtypes.paramfunc"))
+types = util.update(types, require("dddt.newtypes.concretefunc"))
 
 
 return types

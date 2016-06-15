@@ -4,6 +4,7 @@
 -- This is a template for a resial multi layer neural network
 local conv_res_net = {}
 local autograd = require("autograd")
+local dddt = require("dddt")
 local nn = autograd.nn
 local model = autograd.model
 if not cutorch then
@@ -11,7 +12,16 @@ if not cutorch then
    runtests = true
 end
 local util = require("util")
-local common = require("./common")
+local current_folder = (...):gsub('%.[^%.]+$', '')
+local prefix = ... and (...):match '(.-%.?)[^%.]+$' or ''
+print("prefix", prefix)
+print("current_folder", current_folder, ...)
+local common = require(current_folder .. '.common')
+
+
+
+-- local common = require("./common")
+
 local param_str = common.param_str
 local map = util.map
 

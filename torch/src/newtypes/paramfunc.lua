@@ -1,4 +1,4 @@
-local util = require "util"
+local util = require "dddt.util"
 local constructor = util.constructor
 local common = require "templates.common"
 local t = require "torch"

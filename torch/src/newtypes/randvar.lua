@@ -1,4 +1,4 @@
-local util = require "util"
+local util = require "dddt.util"
 local constructor = util.constructor
 
 -- Random Variable

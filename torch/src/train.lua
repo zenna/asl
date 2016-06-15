@@ -20,8 +20,8 @@ function training.train(param_funcs, axiom, params, constants, generator,
   local loss_func = loss_fn(axiom, param_funcs, constants, batch_size)
   local df_loss_func = grad(loss_func)
   -- local stats = {loss_vars = {}, loss_sums = {}}
-  local state = { learningRate = 0.00001 }
-  local optimfn, states = grad.optim.adam(df_loss_func, state, params)
+  local state = { learningRate = 0.0001 }
+  local optimfn, states = grad.optim.sgd(df_loss_func, state, params)
   local val_randvars = generator()
   for epoch = 1, num_epochs do
     -- print("Validate", loss_func(params, val_randvars))

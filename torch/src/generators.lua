@@ -1,6 +1,6 @@
 local gen = {}
 local t = require("torch")
-local util = require("util")
+local util = require("dddt.util")
 
 local function wrap(co)
   return function()

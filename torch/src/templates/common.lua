@@ -1,5 +1,5 @@
 local t = require "torch"
-local util = require "util"
+local util = require "dddt.util"
 local common = {}
 -- Param
 local function parsename(x)

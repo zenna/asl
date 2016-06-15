@@ -1,4 +1,4 @@
-local util = require "util"
+local util = require "dddt.util"
 local ConcreteFunc = require "newtypes/concretefunc".ConcreteFunc
 -- local constructor = util.constructor
 local distances = require "distances"

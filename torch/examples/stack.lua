@@ -1,11 +1,6 @@
 local t = require "torch"
 local dddt = require "dddt"
 local util = dddt.util
-local map = util.map
-local res_net = dddt.templates.res_net
-local conv_res_net = dddt.templates.conv_res_net
-local gen = dddt.generators
--- local Spec = dddt.types.Spec
 local Type = dddt.types.Type
 local eq_axiom = dddt.types.eq_axiom
 local Interface = dddt.types.Interface
@@ -16,6 +11,7 @@ local Constant = dddt.types.Constant
 local constrain_types = dddt.types.constrain_types
 local gen_param_funcs = dddt.types.gen_param_funcs
 local train = require("train").train
+
 require "cunn"
 if not cutorch then
    require 'cutorch'
@@ -34,20 +30,16 @@ end
 
 -- Genereates the stack specification
 local function stack_spec()
-  -- Intensional Axiomitisation
   local stack1 = RandVar(Type('Stack'), 'stack1')
   local item1 = RandVar(Type('Item'), 'item1')
-  -- An axiom is a function
+
+  -- Extensional axiom
   local function axiom(funcs, randvars, constants)
-    -- print("funcs", funcs)
-    -- print("rvs", randvars)
-    -- print("constants", constants)
     local push, pop = funcs['push'], funcs['pop']
     local items, nitems = randvars['items'], randvars['nitems']
     local stack = constants['empty_stack']
     local axioms = {}
     local pop_stack
-    -- Extensional axioms
     for i = 1, nitems do
       stack = push:call({stack, items[i]})[1]
       print("STACKSUM", torch.sum(stack).value)
@@ -73,10 +65,10 @@ local function stack(shapes, dtypes, templates, template_args)
   return adt, spec, constrained_types, param_funcs, interface_params
 end
 
+-- Generators
 local function gen_gen(batch_size, cuda)
-  -- Generators
   local trainData = require('./get_mnist.lua')()
-  local item_coroutine = gen.infinite_minibatches(trainData.x:double(), batch_size,  true)
+  local item_coroutine = dddt.generators.infinite_minibatches(trainData.x:double(), batch_size,  true)
   return function()
     local nitems = 3
     local items = {}
@@ -94,6 +86,7 @@ local function gen_gen(batch_size, cuda)
 end
 
 local function main()
+  local res_net = dddt.templates.res_net
   local shapes = {Item=util.shape({1, 32, 32}), Stack=util.shape({1, 50, 50})}
   local dtypes = {Item=t.getdefaulttensortype(), Stack=t.getdefaulttensortype()}
   local batch_size = 2
@@ -112,15 +105,16 @@ local function main()
   local constant_params = {empty_stack=constrained_types['Stack']:sample(t.rand)}
 
   -- Generate interface params
-  local interface_params = map(function(pf) return pf:gen_params() end, param_funcs)
+  local interface_params = util.map(function(pf) return pf:gen_params() end, param_funcs)
   local all_params = util.update(constant_params, interface_params)
   train(param_funcs, spec.axiom, all_params, adt.constants, generator, batch_size, 10000)
 end
 
 local function conv_main()
+  local conv_res_net = dddt.templates.conv_res_net
   local shapes = {Item=util.shape({1, 32, 32}), Stack=util.shape({1, 32, 32})}
   local dtypes = {Item=t.getdefaulttensortype(), Stack=t.getdefaulttensortype()}
-  local batch_size = 256
+  local batch_size = 512
   local templates = {push=conv_res_net.gen_conv_res_net,
                      pop=conv_res_net.gen_conv_res_net}
   local template_kwargs = {}
@@ -132,7 +126,7 @@ local function conv_main()
   template_kwargs['pooling'] = 0
   template_kwargs['batchNormalization'] = true
   template_kwargs['cuda'] = cuda_on
-  template_kwargs['hiddenFeatures'] = {12, 12}
+  template_kwargs['hiddenFeatures'] = {24, 24}
 
   local template_args = {push=template_kwargs, pop=template_kwargs}
   local adt, spec, constrained_types, param_funcs, interface_params = stack(shapes, dtypes, templates, template_args)
