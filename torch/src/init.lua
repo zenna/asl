@@ -13,12 +13,15 @@ dddt.generators = require "dddt.generators"
 dddt.distances = require "dddt.distances"
 dddt.train = require "dddt.train"
 
-require "cunn"
-if not cutorch then
-   require 'cutorch'
-   runtests = true
-end
+hascunn, cunn = pcall(require, 'cunn')
+hascutorch, cutorch = pcall(require, 'cutorch')
+hasdbg, dbg = pcall(require, 'debugger')
 
-dbg = require "debugger"
+-- require "cunn"
+-- if not cutorch then
+--    require 'cutorch'
+--    runtests = true
+-- end
+--
 
 return dddt

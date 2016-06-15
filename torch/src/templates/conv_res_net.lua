@@ -6,16 +6,7 @@ local conv_res_net = {}
 local util = require("dddt.util")
 local autograd = require("autograd")
 local common = require("dddt.templates.common")
-local nn = autograd.nn
 local model = autograd.model
-
-if not cutorch then
-   require 'cutorch'
-   runtests = true
-end
-
-local param_str = common.param_str
-local map = util.map
 
 local function isimgbatch(input)
   return input:nDimension() == 4
@@ -63,7 +54,7 @@ function conv_res_net.gen_conv_res_net(interface, kwargs)
     -- print("Calling ConvNet")
     -- check input are good
     -- dbg()
-    assert(util.all(map(isimgbatch, inputs)))
+    assert(util.all(util.map(isimgbatch, inputs)))
 
     -- Get inputs
     -- dbg()
