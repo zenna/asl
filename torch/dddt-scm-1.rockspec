@@ -13,6 +13,8 @@ description = {
 
 dependencies = {
    "torch >= 7.0",
+   "autograd",
+   "nn"
 }
 
 build = {

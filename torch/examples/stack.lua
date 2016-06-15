@@ -34,7 +34,8 @@ local function stack_spec()
     local push, pop = funcs['push'], funcs['pop']
     local items, nitems = randvars['items'], randvars['nitems']
     local stack = constants['empty_stack']
-    print("EMPTYSTACKSUM", torch.sum(stack).value)
+    -- dbg()
+    -- print("EMPTYSTACKSUM", torch.sum(stack).value)
     local axioms = {}
     local pop_stack
     for i = 1, nitems do
@@ -44,7 +45,7 @@ local function stack_spec()
       for j = i, 1, -1 do
         pop_stack, pop_item = unpack(pop:call({pop_stack}))
         local axiom = eq_axiom({pop_item}, {items[j]})
-        print("i:%s, j:%s: loss: %s" % {i, j, axiom.value})
+        -- print("i:%s, j:%s: loss: %s" % {i, j, axiom.value})
         table.insert(axioms, axiom)
       end
     end
@@ -67,7 +68,7 @@ local function gen_gen(batch_size, cuda)
   local trainData = require('./get_mnist.lua')()
   local item_coroutine = dddt.generators.infinite_minibatches(trainData.x:double(), batch_size,  true)
   return function()
-    local nitems = 3
+    local nitems = 2
     local items = {}
     for i = 1, nitems do
       local coroutine_ok, value = coroutine.resume(item_coroutine)
@@ -83,11 +84,12 @@ local function gen_gen(batch_size, cuda)
 end
 
 local function main()
-  local optim_state = {learningRate=0.005}
+  local optim_state = {learningRate=0.0001}
+  -- local optim_state = {}
   local opt = {optim_state = optim_state,
-               optim_alg = grad.optim.adam,
+               optim_alg = grad.optim.sgd,
                batch_size = 512,
-               num_epochs = 10,
+               num_epochs = 100000,
                cuda_on = true}
   print("Options:", opt)
 
@@ -100,11 +102,11 @@ local function main()
   template_kwargs['layer_width'] = 10
   template_kwargs['block_size'] = 2
   template_kwargs['activation'] = 'ReLU'
-  template_kwargs['kernelSize'] = 3
+  -- template_kwargs['kernelSize'] = 3
   template_kwargs['pooling'] = 0
   template_kwargs['batchNormalization'] = true
   template_kwargs['cuda'] = opt.cuda_on
-  template_kwargs['hiddenFeatures'] = {6, 6, 6}
+  template_kwargs['hiddenFeatures'] = {12}
 
   local template_args = {push=template_kwargs, pop=template_kwargs}
   local adt, spec, constrained_types, param_funcs, interface_params = stack(shapes, dtypes, templates, template_args)
