@@ -44,7 +44,7 @@ local function stack_spec()
       for j = i, 1, -1 do
         pop_stack, pop_item = unpack(pop:call({pop_stack}))
         local axiom = eq_axiom({pop_item}, {items[j]})
-        -- print("i:%s, j:%s: loss: %s" % {i, j, axiom.value})
+        print("i:%s, j:%s: loss: %s" % {i, j, axiom.value})
         table.insert(axioms, axiom)
       end
     end
@@ -83,11 +83,11 @@ local function gen_gen(batch_size, cuda)
 end
 
 local function main()
-  local optim_state = {learningRate=0.01}
+  local optim_state = {learningRate=0.005}
   local opt = {optim_state = optim_state,
-               optim_alg = grad.optim.sgd,
+               optim_alg = grad.optim.adam,
                batch_size = 512,
-               num_epochs = 100000,
+               num_epochs = 10,
                cuda_on = true}
   print("Options:", opt)
 
@@ -104,7 +104,7 @@ local function main()
   template_kwargs['pooling'] = 0
   template_kwargs['batchNormalization'] = true
   template_kwargs['cuda'] = opt.cuda_on
-  template_kwargs['hiddenFeatures'] = {24, 24}
+  template_kwargs['hiddenFeatures'] = {6, 6, 6}
 
   local template_args = {push=template_kwargs, pop=template_kwargs}
   local adt, spec, constrained_types, param_funcs, interface_params = stack(shapes, dtypes, templates, template_args)

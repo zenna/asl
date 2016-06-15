@@ -19,6 +19,6 @@ if not cutorch then
    runtests = true
 end
 
--- dbg = require "debugger"
+dbg = require "debugger"
 
 return dddt

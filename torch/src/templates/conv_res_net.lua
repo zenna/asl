@@ -70,9 +70,11 @@ function conv_res_net.gen_conv_res_net(interface, kwargs)
     local inp_img = torch.cat(inputs, 2)
 
     local output_product = cnet(params, inp_img)
+    -- print("PRODSIZ", output_product:size())
     local outputs = {}
     for i = 1,noutputs do
       local output_slice = output_product[{{},{i,i},{},{}}]
+      -- print("SLICY", output_slice.value:size())
       -- print("value", torch.sum(output_slice).value)
       table.insert(outputs, output_slice)
     end

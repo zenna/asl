@@ -13,7 +13,7 @@ function training.train(param_funcs, axiom, params, constants, generator, opt)
     -- print("Validate", loss_func(params, val_randvars))
     local randvars = generator()
     local params, loss = optimfn(randvars)
-    -- print("epoch:", epoch, "Loss:", loss)
+    print("epoch:", epoch, "Loss:", loss)
   end
 end
 
