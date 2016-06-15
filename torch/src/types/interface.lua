@@ -11,7 +11,10 @@ Interface.__index = Interface
 -- An interface is an implicitly represented set of functions
 function Interface.new(lhs, rhs, name)
   local self = setmetatable({}, Interface)
+  print("name is", name)
+  print("creating interface" .. name)
   print("Creating interface %s" % name)
+  print("somehow this doesnt work")
   self.lhs = lhs
   self.rhs = rhs
   self.name = name
