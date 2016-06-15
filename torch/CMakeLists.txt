@@ -2,6 +2,10 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.6 FATAL_ERROR)
 CMAKE_POLICY(VERSION 2.6)
 FIND_PACKAGE(Torch REQUIRED)
 
-FILE(GLOB luasrc *.lua)
+FILE(GLOB luasrc src/*.lua)
 
-ADD_TORCH_PACKAGE(dddt ""  "${luasrc}" "Data Driven Data Types")
+ADD_TORCH_PACKAGE(dddt ""  "${luasrc}")
+
+INSTALL(DIRECTORY "src/model" DESTINATION "${Torch_INSTALL_LUA_PATH_SUBDIR}/autograd")
+INSTALL(DIRECTORY "src/templates" DESTINATION "${Torch_INSTALL_LUA_PATH_SUBDIR}/autograd")
+INSTALL(DIRECTORY "src/types" DESTINATION "${Torch_INSTALL_LUA_PATH_SUBDIR}/autograd")

@@ -13,6 +13,11 @@ dddt.generators = require "dddt.generators"
 dddt.distances = require "dddt.distances"
 dddt.train = require "dddt.train"
 
+require "cunn"
+if not cutorch then
+   require 'cutorch'
+   runtests = true
+end
 
 -- dbg = require "debugger"
 

@@ -12,11 +12,7 @@ local constrain_types = dddt.types.constrain_types
 local gen_param_funcs = dddt.types.gen_param_funcs
 local train = dddt.train
 
-require "cunn"
-if not cutorch then
-   require 'cutorch'
-   runtests = true
-end
+local grad = require "autograd"
 
 -- Genereates the stack abstract data type
 local function stack_adt()
@@ -38,16 +34,17 @@ local function stack_spec()
     local push, pop = funcs['push'], funcs['pop']
     local items, nitems = randvars['items'], randvars['nitems']
     local stack = constants['empty_stack']
+    print("EMPTYSTACKSUM", torch.sum(stack).value)
     local axioms = {}
     local pop_stack
     for i = 1, nitems do
       stack = push:call({stack, items[i]})[1]
-      print("STACKSUM", torch.sum(stack).value)
+      -- print("STACKSUM", torch.sum(stack).value)
       pop_stack = stack
       for j = i, 1, -1 do
         pop_stack, pop_item = unpack(pop:call({pop_stack}))
         local axiom = eq_axiom({pop_item}, {items[j]})
-        print("i:%s, j:%s: loss: %s" % {i, j, axiom.value})
+        -- print("i:%s, j:%s: loss: %s" % {i, j, axiom.value})
         table.insert(axioms, axiom)
       end
     end
@@ -86,61 +83,42 @@ local function gen_gen(batch_size, cuda)
 end
 
 local function main()
-  local res_net = dddt.templates.res_net
-  local shapes = {Item=util.shape({1, 32, 32}), Stack=util.shape({1, 50, 50})}
-  local dtypes = {Item=t.getdefaulttensortype(), Stack=t.getdefaulttensortype()}
-  local batch_size = 2
-  local templates = {push=res_net.gen_res_net, pop=res_net.gen_res_net}
-  local template_kwargs = {}
-  template_kwargs['layer_width'] = 10
-  template_kwargs['block_size'] = 2
-  template_kwargs['nblocks'] = 1
-  local template_args = {push=template_kwargs, pop=template_kwargs}
-  local adt, spec, constrained_types, param_funcs, interface_params = stack(shapes, dtypes, templates, template_args)
+  local optim_state = {learningRate=0.01}
+  local opt = {optim_state = optim_state,
+               optim_alg = grad.optim.sgd,
+               batch_size = 512,
+               num_epochs = 100000,
+               cuda_on = true}
+  print("Options:", opt)
 
-  -- Generator
-  local generator = gen_gen(batch_size)
-
-  -- Constants: Generate constant params
-  local constant_params = {empty_stack=constrained_types['Stack']:sample(t.rand)}
-
-  -- Generate interface params
-  local interface_params = util.map(function(pf) return pf:gen_params() end, param_funcs)
-  local all_params = util.update(constant_params, interface_params)
-  train(param_funcs, spec.axiom, all_params, adt.constants, generator, batch_size, 10000)
-end
-
-local function conv_main()
   local conv_res_net = dddt.templates.conv_res_net
   local shapes = {Item=util.shape({1, 32, 32}), Stack=util.shape({1, 32, 32})}
   local dtypes = {Item=t.getdefaulttensortype(), Stack=t.getdefaulttensortype()}
-  local batch_size = 512
   local templates = {push=conv_res_net.gen_conv_res_net,
                      pop=conv_res_net.gen_conv_res_net}
   local template_kwargs = {}
-  local cuda_on = true
   template_kwargs['layer_width'] = 10
   template_kwargs['block_size'] = 2
   template_kwargs['activation'] = 'ReLU'
   template_kwargs['kernelSize'] = 3
   template_kwargs['pooling'] = 0
   template_kwargs['batchNormalization'] = true
-  template_kwargs['cuda'] = cuda_on
+  template_kwargs['cuda'] = opt.cuda_on
   template_kwargs['hiddenFeatures'] = {24, 24}
 
   local template_args = {push=template_kwargs, pop=template_kwargs}
   local adt, spec, constrained_types, param_funcs, interface_params = stack(shapes, dtypes, templates, template_args)
 
   -- Generator
-  local generator = gen_gen(batch_size ,cuda_on )
+  local generator = gen_gen(opt.batch_size, opt.cuda_on)
 
   -- Constants: Generate constant params
-  local constant_params = {empty_stack=constrained_types['Stack']:sample(t.rand, cuda_on)}
+  local constant_params = {empty_stack=constrained_types['Stack']:sample(t.rand, opt.cuda_on)}
 
   -- Generate interface params
   local all_params = util.update(constant_params, interface_params)
   -- dbg()
-  train.train(param_funcs, spec.axiom, all_params, adt.constants, generator, batch_size, 100000)
+  train.train(param_funcs, spec.axiom, all_params, adt.constants, generator, opt)
 end
 
-conv_main()
+main()
