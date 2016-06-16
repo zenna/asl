@@ -1,3 +1,31 @@
+import numpy as np
+
+from dddt.templates.common import *
+import theano
+import lasagne
+
+from lasagne.layers import InputLayer
+from lasagne.layers import ReshapeLayer
+from lasagne.layers import DenseLayer
+from lasagne.layers import NonlinearityLayer
+from lasagne.layers import ConcatLayer
+from lasagne.layers import DropoutLayer
+from lasagne.layers import Pool2DLayer as PoolLayer
+from lasagne.layers import Conv1DLayer
+from lasagne.layers import batch_norm
+from lasagne.init import HeNormal, Constant
+from lasagne.nonlinearities import softmax, rectify, sigmoid
+
+import theano.sandbox.cuda.dnn
+if theano.sandbox.cuda.dnn.dnn_available():
+    from lasagne.layers.dnn import Conv2DDNNLayer as ConvLayer
+    from lasagne.layers.dnn import Conv3DDNNLayer as Conv3DLayer
+else:
+    from lasagne.layers import Conv2DLayer as ConvLayer
+
+
+import numpy as np
+
 def conv_res_net(*inputs, **kwargs):
     """A residual convolutional network of n inputs and m outputs."""
     inp_shapes = kwargs['inp_shapes']

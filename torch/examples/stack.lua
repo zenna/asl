@@ -24,6 +24,14 @@ local function stack_adt()
   return AbstractDataType({push, pop}, {empty_stack=empty_stack}, "Stack")
 end
 
+local function value(x)
+  if type(x) == 'number' then
+    return x
+  else
+    return x.value
+  end
+end
+
 -- Genereates the stack specification
 local function stack_spec()
   local stack1 = RandVar(Type('Stack'), 'stack1')
@@ -38,6 +46,7 @@ local function stack_spec()
     -- print("EMPTYSTACKSUM", torch.sum(stack).value)
     local axioms = {}
     local pop_stack
+    local pop_item
     for i = 1, nitems do
       stack = push:call({stack, items[i]})[1]
       -- print("STACKSUM", torch.sum(stack).value)
@@ -45,7 +54,8 @@ local function stack_spec()
       for j = i, 1, -1 do
         pop_stack, pop_item = unpack(pop:call({pop_stack}))
         local axiom = eq_axiom({pop_item}, {items[j]})
-        -- print("i:%s, j:%s: loss: %s" % {i, j, axiom.value})
+        local k = i - j + 1
+        print("%sth popped = %sth added, loss: %s" % {k, j, value(axiom)})
         table.insert(axioms, axiom)
       end
     end
@@ -75,6 +85,7 @@ local function gen_gen(batch_size, cuda)
       if cuda then
         value = value:cuda()
       end
+      -- print("item" .. i, torch.sum(value))
       assert(coroutine_ok)
       -- dbg()
       table.insert(items, value)
@@ -84,10 +95,10 @@ local function gen_gen(batch_size, cuda)
 end
 
 local function main()
-  local optim_state = {learningRate=0.0001}
+  local optim_state = {learningRate=0.01}
   -- local optim_state = {}
   local opt = {optim_state = optim_state,
-               optim_alg = grad.optim.sgd,
+               optim_alg = grad.optim.adam,
                batch_size = 512,
                num_epochs = 100000,
                cuda_on = true}
@@ -102,11 +113,11 @@ local function main()
   template_kwargs['layer_width'] = 10
   template_kwargs['block_size'] = 2
   template_kwargs['activation'] = 'ReLU'
-  -- template_kwargs['kernelSize'] = 3
+  template_kwargs['kernelSize'] = 3
   template_kwargs['pooling'] = 0
   template_kwargs['batchNormalization'] = true
   template_kwargs['cuda'] = opt.cuda_on
-  template_kwargs['hiddenFeatures'] = {12}
+  template_kwargs['hiddenFeatures'] = {24}
 
   local template_args = {push=template_kwargs, pop=template_kwargs}
   local adt, spec, constrained_types, param_funcs, interface_params = stack(shapes, dtypes, templates, template_args)

@@ -8,6 +8,26 @@ import csv
 import time
 from theano import tensor as T
 
+## Primitive Functions
+## ------------------
+def upper_div(x, y):
+    a, b = divmod(x, y)
+    if b == 0:
+        return a
+    else:
+        return a + 1
+
+def identity(x):
+    return x
+
+
+def upper_div(x, y):
+    a, b = divmod(x, y)
+    if b == 0:
+        return a
+    else:
+        return a + 1
+
 
 
 def circular_indices(lb, ub, thresh):
@@ -97,24 +117,7 @@ def iterate_batches(inputs, batchsize, shuffle=False):
         yield inputs[excerpt]
 
 
-def upper_div(x, y):
-    a, b = divmod(x, y)
-    if b == 0:
-        return a
-    else:
-        return a + 1
 
-# Primitive Functions
-def identity(x):
-    return x
-
-
-def upper_div(x, y):
-    a, b = divmod(x, y)
-    if b == 0:
-        return a
-    else:
-        return a + 1
 
 
 def repeat_to_batch(x, batch_size, tnp=T):

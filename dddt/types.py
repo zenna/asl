@@ -1,12 +1,14 @@
 from __future__ import print_function
-from distances import *
+
+from dddt.templates import *
+from dddt.distances import *
 import time
 import theano
 import lasagne
 import sys
 import numpy as np
-from templates import *
 from io import *
+
 import theano.tensor as T
 from lasagne.utils import floatX
 from theano import shared
