@@ -11,7 +11,6 @@ local Constant = dddt.types.Constant
 local constrain_types = dddt.types.constrain_types
 local gen_param_funcs = dddt.types.gen_param_funcs
 local train = dddt.train
-
 local grad = require "autograd"
 
 -- Genereates the stack abstract data type
@@ -103,11 +102,10 @@ local function stack(shapes, dtypes, templates, template_args)
 end
 
 -- Generators
-local function gen_gen(batch_size, cuda)
+local function gen_gen(batch_size, cuda, nitems)
   local trainData = require('./get_mnist.lua')()
   local item_coroutine = dddt.generators.infinite_minibatches(trainData.x:double(), batch_size,  true)
   return function()
-    local nitems = 2
     local items = {}
     for i = 1, nitems do
       local coroutine_ok, value = coroutine.resume(item_coroutine)
@@ -124,36 +122,51 @@ local function gen_gen(batch_size, cuda)
 end
 
 local function main()
-  local optim_state = {learningRate=0.01}
-  -- local optim_state = {}
-  local opt = {optim_state = optim_state,
-               optim_alg = grad.optim.adam,
-               batch_size = 512,
-               num_epochs = 100000,
-               cuda_on = true}
+  local cmd = t.CmdLine()
+  cmd:text()
+  cmd:text('Construct a stack abstract data type')
+  cmd:text()
+  cmd:text('Options')
+  cmd:option('-optim_alg',grad.optim.adam,'Optimization algorithm')
+  cmd:option('-learning_rate',0.01,'Learning Rate')
+  cmd:option('-batch_size',256,'Size of minibatches')
+  cmd:option('-cuda',true,'Use cuda?')
+  cmd:option('-num_epochs',1000,'Number of training iterations')
+  cmd:option('-verbose',1,'set to 0 to ONLY print the sampled text, no diagnostics')
+
+  -- Stack specific
+  cmd:option('-nitems',3,'Number of items to train stack on')
+
+  local opt = cmd:parse(arg)
+  local cmd = t.CmdLine()
+  -- optional parameters
+  cmd:option('-seed',123,'random number generator\'s seed')
+  cmd:option('-activation','ReLU','Activation')
+  cmd:option('-kernelSize',3,'Size of kernel for convnet ')
+  cmd:option('-pooling',0,'pooling')
+  cmd:option('-batchNormalization',true,'Use batch normalization')
+  cmd:option('-hiddenFeatures',{24},'Hidden features')
+  cmd:text()
+
+  local template_kwargs = cmd:parse(arg)
+  template_kwargs['cuda'] = opt.cuda
   print("Options:", opt)
+  print("Template Args:", template_kwargs)
 
   local conv_res_net = dddt.templates.conv_res_net
   local shapes = {Item=util.shape({1, 32, 32}), Stack=util.shape({1, 32, 32})}
   local dtypes = {Item=t.getdefaulttensortype(), Stack=t.getdefaulttensortype()}
   local templates = {push=conv_res_net.gen_conv_res_net,
                      pop=conv_res_net.gen_conv_res_net}
-  local template_kwargs = {}
-  template_kwargs['activation'] = 'ReLU'
-  template_kwargs['kernelSize'] = 3
-  template_kwargs['pooling'] = 0
-  template_kwargs['batchNormalization'] = true
-  template_kwargs['cuda'] = opt.cuda_on
-  template_kwargs['hiddenFeatures'] = {24}
 
   local template_args = {push=template_kwargs, pop=template_kwargs}
   local adt, spec, constrained_types, param_funcs, interface_params = stack(shapes, dtypes, templates, template_args)
 
   -- Generator
-  local generator = gen_gen(opt.batch_size, opt.cuda_on)
+  local generator = gen_gen(opt.batch_size, opt.cuda, opt.nitems)
 
   -- Constants: Generate constant params
-  local constant_params = {empty_stack=constrained_types['Stack']:sample(t.rand, opt.cuda_on)}
+  local constant_params = {empty_stack=constrained_types['Stack']:sample(t.rand, opt.cuda)}
 
   -- Generate interface params
   local all_params = util.update(constant_params, interface_params)
