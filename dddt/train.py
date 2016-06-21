@@ -16,6 +16,12 @@ def get_updates(loss, params, options):
     updates = {}
     print("Params", params)
     print("Param Sizes", [p.get_value().shape for p in params])
+    print("Before Set Means", [p.get_value().mean() for p in params])
+    # debug set all to uniform
+    from lasagne.utils import floatX
+    [p.set_value(floatX(np.random.rand(*(p.get_value().shape)))) for p in params]
+    print("Before Set Means", [p.get_value().mean() for p in params])
+
     if options['update'] == 'momentum':
         updates = momentum(loss, params, learning_rate=options['learning_rate'],
                            momentum=options['momentum'])
@@ -82,7 +88,7 @@ def train(adt, pdt, num_epochs=1000, summary_gap=100, save_every=10, sfx='',
             train_outs_losses = pdt.train_fn(*inputs)
             train_outs = train_outs_losses[0:ntrain_outs]
             losses = train_outs_losses[ntrain_outs:]
-            print("epoch: ", epoch, "losses: ", losses)
+            print("epoch: ", epoch, " i: ", i, "losses: ", losses)
             train_err += losses[0]
             train_batches += 1
             gens = [next(gen) for gen in pdt.generators]

@@ -8,8 +8,9 @@ function distances.mae(a, b)
 end
 
 function distances.mse(a, b)
+  local eps = 1e-9
   local a_b = a - b
-  local z = t.mean(t.cmul(a_b, a_b))
+  local z = t.mean(t.cmax(t.cmul(a_b, a_b), eps))
   -- dbg()
   return z
 end

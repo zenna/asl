@@ -13,7 +13,7 @@ from lasagne.layers import DropoutLayer
 from lasagne.layers import Pool2DLayer as PoolLayer
 from lasagne.layers import Conv1DLayer
 from lasagne.layers import batch_norm
-from lasagne.init import HeNormal, Constant
+from lasagne.init import HeNormal, Constant, Uniform
 from lasagne.nonlinearities import softmax, rectify, sigmoid
 
 import theano.sandbox.cuda.dnn
@@ -59,7 +59,7 @@ def conv_res_net(*inputs, **kwargs):
         #   print("input ", i, "of shape", inp_shapes[i][1:], " needs projecting to ", layer_shape)
         #   i = Input_layer(inp_shapes[i], input_var = inputs[i])
         #   r = ReshapeLayer(i, ([0], 1, 1, inp_size))
-        #   c = ConvLayer(i, num_filters=npixels, filter_size=1, nonlinearity = rectify, W=lasagne.init.HeNormal(gain='relu'), pad='same' ))
+        #   c = ConvLayer(i, num_filters=npixels, filter_size=1, nonlinearity = rectify, W=lasagne.init.Uniform('), pad='same' ))
         #   d = DenseLayer(i, npixels)
         #   r = ReshapeLayer(d, (1, width, height))
         #   input_channels.append(r)
@@ -73,7 +73,7 @@ def conv_res_net(*inputs, **kwargs):
     wx_sfx = 'wx'
     wx = batch_norm_params(ConvLayer(prev_layer,
         num_filters=nfilters, filter_size=1, nonlinearity = rectify,
-        W=params['W_%s' % wx_sfx, HeNormal(gain='relu')],
+        W=params['W_%s' % wx_sfx, Uniform()],
         b=params['b_%s' % wx_sfx, Constant(0)],
         pad='same'), wx_sfx, params)
     # net['resizeblock'] = prev_layer = x = lasagne.layers.ElemwiseSumLayer([wx, prev_layer])
@@ -84,7 +84,7 @@ def conv_res_net(*inputs, **kwargs):
           sfx = "%s_%s" % (j,i)
           net['conv2d%s_%s' % (j,i)] = prev_layer = batch_norm_params(ConvLayer(prev_layer,
             num_filters=nfilters, filter_size=3, nonlinearity = rectify,
-            W=params['W_%s' % sfx, HeNormal(gain='relu')],
+            W=params['W_%s' % sfx, Uniform()],
             b=params['b_%s' % sfx, Constant(0)],
             pad='same'), sfx, params)
       if nblocks > 1:
@@ -93,7 +93,7 @@ def conv_res_net(*inputs, **kwargs):
     sfx = 'final_conv'
     net['final_conv'] = prev_layer = batch_norm_params(ConvLayer(prev_layer,
       num_filters=noutputs, filter_size=3, nonlinearity = rectify,
-      W=params['W_%s' % sfx, HeNormal(gain='relu')],
+      W=params['W_%s' % sfx, Uniform()],
       b=params['b_%s' % sfx, Constant(0)],
       pad='same'), sfx, params)
 

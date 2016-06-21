@@ -33,9 +33,11 @@ local function add(x, y) return x + y end
 -- an object and it maps "push(randvar)"
 
 -- (Set of) Equational Axiom: a1 = b2, a2 = b2
+local autograd = require("autograd")
+local mae = autograd.nn.AbsCriterion()
 
 function module.eq_axiom(lhs, rhs)
-  local dists = util.mapn(mse, lhs, rhs)
+  local dists = util.mapn(mae, lhs, rhs)
   -- print(util.extract('value', dists))
   -- dbg()
   return reduce(add, dists)/#dists
@@ -53,6 +55,7 @@ function module.loss_fn(axiom, param_funcs, constants, batch_size)
     local constant_vals = {}
     for k, v in pairs(constants) do
       local constant = params[k]
+      -- dbg()
       local new_shape1 = util.add_batch(constant:size(), 1)
       local new_shape2 = util.add_batch(constant:size(), batch_size)
       assert(constant ~= nil)

@@ -27,10 +27,18 @@ end
 local function value(x)
   if type(x) == 'number' then
     return x
-  else
+  elseif type(x) == 'table' then
     return x.value
+  elseif type(x) == 'userdata' then
+    return x
+  else
+    assert(false)
   end
 end
+
+local autograd = require("autograd")
+local mse = autograd.nn.MSECriterion()
+
 
 -- Genereates the stack specification
 local function stack_spec()
@@ -45,21 +53,42 @@ local function stack_spec()
     -- dbg()
     -- print("EMPTYSTACKSUM", torch.sum(stack).value)
     local axioms = {}
-    local pop_stack
     local pop_item
+    local pop_stack = stack
+    -- nitems = 2
     for i = 1, nitems do
       stack = push:call({stack, items[i]})[1]
-      -- print("STACKSUM", torch.sum(stack).value)
-      pop_stack = stack
-      for j = i, 1, -1 do
-        pop_stack, pop_item = unpack(pop:call({pop_stack}))
-        local axiom = eq_axiom({pop_item}, {items[j]})
-        local k = i - j + 1
-        print("%sth popped = %sth added, loss: %s" % {k, j, value(axiom)})
-        table.insert(axioms, axiom)
-      end
     end
+    for j = nitems, 1, -1 do
+      stack, pop_item = unpack(pop:call({stack}))
+      local axiom = mse(pop_item, items[j])
+      -- local axiom = torch.mean(pop_item) - torch.mean(items[j])
+      -- axiom = axiom * axiom
+      -- table.insert(axioms, axiom)
+      -- axiom = eq_axiom({pop_item}, {items[j]})
+      table.insert(axioms, axiom)
+      print("SUMS: lhs:%s, rhs:%s" % {value(pop_item):sum(), value(items[j]):sum()})
+      print("%sth popped: loss %s" % {j, value(axiom)})
+    end
+    --
+    -- for i = 1, nitems do
+    --   stack = push:call({stack, items[i]})[1]
+    --   -- print("STACKSUM", torch.sum(stack).value)
+    --   pop_stack = stack
+    --   for j = i, 1, -1 do
+    --     pop_stack, pop_item = unpack(pop:call({pop_stack}))
+    --     local axiom = torch.sum(pop_item) - torch.sum(items[j])
+    --     axiom = axiom * axiom
+    --     -- local axiom = eq_axiom({pop_item}, {items[j]})
+    --     local k = i - j + 1
+    --     print("SUMS: lhs:%s, rhs:%s" % {value(pop_item):sum(), value(items[j]):sum()})
+    --     print("%sth popped = %sth added, loss: %s" % {k, j, value(axiom)})
+    --     table.insert(axioms, axiom)
+    --   end
+    -- end
+    -- dbg()
     return axioms
+    -- return {axioms[1]}
   end
   return Spec({stack1, item1}, axiom)
 end
@@ -110,8 +139,6 @@ local function main()
   local templates = {push=conv_res_net.gen_conv_res_net,
                      pop=conv_res_net.gen_conv_res_net}
   local template_kwargs = {}
-  template_kwargs['layer_width'] = 10
-  template_kwargs['block_size'] = 2
   template_kwargs['activation'] = 'ReLU'
   template_kwargs['kernelSize'] = 3
   template_kwargs['pooling'] = 0
