@@ -19,7 +19,7 @@ def get_updates(loss, params, options):
     print("Before Set Means", [p.get_value().mean() for p in params])
     # debug set all to uniform
     from lasagne.utils import floatX
-    [p.set_value(floatX(np.random.rand(*(p.get_value().shape)))) for p in params]
+    # [p.set_value(floatX(np.random.rand(*(p.get_value().shape)))) for p in params]
     print("Before Set Means", [p.get_value().mean() for p in params])
 
     if options['update'] == 'momentum':
@@ -71,7 +71,7 @@ def compile_fns(funcs, consts, forallvars, axioms, train_outs, options):
 
 
 def train(adt, pdt, num_epochs=1000, summary_gap=100, save_every=10, sfx='',
-          save_dir="./"):
+          compress=False, save_dir="./"):
     """One epoch is one pass through the data set"""
     print("Starting training...")
     stats = {'loss_vars': [], 'loss_sums': []}
@@ -100,11 +100,14 @@ def train(adt, pdt, num_epochs=1000, summary_gap=100, save_every=10, sfx='',
                 stats['loss_vars'].append(loss_var)
                 stat_sfx = "epoch_%s_run_%s_stats" % (epoch, i)
                 stats_path = os.path.join(save_dir, stat_sfx)
-                np.savez_compressed(stats_path, **stats)
+                if compress:
+                    np.savez_compressed(stats_path, **stats)
+                else:
+                    np.savez(stats_path, **stats)
                 # Save Params
                 sfx2 = "epoch_%s_run_%sloss_%s" % (epoch, i, str(loss_sum))
                 path = os.path.join(save_dir, sfx2)
-                adt.save_params(path)
+                adt.save_params(path, compress=compress)
         print("epoch: ", epoch, " Total loss per epoch: ", train_err)
 
     path = os.path.join(save_dir, "final" + sfx)

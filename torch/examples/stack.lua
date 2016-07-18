@@ -44,6 +44,30 @@ local function stack_spec()
   local stack1 = RandVar(Type('Stack'), 'stack1')
   local item1 = RandVar(Type('Item'), 'item1')
 
+  -- local function axiom(funcs, randvars, constants)
+  --   local push, pop = funcs['push'], funcs['pop']
+  --   local items, nitems = randvars['items'], randvars['nitems']
+  --   local stack = constants['empty_stack']
+  --   -- dbg()
+  --   -- print("EMPTYSTACKSUM", torch.sum(stack).value)
+  --   local axioms = {}
+  --   -- nitems = 2
+  --   for i = 1, nitems do
+  --     stack = push:call({stack, items[i]})[1]
+  --   end
+  --   for j = nitems, 1, -1 do
+  --     stack, pop_item = unpack(pop:call({stack}))
+  --     local axiom = mse(pop_item, items[j])
+  --     -- local axiom = torch.mean(pop_item) - torch.mean(items[j])
+  --     -- axiom = axiom * axiom
+  --     -- table.insert(axioms, axiom)
+  --     -- axiom = eq_axiom({pop_item}, {items[j]})
+  --     table.insert(axioms, axiom)
+  --     print("SUMS: lhs:%s, rhs:%s" % {value(pop_item):sum(), value(items[j]):sum()})
+  --     print("%sth popped: loss %s" % {j, value(axiom)})
+  --   end
+  -- end
+
   -- Extensional axiom
   local function axiom(funcs, randvars, constants)
     local push, pop = funcs['push'], funcs['pop']
@@ -53,38 +77,24 @@ local function stack_spec()
     -- print("EMPTYSTACKSUM", torch.sum(stack).value)
     local axioms = {}
     local pop_item
-    local pop_stack = stack
-    -- nitems = 2
-    for i = 1, nitems do
-      stack = push:call({stack, items[i]})[1]
-    end
-    for j = nitems, 1, -1 do
-      stack, pop_item = unpack(pop:call({stack}))
-      local axiom = mse(pop_item, items[j])
-      -- local axiom = torch.mean(pop_item) - torch.mean(items[j])
-      -- axiom = axiom * axiom
-      -- table.insert(axioms, axiom)
-      -- axiom = eq_axiom({pop_item}, {items[j]})
-      table.insert(axioms, axiom)
-      print("SUMS: lhs:%s, rhs:%s" % {value(pop_item):sum(), value(items[j]):sum()})
-      print("%sth popped: loss %s" % {j, value(axiom)})
-    end
+    local pop_stack
     --
-    -- for i = 1, nitems do
-    --   stack = push:call({stack, items[i]})[1]
-    --   -- print("STACKSUM", torch.sum(stack).value)
-    --   pop_stack = stack
-    --   for j = i, 1, -1 do
-    --     pop_stack, pop_item = unpack(pop:call({pop_stack}))
-    --     local axiom = torch.sum(pop_item) - torch.sum(items[j])
-    --     axiom = axiom * axiom
-    --     -- local axiom = eq_axiom({pop_item}, {items[j]})
-    --     local k = i - j + 1
-    --     print("SUMS: lhs:%s, rhs:%s" % {value(pop_item):sum(), value(items[j]):sum()})
-    --     print("%sth popped = %sth added, loss: %s" % {k, j, value(axiom)})
-    --     table.insert(axioms, axiom)
-    --   end
-    -- end
+    for i = 1, nitems do
+      dbg()
+      stack = push:call({stack, items[i]})[1]
+      -- print("STACKSUM", torch.sum(stack).value)
+      pop_stack = stack
+      for j = i, 1, -1 do
+        pop_stack, pop_item = unpack(pop:call({pop_stack}))
+        local axiom = torch.sum(pop_item) - torch.sum(items[j])
+        axiom = axiom * axiom
+        -- local axiom = eq_axiom({pop_item}, {items[j]})
+        local k = i - j + 1
+        print("SUMS: lhs:%s, rhs:%s" % {value(pop_item):sum(), value(items[j]):sum()})
+        print("%sth popped = %sth added, loss: %s" % {k, j, value(axiom)})
+        table.insert(axioms, axiom)
+      end
+    end
     -- dbg()
     return axioms
     -- return {axioms[1]}
@@ -103,8 +113,12 @@ end
 
 -- Generators
 local function gen_gen(batch_size, cuda, nitems)
-  local trainData = require('./get_mnist.lua')()
-  local item_coroutine = dddt.generators.infinite_minibatches(trainData.x:double(), batch_size,  true)
+  -- local trainData = require('./get_mnist.lua')()
+  local trainData = t.load('./mnist/train.t7')
+  local data = trainData.data:type(t.Tensor():type())
+  data:mul(1/data:max())
+  dbg()
+  local item_coroutine = dddt.generators.infinite_minibatches(data:view(-1,1,28,28), batch_size,  true)
   return function()
     local items = {}
     for i = 1, nitems do
@@ -129,7 +143,7 @@ local function main()
   cmd:text('Options')
   cmd:option('-optim_alg',grad.optim.adam,'Optimization algorithm')
   cmd:option('-learning_rate',0.01,'Learning Rate')
-  cmd:option('-batch_size',256,'Size of minibatches')
+  cmd:option('-batch_size',128,'Size of minibatches')
   cmd:option('-cuda',true,'Use cuda?')
   cmd:option('-num_epochs',1000,'Number of training iterations')
   cmd:option('-verbose',1,'set to 0 to ONLY print the sampled text, no diagnostics')
@@ -154,7 +168,7 @@ local function main()
   print("Template Args:", template_kwargs)
 
   local conv_res_net = dddt.templates.conv_res_net
-  local shapes = {Item=util.shape({1, 32, 32}), Stack=util.shape({1, 32, 32})}
+  local shapes = {Item=util.shape({1, 28, 28}), Stack=util.shape({1, 28, 28})}
   local dtypes = {Item=t.getdefaulttensortype(), Stack=t.getdefaulttensortype()}
   local templates = {push=conv_res_net.gen_conv_res_net,
                      pop=conv_res_net.gen_conv_res_net}
@@ -170,7 +184,23 @@ local function main()
 
   -- Generate interface params
   local all_params = util.update(constant_params, interface_params)
-  -- dbg()
+
+  -- load data
+  local npy4th = require 'npy4th'
+  local prefix = "/home/zenna/data/1467078183.7549355block_size_1__nblocks_1__nfilters_24__adt_stack__/epoch_10_run_0loss_0.187983"
+  local push_int = npy4th.loadnpz(prefix .. "_interface_0.npz")
+  local p = {{push_int.arr_0:cuda(), t.zeros(24):cuda()},
+             {push_int.arr_1:cuda(), push_int.arr_2:cuda()},
+             {push_int.arr_5:cuda(), t.zeros(1):cuda()},
+             {push_int.arr_6:cuda(), push_int.arr_7:cuda()}}
+  local pop_int = npy4th.loadnpz(prefix .. "_interface_1.npz")
+  local q = {{pop_int.arr_0:cuda(), t.zeros(24):cuda()},
+             {pop_int.arr_1:cuda(), pop_int.arr_2:cuda()},
+             {pop_int.arr_5:cuda(), t.zeros(2):cuda()},
+             {pop_int.arr_6:cuda(), pop_int.arr_7:cuda()}}
+  local constant = npy4th.loadnpz(prefix .. "_constant_0.npz")
+  local e = constant.arr_0:view(1,28,28):cuda()
+  local all_params = {push=p, pop=q, empty_stack=e}
   train.train(param_funcs, spec.axiom, all_params, adt.constants, generator, opt)
 end
 

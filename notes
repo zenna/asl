@@ -1,0 +1,44 @@
+In a homoiconic language, the data structure representing the program can be manipulated by the program itself.  This enables code generation either dynamically (e.g. LISP, Julia) or statically (e.g. Scala).
+
+Program Structure Parameters vs Continuous Parameters
+
+- Both define subsets of ℜn -> ℜm
+- Continuous Parameters follow discrete ones and not the other way around.  That is, o choose continuous parameters we neeed to first deteermine program strcture.  We need to choose the number of layers before we can choose
+  the convolutional filters at each layer_width
+- Discrete parameters can vary over the dimensionality of a function.  It's certainty true the dimensionality of the output could depend on a continuous function, e.g.:
+
+function (x, Θ)
+  if Θ < 0
+    return (x, x)
+  else
+    return (x, x, x)
+  end
+end
+
+I think the distinction is less about discrete vs continuous it's about the degrees of freedom.
+When we build programs, differentiable or conventional ones, we exploit composition to exploded
+program spaces of unbounded complexity.  We can continue to increase the complexity of the program
+until necessary.  The syntax tree can grow arbitrarily large.
+
+In contrast, when we parameterise spaces, the degrees of freedom are fixed.  That is, we create
+a function from Θ -> (ℜn -> ℜm), where Θ is fixed.  This seems necessary for the optimisation process.
+How could we search over Θ if it is not fixed.
+
+One example of non fixed Θ are grammars, we sample from the grammar and effectively have a variable parameter space.
+It could be Θ1, Θ2 or more.  The grammar you migt say is infinite dimensional.
+I think the problem then boils down to
+
+Can we explore infinite dimensional spaces in a way which is differentiable.
+
+One high level idea is to take an infinite set of parametric models and interpolate.
+That is, consider the compositions
+
+- `f12(x) = f1(x, Θ1)`
+- `f12(x) = f2(f1(x, Θ1), Θ2)`
+- `f123(x) = f3(f2(f1(x, Θ1), Θ2), Θ3)`
+
+We can think of some interpolation between these sets
+
+
+I think this is what it comes down to.  We want to traverse infinite dimensional spaces.
+One question i

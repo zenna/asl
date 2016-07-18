@@ -62,7 +62,7 @@ class Interface():
         self.name = name
         # output_args = {'batch_norm_update_averages' : True,
         #                'batch_norm_use_averages' : True}
-        output_args = {'deterministic': False}
+        output_args = {'deterministic': True}
         outputs, params = template(*self.inputs, output_args=output_args,
                                      params=params, inp_shapes=self.inp_shapes,
                                      out_shapes=self.out_shapes,
@@ -76,7 +76,7 @@ class Interface():
         print("Calling", args)
         # shapes = [type.get_shape(add_batch=True) for type in self.lhs]
         # output_args = {'batch_norm_update_averages' : True, 'batch_norm_use_averages' : False}
-        output_args = {'deterministic': False}
+        output_args = {'deterministic': True}
         outputs, params = self.template(*args, output_args = output_args, params = self.params, inp_shapes = self.inp_shapes, out_shapes = self.out_shapes, **self.template_kwargs)
         return outputs
 
@@ -94,10 +94,16 @@ class Interface():
         param_values = npz_to_array(params_file)
         return self.load_params(param_values)
 
-    def save_params(self, fname):
+    def save_params(self, fname, compress=True):
         params = self.params.get_params()
         param_values = [param.get_value() for param in params]
-        np.savez_compressed(fname, *param_values)
+        print("Params", params)
+        print("Param Sizes", [p.get_value().shape for p in params])
+        print("Before Set Means", [p.get_value().mean() for p in params])
+        if compress:
+            np.savez_compressed(fname, *param_values)
+        else:
+            np.savez(fname, *param_values)
 
     def compile(self):
         print("Compiling func")
@@ -181,10 +187,12 @@ class Const():
         param_values = npz_to_array(params_file)
         return self.load_params(param_values[0])
 
-    def save_params(self, fname):
+    def save_params(self, fname, compress=True):
         param_value = self.input_var.get_value()
-        np.savez_compressed(fname, param_value)
-
+        if compress:
+            np.savez_compressed(fname, param_value)
+        else:
+            np.savez(fname, param_value)
 
 class Params():
     def __init__(self):
@@ -257,11 +265,11 @@ class AbstractDataType():
         for i in range(len(self.consts)):
             self.consts[i].load_params_fname("%s_constant_%s.npz" % (sfx, i))
 
-    def save_params(self, sfx):
+    def save_params(self, sfx, compress=True):
         for i in range(len(self.funcs)):
-            self.funcs[i].save_params("%s_interface_%s" % (sfx, i))
+            self.funcs[i].save_params("%s_interface_%s" % (sfx, i), compress)
         for i in range(len(self.consts)):
-            self.consts[i].save_params("%s_constant_%s" % (sfx, i))
+            self.consts[i].save_params("%s_constant_%s" % (sfx, i), compress)
 
 
 class ProbDataType():

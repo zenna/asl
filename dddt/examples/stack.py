@@ -130,7 +130,8 @@ def load_train_save(options, adt, pbt, sfx, save_dir):
 
     if options['train'] is True:
         train(adt, pbt, num_epochs=options['num_epochs'],
-              sfx=sfx, save_dir=save_dir, save_every=options['save_every'])
+              sfx=sfx, save_dir=save_dir, save_every=options['save_every'],
+              compress=options['compress'])
 
 def main(argv):
     # Args
@@ -149,6 +150,7 @@ def main(argv):
     cust_options['height'] = (int, 28)
     cust_options['num_epochs'] = (int, 100)
     cust_options['save_every'] = (int, 100)
+    cust_options['compress'] = (False,)
     cust_options['compile_fns'] = (True,)
     cust_options['save_params'] = (True,)
     cust_options['train'] = (True,)

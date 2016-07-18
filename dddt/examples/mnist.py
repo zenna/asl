@@ -29,7 +29,7 @@ def load_dataset():
         # The inputs come as bytes, we convert them to float32 in range [0,1].
         # (Actually to range [0, 255/256], for compatibility to the version
         # provided at http://deeplearning.net/data/mnist/mnist.pkl.gz.)
-        return data / np.float32(256)
+        return data / np.float32(255)
 
     def load_mnist_labels(filename):
         if not os.path.exists(filename):
