@@ -80,7 +80,7 @@ local function stack_spec()
     local pop_stack
     --
     for i = 1, nitems do
-      dbg()
+      -- dbg()
       stack = push:call({stack, items[i]})[1]
       -- print("STACKSUM", torch.sum(stack).value)
       pop_stack = stack
@@ -112,13 +112,8 @@ local function stack(shapes, dtypes, templates, template_args)
 end
 
 -- Generators
-local function gen_gen(batch_size, cuda, nitems)
-  -- local trainData = require('./get_mnist.lua')()
-  local trainData = t.load('./mnist/train.t7')
-  local data = trainData.data:type(t.Tensor():type())
-  data:mul(1/data:max())
-  dbg()
-  local item_coroutine = dddt.generators.infinite_minibatches(data:view(-1,1,28,28), batch_size,  true)
+local function gen_gen(batch_size, cuda, nitems, data)
+  local item_coroutine = dddt.generators.infinite_minibatches(data, batch_size,  true)
   return function()
     local items = {}
     for i = 1, nitems do
@@ -149,7 +144,7 @@ local function main()
   cmd:option('-verbose',1,'set to 0 to ONLY print the sampled text, no diagnostics')
 
   -- Stack specific
-  cmd:option('-nitems',3,'Number of items to train stack on')
+  cmd:option('-nitems',2,'Number of items to train stack on')
 
   local opt = cmd:parse(arg)
   local cmd = t.CmdLine()
@@ -168,7 +163,7 @@ local function main()
   print("Template Args:", template_kwargs)
 
   local conv_res_net = dddt.templates.conv_res_net
-  local shapes = {Item=util.shape({1, 28, 28}), Stack=util.shape({1, 28, 28})}
+  local shapes = {Item=util.shape({1, 32, 32}), Stack=util.shape({1, 32, 32})}
   local dtypes = {Item=t.getdefaulttensortype(), Stack=t.getdefaulttensortype()}
   local templates = {push=conv_res_net.gen_conv_res_net,
                      pop=conv_res_net.gen_conv_res_net}
@@ -177,8 +172,8 @@ local function main()
   local adt, spec, constrained_types, param_funcs, interface_params = stack(shapes, dtypes, templates, template_args)
 
   -- Generator
-  local generator = gen_gen(opt.batch_size, opt.cuda, opt.nitems)
-
+  local data = require("get_mnist")()
+  local generator = gen_gen(opt.batch_size, opt.cuda, opt.nitems, data)
   -- Constants: Generate constant params
   local constant_params = {empty_stack=constrained_types['Stack']:sample(t.rand, opt.cuda)}
 
@@ -186,21 +181,21 @@ local function main()
   local all_params = util.update(constant_params, interface_params)
 
   -- load data
-  local npy4th = require 'npy4th'
-  local prefix = "/home/zenna/data/1467078183.7549355block_size_1__nblocks_1__nfilters_24__adt_stack__/epoch_10_run_0loss_0.187983"
-  local push_int = npy4th.loadnpz(prefix .. "_interface_0.npz")
-  local p = {{push_int.arr_0:cuda(), t.zeros(24):cuda()},
-             {push_int.arr_1:cuda(), push_int.arr_2:cuda()},
-             {push_int.arr_5:cuda(), t.zeros(1):cuda()},
-             {push_int.arr_6:cuda(), push_int.arr_7:cuda()}}
-  local pop_int = npy4th.loadnpz(prefix .. "_interface_1.npz")
-  local q = {{pop_int.arr_0:cuda(), t.zeros(24):cuda()},
-             {pop_int.arr_1:cuda(), pop_int.arr_2:cuda()},
-             {pop_int.arr_5:cuda(), t.zeros(2):cuda()},
-             {pop_int.arr_6:cuda(), pop_int.arr_7:cuda()}}
-  local constant = npy4th.loadnpz(prefix .. "_constant_0.npz")
-  local e = constant.arr_0:view(1,28,28):cuda()
-  local all_params = {push=p, pop=q, empty_stack=e}
+  -- local npy4th = require 'npy4th'
+  -- local prefix = "/home/zenna/data/1467078183.7549355block_size_1__nblocks_1__nfilters_24__adt_stack__/epoch_10_run_0loss_0.187983"
+  -- local push_int = npy4th.loadnpz(prefix .. "_interface_0.npz")
+  -- local p = {{push_int.arr_0:cuda(), t.zeros(24):cuda()},
+  --            {push_int.arr_1:cuda(), push_int.arr_2:cuda()},
+  --            {push_int.arr_5:cuda(), t.zeros(1):cuda()},
+  --            {push_int.arr_6:cuda(), push_int.arr_7:cuda()}}
+  -- local pop_int = npy4th.loadnpz(prefix .. "_interface_1.npz")
+  -- local q = {{pop_int.arr_0:cuda(), t.zeros(24):cuda()},
+  --            {pop_int.arr_1:cuda(), pop_int.arr_2:cuda()},
+  --            {pop_int.arr_5:cuda(), t.zeros(2):cuda()},
+  --            {pop_int.arr_6:cuda(), pop_int.arr_7:cuda()}}
+  -- local constant = npy4th.loadnpz(prefix .. "_constant_0.npz")
+  -- local e = constant.arr_0:view(1,28,28):cuda()
+  -- local all_params = {push=p, pop=q, empty_stack=e}
   train.train(param_funcs, spec.axiom, all_params, adt.constants, generator, opt)
 end
 
