@@ -36,7 +36,7 @@ def stack_adt(train_data, options, stack_shape=(1, 28, 28), push_args={},
     forallvars = items
 
     generators = [infinite_batches(train_data, batch_size, shuffle=True)
-                      for i in range(nitems)]
+                  for i in range(nitems)]
 
     # Axioms
     axioms = []
@@ -54,23 +54,9 @@ def stack_adt(train_data, options, stack_shape=(1, 28, 28), push_args={},
     stack_adt = AbstractDataType(funcs, consts, forallvars, axioms,
                                  name='stack')
     stack_pdt = ProbDataType(stack_adt, train_fn, call_fns,
-                               generators, gen_to_inputs, train_outs)
+                             generators, gen_to_inputs, train_outs)
     return stack_adt, stack_pdt
 
-# def stack_pdt(adt, options):
-#     # Generators
-#     train_fn, call_fns = compile_fns(adt.funcs, adt.consts, adt.forallvars,
-#                                      adt.axioms, adt.train_outs, options)
-#     push, pop = call_fns
-#     generators = [infinite_batches(train_data, batch_size, shuffle=True)
-#                   for i in range(nitems)]
-#
-#     train_fn, call_fns = compile_fns(funcs, consts, forallvars, axioms,
-#                                      train_outs, options)
-#
-#     stack_pdt = ProbDataType(stack_adt, train_fn, call_fns, generators,
-#                              gen_to_inputs, train_outs)
-#     return stack_pdt, stack_pdt
 
 # Validation
 def validate_what(data, batch_size, nitems, es, push, pop):
@@ -90,10 +76,6 @@ def validate_what(data, batch_size, nitems, es, push, pop):
             losses.append(loss)
     print(losses)
 
-def whitenoise_trick():
-    new_img = floatX(np.array(np.random.rand(1,1,28,28)*2**8, dtype='int'))/256
-    for i in range(1000):
-        loss, stack, img, new_stack, new_img = validate_stack(new_img, X_train, push, pop, 0, 512)
 
 def stack_unstack(n, stack, offset=0):
     lb = 0 + offset
@@ -113,9 +95,6 @@ def stack_unstack(n, stack, offset=0):
         imgs.append(old_img)
 
     return stacks + imgs
-
-def whitenoise(batch_size):
-    return floatX(np.array(np.random.rand(batch_size,1,28,28)*2**8, dtype='int'))/256
 
 def load_train_save(options, adt, pbt, sfx, save_dir):
     options_path = os.path.join(save_dir, "options")

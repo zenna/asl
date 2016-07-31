@@ -3,6 +3,7 @@ import numpy as np
 from dddt.templates.common import *
 import theano
 import lasagne
+import numpy as np
 
 from lasagne.layers import InputLayer
 from lasagne.layers import ReshapeLayer
@@ -23,8 +24,6 @@ if theano.sandbox.cuda.dnn.dnn_available():
 else:
     from lasagne.layers import Conv2DLayer as ConvLayer
 
-
-import numpy as np
 
 def conv_res_net(*inputs, **kwargs):
     """A residual convolutional network of n inputs and m outputs."""

@@ -64,9 +64,9 @@ class Interface():
         #                'batch_norm_use_averages' : True}
         output_args = {'deterministic': True}
         outputs, params = template(*self.inputs, output_args=output_args,
-                                     params=params, inp_shapes=self.inp_shapes,
-                                     out_shapes=self.out_shapes,
-                                     **self.template_kwargs)
+                                   params=params, inp_shapes=self.inp_shapes,
+                                   out_shapes=self.out_shapes,
+                                   **self.template_kwargs)
         params.lock()
         self.params = params
         self.outputs = outputs
@@ -74,10 +74,13 @@ class Interface():
     def __call__(self, *raw_args):
         args = [arg.input_var if hasattr(arg, 'input_var') else arg for arg in raw_args]
         print("Calling", args)
-        # shapes = [type.get_shape(add_batch=True) for type in self.lhs]
         # output_args = {'batch_norm_update_averages' : True, 'batch_norm_use_averages' : False}
         output_args = {'deterministic': True}
-        outputs, params = self.template(*args, output_args = output_args, params = self.params, inp_shapes = self.inp_shapes, out_shapes = self.out_shapes, **self.template_kwargs)
+        outputs, params = self.template(*args, output_args=output_args,
+                                        params=self.params,
+                                        inp_shapes=self.inp_shapes,
+                                        out_shapes=self.out_shapes,
+                                        **self.template_kwargs)
         return outputs
 
     def get_params(self, **tags):
@@ -85,7 +88,7 @@ class Interface():
 
     def load_params(self, param_values):
         params = self.params.get_params()
-        assert len(param_values) == len(params), "Tried to load invalid param file"
+        assert len(param_values) == len(params), "Invalid param file"
         for i in range(len(params)):
             params[i].set_value(param_values[i])
 

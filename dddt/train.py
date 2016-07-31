@@ -1,4 +1,5 @@
 import lasagne
+from lasagne.utils import floatX
 from theano import function
 import time
 from lasagne.updates import *
@@ -18,12 +19,11 @@ def get_updates(loss, params, options):
     print("Param Sizes", [p.get_value().shape for p in params])
     print("Before Set Means", [p.get_value().mean() for p in params])
     # debug set all to uniform
-    from lasagne.utils import floatX
-    # [p.set_value(floatX(np.random.rand(*(p.get_value().shape)))) for p in params]
     print("Before Set Means", [p.get_value().mean() for p in params])
 
     if options['update'] == 'momentum':
-        updates = momentum(loss, params, learning_rate=options['learning_rate'],
+        updates = momentum(loss, params,
+                           learning_rate=options['learning_rate'],
                            momentum=options['momentum'])
     elif options['update'] == 'adam':
         updates = adam(loss, params, learning_rate=options['learning_rate'])

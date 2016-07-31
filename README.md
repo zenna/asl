@@ -1,6 +1,8 @@
 # Data Driven Data Structures
 
-DDDT is a framework for synthesizing approximate data strucftures from specification.
+DDDT is a framework for synthesizing approximate data structures from specification.
+
+There is currently a Python (theano) and Lua (Torch) implementation
 
 ### Usage
 
