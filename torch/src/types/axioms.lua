@@ -2,6 +2,8 @@ local util = require "dddt.util"
 local ConcreteFunc = require("dddt.types.concretefunc").ConcreteFunc
 local distances = require("dddt.distances")
 local mse = distances.mse
+local autograd = require("autograd")
+local mae = autograd.nn.AbsCriterion()
 
 local module = {}
 -- Helpers
@@ -33,11 +35,10 @@ local function add(x, y) return x + y end
 -- an object and it maps "push(randvar)"
 
 -- (Set of) Equational Axiom: a1 = b2, a2 = b2
-local autograd = require("autograd")
-local mae = autograd.nn.AbsCriterion()
+
 
 function module.eq_axiom(lhs, rhs)
-  local dists = util.mapn(mae, lhs, rhs)
+  local dists = util.mapn(mse, lhs, rhs)
   -- print(util.extract('value', dists))
   -- dbg()
   return reduce(add, dists)/#dists

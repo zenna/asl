@@ -32,8 +32,6 @@ function common.param_str(id, shape)
   return "%s_%s" % {id, util.tostring(shape)}
 end
 
-
-
 local function axes_f(f, tensor, axes)
   local out = tensor
   for i, axis in ipairs(axes) do

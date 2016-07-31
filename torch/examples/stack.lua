@@ -86,9 +86,9 @@ local function stack_spec()
       pop_stack = stack
       for j = i, 1, -1 do
         pop_stack, pop_item = unpack(pop:call({pop_stack}))
-        local axiom = torch.sum(pop_item) - torch.sum(items[j])
-        axiom = axiom * axiom
-        -- local axiom = eq_axiom({pop_item}, {items[j]})
+        -- local axiom = torch.sum(pop_item) - torch.sum(items[j])
+        -- axiom = axiom * axiom
+        local axiom = eq_axiom({pop_item}, {items[j]})
         local k = i - j + 1
         print("SUMS: lhs:%s, rhs:%s" % {value(pop_item):sum(), value(items[j]):sum()})
         print("%sth popped = %sth added, loss: %s" % {k, j, value(axiom)})
@@ -146,19 +146,18 @@ local function main()
   -- Stack specific
   cmd:option('-nitems',2,'Number of items to train stack on')
 
-  local opt = cmd:parse(arg)
-  local cmd = t.CmdLine()
-  -- optional parameters
+  -- Tempalte specific
   cmd:option('-seed',123,'random number generator\'s seed')
   cmd:option('-activation','ReLU','Activation')
   cmd:option('-kernelSize',3,'Size of kernel for convnet ')
   cmd:option('-pooling',0,'pooling')
-  cmd:option('-batchNormalization',true,'Use batch normalization')
+  cmd:option('-batchNormalization',false,'Use batch normalization')
   cmd:option('-hiddenFeatures',{24},'Hidden features')
   cmd:text()
-
-  local template_kwargs = cmd:parse(arg)
-  template_kwargs['cuda'] = opt.cuda
+  local opt = cmd:parse(arg)
+  local template_keys = {"seed", "activation", "kernelSize", "pooling", "cuda",
+                         "batchNormalization", "hiddenFeatures"}
+  local template_kwargs = util.restrict(template_keys, opt)
   print("Options:", opt)
   print("Template Args:", template_kwargs)
 

@@ -213,6 +213,18 @@ function util.extract(k, xs)
   return util.map(function(x) return x[k] end, xs)
 end
 
+-- Restrict the domain of a table xs, to only those keys ks
+function util.restrict(ks, xs)
+  local xs2 = {}
+  for i, v in ipairs(ks) do
+    local value = xs[v]
+    if value ~= nil then
+      xs2[v] = value
+    end
+  end
+  return xs2
+end
+
 -- Table
 function util.val_to_str ( v )
   if "string" == type( v ) then
