@@ -176,6 +176,7 @@ def get_filepaths(directory):
 
     return file_paths  # Self-explanatory.
 
+
 def handle_args(argv, cust_opts):
     custom_long_opts = ["%s=" % k for k in cust_opts.keys()]
     cust_double_dash = ["--%s" % k for k in cust_opts.keys()]

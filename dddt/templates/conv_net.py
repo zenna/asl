@@ -24,7 +24,6 @@ if theano.sandbox.cuda.dnn.dnn_available():
 else:
     from lasagne.layers import Conv2DLayer as ConvLayer
 
-
 def conv_res_net(*inputs, **kwargs):
     """A residual convolutional network of n inputs and m outputs."""
     inp_shapes = kwargs['inp_shapes']
@@ -109,3 +108,14 @@ def conv_res_net(*inputs, **kwargs):
     params.add_tagged_params(all_params)
     params.check(lasagne.layers.get_all_params(prev_layer))
     return outputs, params
+
+
+def conv_res_net_kwargs():
+    cust_options = {}
+    cust_options['train'] = (True,)
+    cust_options['nblocks'] = (int, 1)
+    cust_options['block_size'] = (int, 2)
+    cust_options['batch_size'] = (int, 512)
+    cust_options['nfilters'] = (int, 24)
+    cust_options['layer_width'] = (int, 50)
+    return cust_options

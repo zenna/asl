@@ -6,6 +6,7 @@ from dddt.train import *
 from dddt.common import *
 from dddt.io import *
 from dddt.types import *
+from dddt.templates.conv_net import *
 
 # theano.config.optimizer = 'None'
 theano.config.optimizer = 'fast_compile'
@@ -112,6 +113,7 @@ def load_train_save(options, adt, pbt, sfx, save_dir):
               sfx=sfx, save_dir=save_dir, save_every=options['save_every'],
               compress=options['compress'])
 
+
 def main(argv):
     # Args
     global options
@@ -132,14 +134,9 @@ def main(argv):
     cust_options['compress'] = (False,)
     cust_options['compile_fns'] = (True,)
     cust_options['save_params'] = (True,)
-    cust_options['train'] = (True,)
-    cust_options['nblocks'] = (int, 1)
-    cust_options['block_size'] = (int, 2)
-    cust_options['batch_size'] = (int, 512)
-    cust_options['nfilters'] = (int, 24)
-    cust_options['layer_width'] = (int, 50)
     cust_options['adt'] = (str, 'stack')
     cust_options['template'] = (str, 'res_net')
+    cust_options.update(conv_res_net_kwargs())
     options = handle_args(argv, cust_options)
 
     X_train, y_train, X_val, y_val, X_test, y_test = load_dataset()
@@ -149,7 +146,6 @@ def main(argv):
     adt, pdt = stack_adt(X_train, options, push_args=options,
                     nitems=options['nitems'], pop_args=options,
                     batch_size=options['batch_size'])
-    # pdt = stack_pdt(adt, options)
 
     save_dir = mk_dir(sfx)
     load_train_save(options, adt, pdt, sfx, save_dir)

@@ -14,5 +14,6 @@ ipython -- dddt/examples/stack.py --template=conv_net --nblocks=1 --block_size=1
 Torch stack example:
 
 ```
-th examples/stack.py --template=conv_net --nblocks=1 --block_size=1 -u adam -l 0.01 --nitems=2
+th torch/examples/stack.lua -nitems 2 -batch_size 512 -learning_rate 0.0001 -num_epochs 100000
+
 ```
