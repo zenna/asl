@@ -3,7 +3,6 @@ import numpy as np
 from dddt.templates.common import *
 import theano
 import lasagne
-import numpy as np
 
 from lasagne.layers import InputLayer
 from lasagne.layers import ReshapeLayer
