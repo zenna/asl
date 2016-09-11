@@ -1,26 +1,3 @@
-# def stack_example(train_data, options, stack_shape = (100,), item_shape = (28*28,), batch_sizes = (256, 256)):
-#     Stack = Type(stack_shape)
-#     Item = Type(item_shape)
-#     push = Interface([Stack, Item],[Stack], res_net, layer_width=100)
-#     pop = Interface([Stack],[Stack, Item], res_net, layer_width=884)
-#     stack1 = ForAllVar(Stack)
-#     item1 = ForAllVar(Item)
-#     global axiom1
-#     generators = [infinite_samples(np.random.rand, batch_sizes[0], stack_shape),
-#                   infinite_minibatches(train_data, batch_sizes[1], True)]
-#
-#     # Axioms
-#     (pushed_stack,) = push(stack1.input_var, item1.input_var)
-#     (popped_stack, popped_item) = pop(pushed_stack)
-#
-#     axiom1 = Axiom((popped_stack, popped_item), (stack1.input_var, item1.input_var))
-#     axiom2 = BoundAxiom(pushed_stack)
-#     axiom3 = BoundAxiom(popped_stack)
-#     axioms = [axiom1, axiom2, axiom3]
-#     train_fn, call_fns = compile_fns([push, pop], [stack1, item1], axioms, options)
-#     train(train_fn, generators)
-
-
 def binary_tree(train_data, binary_tree_shape = (500,), item_shape = (28*28,),  batch_size = 256):
     BinTree = Type(binary_tree_shape)
     Item = Type(item_shape)
