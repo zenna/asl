@@ -36,6 +36,7 @@ def res_net(*inputs, **kwargs):
   ninputs = len(inp_shapes)
   noutputs = len(out_shapes)
 
+  assert False "I'm calculating input_width wrongly, asserting here because i got other things to fix right now. Missing dimensions other than first one after batch"
   input_width = np.sum([in_shape[1] for in_shape in inp_shapes])
   flat_output_shapes = [np.prod(out_shape[1:]) for out_shape in out_shapes]
   output_width = np.sum(flat_output_shapes)
