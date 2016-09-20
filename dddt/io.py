@@ -6,7 +6,6 @@ import os
 import scipy.ndimage
 import csv
 import time
-from theano import tensor as T
 
 ## Primitive Functions
 ## ------------------
@@ -117,12 +116,20 @@ def iterate_batches(inputs, batchsize, shuffle=False):
         yield inputs[excerpt]
 
 
+# def repeat_to_batch(x, batch_size, tnp):
+#     return tnp.repeat(x, batch_size, axis=0)
 
-
-
-def repeat_to_batch(x, batch_size, tnp=T):
-    return tnp.repeat(x, batch_size, axis=0)
-
+def repeat_to_batch(x, batch_size):
+    """
+    Tile the first dimension to a batch_size
+    x :: tf.Tensor (1, d2, d3, ..., dn) -> tf.Tensor (batch_size, d2, d3, ..., dn)
+    """
+    import tensorflow as tf
+    shape = tf.shape(x)
+    rnk = tf.rank(x)
+    tileshp = tf.ones([rnk - 1], dtype=tf.int32)
+    tileshpfinal = tf.concat(0, [[batch_size], tileshp])
+    return tf.tile(x, tileshpfinal)
 
 # Dict Functions
 def stringy(ls):

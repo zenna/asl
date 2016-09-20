@@ -1,8 +1,5 @@
-import lasagne
-from lasagne.utils import floatX
-from theano import function
+## Training for tensorflow
 import time
-from lasagne.updates import *
 import os
 import numpy as np
 

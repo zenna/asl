@@ -1,16 +1,14 @@
-import theano
 from dddt import *
 from mnist import *
 # from ig.util import *
-from dddt.train import *
+from dddt.train_tf import *
 from dddt.common import *
 from dddt.io import *
 from dddt.types import *
 from dddt.templates.conv_net import *
 
 # theano.config.optimizer = 'None'
-theano.config.optimizer = 'fast_compile'
-
+# theano.config.optimizer = 'fast_compile'
 
 def stack_adt(train_data, options, stack_shape=(1, 28, 28), push_args={},
               pop_args={}, item_shape=(1, 28, 28), batch_size=512, nitems=3):
