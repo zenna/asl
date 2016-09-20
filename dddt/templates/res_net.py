@@ -36,10 +36,18 @@ def res_net(*inputs, **kwargs):
     ninputs = len(inp_shapes)
     noutputs = len(out_shapes)
 
+<<<<<<< HEAD
+  assert False "I'm calculating input_width wrongly, asserting here because i got other things to fix right now. Missing dimensions other than first one after batch"
+  input_width = np.sum([in_shape[1] for in_shape in inp_shapes])
+  flat_output_shapes = [np.prod(out_shape[1:]) for out_shape in out_shapes]
+  output_width = np.sum(flat_output_shapes)
+  print("Building resnet with: %s residual blocks of size %s inner width: %s from: %s inputs to %s outputs" %
+=======
     input_width = np.sum([in_shape[1] for in_shape in inp_shapes])
     flat_output_shapes = [np.prod(out_shape[1:]) for out_shape in out_shapes]
     output_width = np.sum(flat_output_shapes)
     print("Building resnet with: %s residual blocks of size %s inner width: %s from: %s inputs to %s outputs" %
+>>>>>>> eb66e3be55f5b67c1f0a66edd5ec36370d708d72
         (nblocks, block_size, layer_width, input_width, output_width))
     input_layers = [InputLayer(inp_shapes[i], input_var = inputs[i]) for i in range(len(inputs))]
 
