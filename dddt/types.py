@@ -3,17 +3,18 @@ from __future__ import print_function
 from dddt.templates import *
 from dddt.distances import *
 import time
-import theano
-import lasagne
 import sys
 import numpy as np
 from io import *
+from dddt.config import floatX
+from dddt.distances import *
 
-import theano.tensor as T
-from lasagne.utils import floatX
-from theano import shared
-from theano import function
-from theano import config
+# import theano
+# import theano.tensor as T
+# import lasagne
+# from lasagne.utils import floatX
+# from theano common.variable theano import function
+# from theano import confi  g
 
 sys.setrecursionlimit(40000)
 
@@ -23,7 +24,7 @@ def typed_arg_name(type_name, arg_name):
 
 
 class Type():
-    def __init__(self, shape, dtype=T.config.floatX, name=''):
+    def __init__(self, shape, dtype=floatX, name=''):
         self.shape = shape
         self.dtype = dtype
         self.name = name
@@ -167,7 +168,7 @@ class BoundAxiom():
 
 
 class Const():
-    def __init__(self, type, spec=lasagne.init.GlorotUniform(), name='C'):
+    def __init__(self, type, spec, name='C'):
         self.type = type
         self.shape = type.get_shape(add_batch=True, batch_size=1)
         arr = spec(self.shape)
@@ -175,8 +176,8 @@ class Const():
         assert arr.shape == self.shape
         broadcastable = (True,) + (False,) * (len(self.shape) - 1)
         # broadcastable = None
-        self.input_var = theano.shared(arr, name=name,
-                                       broadcastable=broadcastable)
+        self.input_var = common.variable(arr, name=name,
+                                         broadcastable=broadcastable)
 
     def get_params(self, **tags):
         return [self.input_var]
