@@ -25,7 +25,7 @@ def typed_arg_name(type_name, arg_name):
 
 
 class Type():
-    def __init__(self, shape, dtype=floatX, name=''):
+    def __init__(self, shape, name, dtype=floatX):
         self.shape = shape
         self.dtype = dtype
         self.name = name
@@ -37,10 +37,10 @@ class Type():
         if add_batch:
             ndims += 1
         broadcastable = (False,)*ndims
-        tensor = placeholder(dtype=self.dtype, ndim=ndims, name=name)
+        tensor = placeholder(dtype=self.dtype,
+                             shape=self.get_shape(add_batch=True),
+                             ndim=ndims, name=name)
         return tensor
-        # return T.TensorType(dtype=
-        #                     broadcastable=(False,)*ndims)(name)
 
     def tensor_tf(self, name='', add_batch=False):
         tensor_name = typed_arg_name(self.name, name)
@@ -52,25 +52,25 @@ class Type():
         else:
             return self.shape
 
-
 class Interface():
-    def __init__(self, lhs, rhs, name='', **template_kwargs):
+    def __init__(self, lhs, rhs, name, **template_kwargs):
+        self.name = name
         self.lhs = lhs
         self.rhs = rhs
         self.template = template = template_kwargs['template']
         self.template_kwargs = template_kwargs
-        self.inputs = [type.tensor(add_batch=True) for type in lhs]
-        print(self.inputs[0].ndim)
+        self.inputs = [type.tensor(add_batch=True, name=self.input_name(type, i))
+                       for i, type in enumerate(lhs)]
+        # print(self.inputs[0].ndim)
         params = Params()
         self.inp_shapes = [type.get_shape(add_batch=True) for type in lhs]
         self.out_shapes = [type.get_shape(add_batch=True) for type in rhs]
-        self.name = name
         # output_args = {'batch_norm_update_averages' : True,
         #                'batch_norm_use_averages' : True}
         output_args = {'deterministic': True}
-        outputs, params = template(*self.inputs, output_args=output_args,
+        outputs, params = template(self.inputs, out_shapes=self.out_shapes,
+                                   output_args=output_args,
                                    params=params, inp_shapes=self.inp_shapes,
-                                   out_shapes=self.out_shapes,
                                    **self.template_kwargs)
         params.lock()
         self.params = params
@@ -87,6 +87,12 @@ class Interface():
                                         out_shapes=self.out_shapes,
                                         **self.template_kwargs)
         return outputs
+
+    def input_name(self, type, input_id):
+        """
+        push_0_Stack
+        """
+        return "%s-%s-%s" % (self.name, type.name, input_id)
 
     def get_params(self, **tags):
         return self.params.get_params(**tags)

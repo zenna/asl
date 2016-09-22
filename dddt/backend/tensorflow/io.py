@@ -1,6 +1,7 @@
-import dddt.config._FLOATX
+import tensorflow as tf
+from dddt.config import floatX
 
-def placeholder(shape=None, ndim=None, dtype=_FLOATX, sparse=False, name=None):
+def placeholder(shape=None, ndim=None, dtype=floatX, sparse=False, name=None):
     '''Instantiates a placeholder.
     # Arguments
         shape: shape of the placeholder

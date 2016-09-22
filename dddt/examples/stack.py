@@ -12,8 +12,8 @@ from dddt.types import *
 def stack_adt(train_data, options, stack_shape=(1, 28, 28), push_args={},
               pop_args={}, item_shape=(1, 28, 28), batch_size=512, nitems=3):
     # Types
-    Stack = Type(stack_shape)
-    Item = Type(item_shape)
+    Stack = Type(stack_shape, 'Stack')
+    Item = Type(item_shape, 'Item')
 
     # Interface
     push = Interface([Stack, Item], [Stack], 'push', **push_args)
