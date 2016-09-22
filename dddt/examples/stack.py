@@ -5,7 +5,6 @@ from dddt.train_tf import *
 from dddt.common import *
 from dddt.io import *
 from dddt.types import *
-from dddt.templates.conv_net import *
 
 # theano.config.optimizer = 'None'
 # theano.config.optimizer = 'fast_compile'
@@ -134,7 +133,7 @@ def main(argv):
     cust_options['save_params'] = (True,)
     cust_options['adt'] = (str, 'stack')
     cust_options['template'] = (str, 'res_net')
-    cust_options.update(conv_res_net_kwargs())
+    cust_options.update(default_template_kwargs('res_net'))
     options = handle_args(argv, cust_options)
 
     X_train, y_train, X_val, y_val, X_test, y_test = load_dataset()

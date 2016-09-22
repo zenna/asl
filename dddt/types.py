@@ -6,6 +6,7 @@ import time
 import sys
 import numpy as np
 from io import *
+from dddt.io import placeholder
 from dddt.config import floatX
 from dddt.distances import *
 
@@ -35,8 +36,11 @@ class Type():
         ndims = len(self.shape)
         if add_batch:
             ndims += 1
-        return T.TensorType(dtype=self.dtype,
-                            broadcastable=(False,)*ndims)(name)
+        broadcastable = (False,)*ndims
+        tensor = placeholder(dtype=self.dtype, ndim=ndims, name=name)
+        return tensor
+        # return T.TensorType(dtype=
+        #                     broadcastable=(False,)*ndims)(name)
 
     def tensor_tf(self, name='', add_batch=False):
         tensor_name = typed_arg_name(self.name, name)

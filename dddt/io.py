@@ -10,7 +10,7 @@ import dddt.config
 
 ## Backend specific
 if dddt.config.backend == 'tensorflow':
-    import dddt.backend.tensorflow.io
+    from dddt.backend.tensorflow.io import *
 elif dddt.config.backend == 'theano':
     import dddt.backend.theano.io
 
@@ -176,9 +176,32 @@ def get_filepaths(directory):
     return file_paths  # Self-explanatory.
 
 
+def default_kwargs():
+    """Default kwargs"""
+    options = {}
+    options['learning_rate'] = (float, 0.1)
+    options['update'] = (str, 'momentum')
+    options['params_file'] = (str, 28)
+    options['momentum'] = (float, 0.9)
+    options['description'] = (str, None)
+    options['template'] = (str, None)
+    options['save_every'] = (int, 100)
+    options['compress'] = (False,)
+    options['compile_fns'] = (True,)
+    options['save_params'] = (True,)
+    options['template'] = (str, 'res_net')
+
+
 def handle_args(argv, cust_opts):
+    """Handle getting options from command liner arguments"""
     custom_long_opts = ["%s=" % k for k in cust_opts.keys()]
     cust_double_dash = ["--%s" % k for k in cust_opts.keys()]
+
+    # Way to set default values
+    # some flags affect more than one thing
+    # some things need to set otherwise everything goes to shit
+    # some things need to be set if other things are set
+
     long_opts = ["params_file=", "learning_rate=", "momentum=", "update=",
                  "description=", "template="] + custom_long_opts
     options = {'params_file': '', 'learning_rate': 0.1, 'momentum': 0.9,

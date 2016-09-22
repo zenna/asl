@@ -1,3 +1,28 @@
+import dddt.config._FLOATX
+
+def placeholder(shape=None, ndim=None, dtype=_FLOATX, sparse=False, name=None):
+    '''Instantiates a placeholder.
+    # Arguments
+        shape: shape of the placeholder
+            (integer tuple, may include None entries).
+        ndim: number of axes of the tensor.
+            At least one of {`shape`, `ndim`} must be specified.
+            If both are specified, `shape` is used.
+        dtype: placeholder type.
+        name: optional name string for the placeholder.
+    # Returns
+        Placeholder tensor instance.
+    '''
+    if not shape:
+        if ndim:
+            shape = tuple([None for _ in range(ndim)])
+    if sparse:
+        tf_shape = tf.constant(np.array(list([0 for _ in range(len(shape))]), dtype=np.int64))
+        x = tf.sparse_placeholder(dtype, shape=tf_shape, name=name)
+    else:
+        x = tf.placeholder(dtype, shape=shape, name=name)
+    return x
+
 def variable(value, dtype, name=None):
     '''Instantiate a tensor variable.
     '''
