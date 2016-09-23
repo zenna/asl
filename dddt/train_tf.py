@@ -2,25 +2,20 @@
 import time
 import os
 import numpy as np
+import tensorflow as tf
 
 
-def get_updates(loss, params, options):
-    updates = {}
-    print("Params", params)
-    print("Param Sizes", [p.get_value().shape for p in params])
-    print("Before Set Means", [p.get_value().mean() for p in params])
-    # debug set all to uniform
-    print("Before Set Means", [p.get_value().mean() for p in params])
-
+def get_updates(loss, options):
     if options['update'] == 'momentum':
-        updates = momentum(loss, params,
+        optimizer = tf.train.MomentumOptimizer(loss, params,
                            learning_rate=options['learning_rate'],
                            momentum=options['momentum'])
     elif options['update'] == 'adam':
-        updates = adam(loss, params, learning_rate=options['learning_rate'])
+        optimizer = tf.train.AdamOptimizer(learning_rate=options['learning_rate'])
     elif options['update'] == 'rmsprop':
-        updates = rmsprop(loss, params, learning_rate=options['learning_rate'])
-    return updates
+        optimizer = tf.train.RMSPropOptimizer(learning_rate=options['learning_rate'])
+    update_step = optimizer.minimize(loss)
+    return optimizer, update_step
 
 
 def get_losses(axioms):
@@ -45,21 +40,26 @@ def get_params(funcs, options, **tags):
 def compile_fns(funcs, consts, forallvars, axioms, train_outs, options):
     print("Compiling training fn...")
     losses = get_losses(axioms)
-    func_params = get_params(funcs, options, trainable=True)
-    constant_params = get_params(consts, options)
-    params = func_params + constant_params
+    # func_params = get_params(funcs, options, trainable=True)
+    # constant_params = get_params(consts, options)
+    # params = func_params + constant_params
     loss = sum(losses)
     outputs = train_outs + losses + [loss]
-    updates = get_updates(loss, params, options)
-    train_fn = function([forallvar.input_var for forallvar in forallvars],
-                        outputs, updates=updates)
+    optimizer, update_step = get_updates(loss, options)
+    def train_fn(inputs, sess):
+        import pdb; pdb.set_trace()
+        return sess.run(outputs, feed_dict=inputs)
+
+    # train_fn = function([forallvar.input_var for forallvar in forallvars],
+    #                     outputs, updates=updates)
     # Compile the func for use
-    if options['compile_fns']:
-        print("Compiling func fns...")
-        call_fns = [func.compile() for func in funcs]
-    else:
-        call_fns = []
-    # FIXME Trainable=true, deterministic = true/false
+    # if options['compile_fns']:
+    #     print("Compiling func fns...")
+    #     call_fns = [func.compile() for func in funcs]
+    # else:
+    #     call_fns = []
+    # # FIXME Trainable=true, deterministic = true/false
+    call_fns = []
     return train_fn, call_fns
 
 
@@ -67,6 +67,7 @@ def train(adt, pdt, num_epochs=1000, summary_gap=100, save_every=10, sfx='',
           compress=False, save_dir="./"):
     """One epoch is one pass through the data set"""
     print("Starting training...")
+    sess = tf.Session()
     stats = {'loss_vars': [], 'loss_sums': []}
     for epoch in range(num_epochs):
         train_err = 0
@@ -78,7 +79,7 @@ def train(adt, pdt, num_epochs=1000, summary_gap=100, save_every=10, sfx='',
         for i in range(summary_gap):
             gens = [gen.send(train_outs) for gen in pdt.generators]
             inputs = pdt.gen_to_inputs(gens)
-            train_outs_losses = pdt.train_fn(*inputs)
+            train_outs_losses = pdt.train_fn(inputs, sess)
             train_outs = train_outs_losses[0:ntrain_outs]
             losses = train_outs_losses[ntrain_outs:]
             print("epoch: ", epoch, " i: ", i, "losses: ", losses)

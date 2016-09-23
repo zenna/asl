@@ -10,7 +10,8 @@ from dddt.types import *
 # theano.config.optimizer = 'fast_compile'
 
 def stack_adt(train_data, options, stack_shape=(1, 28, 28), push_args={},
-              pop_args={}, item_shape=(1, 28, 28), batch_size=512, nitems=3):
+              pop_args={}, empty_stack_args={}, item_shape=(1, 28, 28),
+              batch_size=512, nitems=3):
     # Types
     Stack = Type(stack_shape, 'Stack')
     Item = Type(item_shape, 'Item')
@@ -25,12 +26,12 @@ def stack_adt(train_data, options, stack_shape=(1, 28, 28), push_args={},
     gen_to_inputs = identity
 
     # Consts
-    empty_stack = Const(Stack)
+    empty_stack = Const(Stack, **empty_stack_args)
     consts = [empty_stack]
 
     # Vars
     # stack1 = ForAllVar(Stack)
-    items = [ForAllVar(Item) for i in range(nitems)]
+    items = [ForAllVar(Item, str(i)) for i in range(nitems)]
     forallvars = items
 
     generators = [infinite_batches(train_data, batch_size, shuffle=True)
@@ -122,26 +123,28 @@ def main(argv):
     global save_dir
     global sfx
 
-    cust_options = {}
-    cust_options['nitems'] = (int, 3)
-    cust_options['width'] = (int, 28)
-    cust_options['height'] = (int, 28)
-    cust_options['num_epochs'] = (int, 100)
-    cust_options['save_every'] = (int, 100)
-    cust_options['compress'] = (False,)
-    cust_options['compile_fns'] = (True,)
-    cust_options['save_params'] = (True,)
-    cust_options['adt'] = (str, 'stack')
-    cust_options['template'] = (str, 'res_net')
-    cust_options.update(default_template_kwargs('res_net'))
-    options = handle_args(argv, cust_options)
+    options = {}
+    options['nitems'] = (int, 3)
+    options['width'] = (int, 28)
+    options['height'] = (int, 28)
+    options['num_epochs'] = (int, 100)
+    options['save_every'] = (int, 100)
+    options['compress'] = (False,)
+    options['compile_fns'] = (True,)
+    options['save_params'] = (False,)
+    options['adt'] = (str, 'stack')
+    options['template'] = (str, 'res_net')
+    options.update(default_template_kwargs('res_net'))
+    options = handle_args(argv, options)
 
     X_train, y_train, X_val, y_val, X_test, y_test = load_dataset()
     sfx = gen_sfx_key(('adt', 'nblocks', 'block_size', 'nfilters'), options)
     options['template'] = parse_template(options['template'])
 
+    empty_stack_args = {'initializer': tf.random_uniform_initializer()}
     adt, pdt = stack_adt(X_train, options, push_args=options,
                     nitems=options['nitems'], pop_args=options,
+                    empty_stack_args=empty_stack_args,
                     batch_size=options['batch_size'])
 
     save_dir = mk_dir(sfx)

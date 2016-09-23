@@ -1,3 +1,4 @@
+import numpy as np
 import tensorflow as tf
 from dddt.config import floatX
 
@@ -24,15 +25,10 @@ def placeholder(shape=None, ndim=None, dtype=floatX, sparse=False, name=None):
         x = tf.placeholder(dtype, shape=shape, name=name)
     return x
 
-def variable(value, dtype, name=None):
-    '''Instantiate a tensor variable.
-    '''
-    if hasattr(value, 'tocoo'):
-        _assert_sparse_module()
-        return th_sparse_module.as_sparse_variable(value)
-    else:
-        value = np.asarray(value, dtype=dtype)
-        return theano.shared(value=value, name=name, strict=False)
+
+def variable(value, dtype, name=None, broadcastable=None):
+    """Instantiate a tensor variable."""
+    return tf.Variable(value, dtype=dtype, name=name)
 
 
 def repeat_to_batch(x, batch_size):

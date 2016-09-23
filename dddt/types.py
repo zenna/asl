@@ -30,7 +30,7 @@ class Type():
         self.dtype = dtype
         self.name = name
 
-    def tensor(self, name='', add_batch=False):
+    def tensor(self, name, add_batch=False):
         tensor_name = typed_arg_name(self.name, name)
         # Create a tensor for this shape
         ndims = len(self.shape)
@@ -61,18 +61,22 @@ class Interface():
         self.template_kwargs = template_kwargs
         self.inputs = [type.tensor(add_batch=True, name=self.input_name(type, i))
                        for i, type in enumerate(lhs)]
-        # print(self.inputs[0].ndim)
         params = Params()
         self.inp_shapes = [type.get_shape(add_batch=True) for type in lhs]
         self.out_shapes = [type.get_shape(add_batch=True) for type in rhs]
         # output_args = {'batch_norm_update_averages' : True,
         #                'batch_norm_use_averages' : True}
         output_args = {'deterministic': True}
-        outputs, params = template(self.inputs, out_shapes=self.out_shapes,
-                                   output_args=output_args,
-                                   params=params, inp_shapes=self.inp_shapes,
-                                   **self.template_kwargs)
-        params.lock()
+
+        with tf.variable_scope(self.name) as scope:
+            outputs, params = template(self.inputs,
+                                       inp_shapes=self.inp_shapes,
+                                       out_shapes=self.out_shapes,
+                                       output_args=output_args,
+                                       params=params,
+                                       **self.template_kwargs)
+            scope.reuse_variables()
+        # params.lock()
         self.params = params
         self.outputs = outputs
 
@@ -81,11 +85,14 @@ class Interface():
         print("Calling", args)
         # output_args = {'batch_norm_update_averages' : True, 'batch_norm_use_averages' : False}
         output_args = {'deterministic': True}
-        outputs, params = self.template(*args, output_args=output_args,
-                                        params=self.params,
-                                        inp_shapes=self.inp_shapes,
-                                        out_shapes=self.out_shapes,
-                                        **self.template_kwargs)
+        with tf.variable_scope(self.name) as scope:
+            scope.reuse_variables()
+            outputs, params = self.template(args,
+                                            inp_shapes=self.inp_shapes,
+                                            out_shapes=self.out_shapes,
+                                            output_args=output_args,
+                                            params=self.params,
+                                            **self.template_kwargs)
         return outputs
 
     def input_name(self, type, input_id):
@@ -127,9 +134,16 @@ class Interface():
 
 class ForAllVar():
     "Universally quantified variable"
-    def __init__(self, type):
+    def __init__(self, type, name):
         self.type = type
-        self.input_var = type.tensor(add_batch=True)
+        self.name = name
+        self.input_var = type.tensor(self.forallvar_name(), add_batch=True)
+
+    def forallvar_name(self):
+        """
+        0_Stack
+        """
+        return "%s-%s" % (self.name, self.type.name)
 
 
 class Axiom():
@@ -178,16 +192,15 @@ class BoundAxiom():
 
 
 class Const():
-    def __init__(self, type, spec, name='C'):
+    def __init__(self, type, initializer, name='C'):
         self.type = type
         self.shape = type.get_shape(add_batch=True, batch_size=1)
-        arr = spec(self.shape)
-        arr = floatX(arr)
-        assert arr.shape == self.shape
+        arr = initializer(self.shape)
+        # arr = floatX(arr)
+        # assert arr.shape == self.shape
         broadcastable = (True,) + (False,) * (len(self.shape) - 1)
-        # broadcastable = None
-        self.input_var = common.variable(arr, name=name,
-                                         broadcastable=broadcastable)
+        self.input_var = dddt.common.variable(arr, dtype=type.dtype, name=name,
+                                              broadcastable=broadcastable)
 
     def get_params(self, **tags):
         return [self.input_var]
