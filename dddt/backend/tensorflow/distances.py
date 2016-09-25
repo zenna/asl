@@ -13,4 +13,9 @@ def bound_loss(x, a, b):
 def mse(a, b):
     """Mean square error"""
     eps = 1e-9
-    return tf.reduce_mean(a - b)
+    return tf.reduce_mean(tf.square(a - b))
+
+def mae(a, b):
+    """Mean absolute error"""
+    eps = 1e-9
+    return tf.reduce_mean(tf.abs(a - b))

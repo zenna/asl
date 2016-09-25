@@ -6,18 +6,19 @@ from dddt.common import *
 from dddt.io import *
 from dddt.types import *
 
-# theano.config.optimizer = 'None'
-# theano.config.optimizer = 'fast_compile'
-
 def stack_adt(train_data, options, stack_shape=(1, 28, 28), push_args={},
               pop_args={}, empty_stack_args={}, item_shape=(1, 28, 28),
               batch_size=512, nitems=3):
-    # Types
+    """Construct a stack abstract data type"""
+    # Types - a Stack of Item
     Stack = Type(stack_shape, 'Stack')
     Item = Type(item_shape, 'Item')
 
-    # Interface
+    ## Interface
+
+    # Push an Item onto a Stack to create a new stack
     push = Interface([Stack, Item], [Stack], 'push', **push_args)
+    # Pop an Item from a stack, returning a new stack and the item
     pop = Interface([Stack], [Stack, Item], 'pop', **pop_args)
     funcs = [push, pop]
 
@@ -25,8 +26,9 @@ def stack_adt(train_data, options, stack_shape=(1, 28, 28), push_args={},
     train_outs = []
     gen_to_inputs = identity
 
-    # Consts
-    empty_stack = Const(Stack, **empty_stack_args)
+    ## Consts
+    # The empty stack is the stack with no items
+    empty_stack = Const(Stack, 'empty_stack', batch_size, **empty_stack_args)
     consts = [empty_stack]
 
     # Vars
@@ -39,8 +41,7 @@ def stack_adt(train_data, options, stack_shape=(1, 28, 28), push_args={},
 
     # Axioms
     axioms = []
-    batch_empty_stack = repeat_to_batch(empty_stack.input_var, batch_size)
-    stack = batch_empty_stack
+    stack = empty_stack.batch_input_var
     for i in range(nitems):
         (stack,) = push(stack, items[i].input_var)
         pop_stack = stack
@@ -141,12 +142,14 @@ def main(argv):
     sfx = gen_sfx_key(('adt', 'nblocks', 'block_size', 'nfilters'), options)
     options['template'] = parse_template(options['template'])
 
-    empty_stack_args = {'initializer': tf.random_uniform_initializer()}
+    empty_stack_args = {'initializer': tf.random_uniform_initializer}
     adt, pdt = stack_adt(X_train, options, push_args=options,
                     nitems=options['nitems'], pop_args=options,
                     empty_stack_args=empty_stack_args,
                     batch_size=options['batch_size'])
 
+    graph = tf.get_default_graph()
+    writer = tf.train.SummaryWriter('/home/zenna/repos/dddt/dddt/log', graph)
     save_dir = mk_dir(sfx)
     load_train_save(options, adt, pdt, sfx, save_dir)
     push, pop = pdt.call_fns

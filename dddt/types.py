@@ -9,6 +9,7 @@ from io import *
 from dddt.io import placeholder
 from dddt.config import floatX
 from dddt.distances import *
+from dddt.common import *
 
 # import theano
 # import theano.tensor as T
@@ -67,15 +68,15 @@ class Interface():
         # output_args = {'batch_norm_update_averages' : True,
         #                'batch_norm_use_averages' : True}
         output_args = {'deterministic': True}
-
-        with tf.variable_scope(self.name) as scope:
-            outputs, params = template(self.inputs,
-                                       inp_shapes=self.inp_shapes,
-                                       out_shapes=self.out_shapes,
-                                       output_args=output_args,
-                                       params=params,
-                                       **self.template_kwargs)
-            scope.reuse_variables()
+        with tf.name_scope(self.name):
+            with tf.variable_scope(self.name) as scope:
+                outputs, params = template(self.inputs,
+                                           inp_shapes=self.inp_shapes,
+                                           out_shapes=self.out_shapes,
+                                           output_args=output_args,
+                                           params=params,
+                                           **self.template_kwargs)
+                scope.reuse_variables()
         # params.lock()
         self.params = params
         self.outputs = outputs
@@ -85,14 +86,15 @@ class Interface():
         print("Calling", args)
         # output_args = {'batch_norm_update_averages' : True, 'batch_norm_use_averages' : False}
         output_args = {'deterministic': True}
-        with tf.variable_scope(self.name) as scope:
-            scope.reuse_variables()
-            outputs, params = self.template(args,
-                                            inp_shapes=self.inp_shapes,
-                                            out_shapes=self.out_shapes,
-                                            output_args=output_args,
-                                            params=self.params,
-                                            **self.template_kwargs)
+        with tf.name_scope(self.name):
+            with tf.variable_scope(self.name) as scope:
+                scope.reuse_variables()
+                outputs, params = self.template(args,
+                                                inp_shapes=self.inp_shapes,
+                                                out_shapes=self.out_shapes,
+                                                output_args=output_args,
+                                                params=self.params,
+                                                **self.template_kwargs)
         return outputs
 
     def input_name(self, type, input_id):
@@ -152,7 +154,7 @@ class Axiom():
         self.lhs = lhs
         self.rhs = rhs
 
-    def get_losses(self, dist=mse):
+    def get_losses(self, dist=mae):
         print("lhs", self.lhs)
         print("rhs", self.rhs)
         losses = [dist(self.lhs[i], self.rhs[i]) for i in range(len(self.lhs))]
@@ -172,7 +174,7 @@ class CondAxiom():
         self.alt_rhs = alt_rhs
         self.num_constraints = len(cond_lhs)
 
-    def get_losses(self, dist=mse):
+    def get_losses(self, dist=mae):
         losses = []
         for i in self.num_constraints:
             cond = dist(self.cond_lhs[i], self.cond_rhs)
@@ -192,15 +194,27 @@ class BoundAxiom():
 
 
 class Const():
-    def __init__(self, type, initializer, name='C'):
+    def __init__(self, type, name, batch_size, initializer, do_repeat_to_batch=True):
         self.type = type
         self.shape = type.get_shape(add_batch=True, batch_size=1)
-        arr = initializer(self.shape)
+        self.name = name
         # arr = floatX(arr)
         # assert arr.shape == self.shape
         broadcastable = (True,) + (False,) * (len(self.shape) - 1)
-        self.input_var = dddt.common.variable(arr, dtype=type.dtype, name=name,
-                                              broadcastable=broadcastable)
+        with tf.name_scope(self.const_name()):
+            arr = initializer()(self.shape)
+            self.input_var = dddt.common.variable(arr, dtype=type.dtype,
+                                             name=self.const_name(),
+                                             broadcastable=broadcastable)
+            if do_repeat_to_batch:
+                self.batch_input_var = repeat_to_batch(self.input_var, batch_size)
+
+    def const_name(self):
+        """
+        0_Stack
+        """
+        return "const-%s-%s" % (self.name, self.type.name)
+
 
     def get_params(self, **tags):
         return [self.input_var]
