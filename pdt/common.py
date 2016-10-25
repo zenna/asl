@@ -6,6 +6,7 @@ from tensortemplates.res_net import *
 # from pdt.templates.res_net import *
 # from pdt.templates.warp_conv_net import *
 
+
 def gen_sfx_key(keys, options):
     sfx_dict = {}
     for key in keys:
@@ -17,17 +18,15 @@ def gen_sfx_key(keys, options):
 
 def parse_template(template):
     if template == 'res_net':
-        return tt.res_net.res_net
+        return tt.res_net.template
     elif template == 'conv_net':
-        return conv_res_net
-    elif template == 'warp_conv_net':
-        return warp_conv_net
+        return tt.conv_res_net.template
     else:
         print("Invalid Template ", template)
         raise ValueError
 
 
-default_template_map = {'res_net': tt.res_net.res_net_kwargs}
+default_template_map = {'res_net': tt.res_net.kwargs}
 
 
 def default_template_kwargs(template):

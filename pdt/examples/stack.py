@@ -1,21 +1,22 @@
+"""Probabilistic Data Type for a Stack (FILO Queue)"""
 from pdt import *
-from mnist import *
+import mnist
 # from ig.util import *
 from pdt.train_tf import *
 from pdt.common import *
 from pdt.io import *
 from pdt.types import *
 
-def stack_adt(train_data, options, stack_shape=(1, 28, 28), push_args={},
-              pop_args={}, empty_stack_args={}, item_shape=(1, 28, 28),
-              batch_size=512, nitems=3):
+
+def gen_stack_adt(train_data, options, stack_shape=(1, 28, 28), push_args={},
+                  pop_args={}, empty_stack_args={}, item_shape=(1, 28, 28),
+                  batch_size=512, nitems=3):
     """Construct a stack abstract data type"""
     # Types - a Stack of Item
     Stack = Type(stack_shape, 'Stack')
     Item = Type(item_shape, 'Item')
 
-    ## Interface
-
+    # Interface
     # Push an Item onto a Stack to create a new stack
     push = Interface([Stack, Item], [Stack], 'push', **push_args)
     # Pop an Item from a stack, returning a new stack and the item
@@ -26,7 +27,7 @@ def stack_adt(train_data, options, stack_shape=(1, 28, 28), push_args={},
     train_outs = []
     gen_to_inputs = identity
 
-    ## Consts
+    # Consts
     # The empty stack is the stack with no items
     empty_stack = Const(Stack, 'empty_stack', batch_size, **empty_stack_args)
     consts = [empty_stack]
@@ -58,43 +59,44 @@ def stack_adt(train_data, options, stack_shape=(1, 28, 28), push_args={},
     return stack_adt, stack_pdt
 
 
-# Validation
-def validate_what(data, batch_size, nitems, es, push, pop):
-    datalen = data.shape[0]
-    es = np.repeat(es, batch_size, axis=0)
-    data_indcs = np.random.randint(0, datalen-batch_size, nitems)
-    items = [data[data_indcs[i]:data_indcs[i]+batch_size]
-             for i in range(nitems)]
-    losses = []
-    stack = es
-    for i in range(nitems):
-        (stack,) = push(stack, items[i])
-        pop_stack = stack
-        for j in range(i, -1, -1):
-            (pop_stack, pop_item) = pop(pop_stack)
-            loss = mse(pop_item, items[j], tnp=np)
-            losses.append(loss)
-    print(losses)
+# # Validation
+# def validate_what(data, batch_size, nitems, es, push, pop):
+#     datalen = data.shape[0]
+#     es = np.repeat(es, batch_size, axis=0)
+#     data_indcs = np.random.randint(0, datalen-batch_size, nitems)
+#     items = [data[data_indcs[i]:data_indcs[i]+batch_size]
+#              for i in range(nitems)]
+#     losses = []
+#     stack = es
+#     for i in range(nitems):
+#         (stack,) = push(stack, items[i])
+#         pop_stack = stack
+#         for j in range(i, -1, -1):
+#             (pop_stack, pop_item) = pop(pop_stack)
+#             loss = mse(pop_item, items[j], tnp=np)
+#             losses.append(loss)
+#     print(losses)
 
 
-def stack_unstack(n, stack, offset=0):
-    lb = 0 + offset
-    ub = 1 + offset
-    imgs = []
-    stacks = []
-    stacks.append(stack)
-    for i in range(n):
-        new_img = floatX(X_train[lb+i:ub+i])
-        imgs.append(new_img)
-        (stack,) = push(stack,new_img)
-        stacks.append(stack)
+# def stack_unstack(n, stack, offset=0):
+#     lb = 0 + offset
+#     ub = 1 + offset
+#     imgs = []
+#     stacks = []
+#     stacks.append(stack)
+#     for i in range(n):
+#         new_img = floatX(X_train[lb+i:ub+i])
+#         imgs.append(new_img)
+#         (stack,) = push(stack,new_img)
+#         stacks.append(stack)
+#
+#     for i in range(n):
+#         (stack, old_img) = pop(stack)
+#         stacks.append(stack)
+#         imgs.append(old_img)
+#
+#     return stacks + imgs
 
-    for i in range(n):
-        (stack, old_img) = pop(stack)
-        stacks.append(stack)
-        imgs.append(old_img)
-
-    return stacks + imgs
 
 def load_train_save(options, adt, pbt, sfx, save_dir):
     options_path = os.path.join(save_dir, "options")
@@ -114,46 +116,43 @@ def load_train_save(options, adt, pbt, sfx, save_dir):
 
 
 def main(argv):
-    # Args
-    global options
-    global test_files, train_files
-    global views, outputs, net
-    global push, pop
-    global X_train
-    global adt, pdt
-    global save_dir
-    global sfx
-
     options = {}
     options['nitems'] = (int, 3)
-    options['width'] = (int, 28)
-    options['height'] = (int, 28)
-    options['num_epochs'] = (int, 100)
-    options['save_every'] = (int, 100)
-    options['compress'] = (False,)
-    options['compile_fns'] = (True,)
-    options['save_params'] = (False,)
+    # options['width'] = (int, 28)
+    # options['height'] = (int, 28)
+    # options['num_epochs'] = (int, 100)
+    # options['save_every'] = (int, 100)
+    # options['compress'] = (False,)
+    # options['compile_fns'] = (True,)
+    # options['save_params'] = (False,)
     options['adt'] = (str, 'stack')
-    options['template'] = (str, 'res_net')
+    # options['template'] = (str, 'res_net')
+    # import pdb; pdb.set_trace()
+
+    options.update(default_kwargs())
     options.update(default_template_kwargs('res_net'))
     options = handle_args(argv, options)
 
-    X_train, y_train, X_val, y_val, X_test, y_test = load_dataset()
-    sfx = gen_sfx_key(('adt', 'nblocks', 'block_size', 'nfilters'), options)
+    mnist_data = mnist.load_dataset()
+    X_train = mnist_data[0]
+    sfx = gen_sfx_key(('adt',), options)
     options['template'] = parse_template(options['template'])
 
     empty_stack_args = {'initializer': tf.random_uniform_initializer}
-    adt, pdt = stack_adt(X_train, options, push_args=options,
-                    nitems=options['nitems'], pop_args=options,
-                    empty_stack_args=empty_stack_args,
-                    batch_size=options['batch_size'])
+    stack_adt, stack_pdt = gen_stack_adt(X_train,
+                                         options,
+                                         push_args=options,
+                                         nitems=options['nitems'],
+                                         pop_args=options,
+                                         empty_stack_args=empty_stack_args,
+                                         batch_size=options['batch_size'])
 
     graph = tf.get_default_graph()
-    writer = tf.train.SummaryWriter('/home/zenna/repos/pdt/pdt/log', graph)
+    tf.train.SummaryWriter('/home/zenna/repos/pdt/pdt/log', graph)
     save_dir = mk_dir(sfx)
-    load_train_save(options, adt, pdt, sfx, save_dir)
-    push, pop = pdt.call_fns
-    loss, stack, img, new_stack, new_img = validate_stack_img_rec(new_img, X_train, push, pop, 0, 1)
+    load_train_save(options, stack_adt, stack_pdt, sfx, save_dir)
+    # push, pop = stack_pdt.call_fns
+    # loss, stack, img, new_stack, new_img = validate_stack_img_rec(new_img, X_train, push, pop, 0, 1)
 
 
 if __name__ == "__main__":

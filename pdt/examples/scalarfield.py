@@ -1,4 +1,3 @@
-import theano
 import numpy as np
 
 from pdt import *
@@ -9,7 +8,6 @@ from pdt.common import *
 from pdt.io import *
 from pdt.types import *
 
-theano.config.optimizer = 'fast_compile'
 
 def rand_rotation_matrix(deflection=1.0, randnums=None, floatX='float32'):
     """

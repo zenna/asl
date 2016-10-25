@@ -1,6 +1,5 @@
-from __future__ import print_function
-import numpy as np
 import sys
+import numpy as np
 import getopt
 import os
 import scipy.ndimage
@@ -184,12 +183,15 @@ def default_kwargs():
     options['params_file'] = (str, 28)
     options['momentum'] = (float, 0.9)
     options['description'] = (str, None)
-    options['template'] = (str, None)
+    options['batch_size'] = (int, 128)
     options['save_every'] = (int, 100)
     options['compress'] = (False,)
+    options['num_epochs'] = (int, 10)
     options['compile_fns'] = (True,)
-    options['save_params'] = (True,)
+    options['save_params'] = (False,)
     options['template'] = (str, 'res_net')
+    options['train'] = (True,)
+    return options
 
 
 def handle_args(argv, cust_opts):
@@ -203,10 +205,10 @@ def handle_args(argv, cust_opts):
     # some things need to be set if other things are set
 
     long_opts = ["params_file=", "learning_rate=", "momentum=", "update=",
-                 "description=", "template="] + custom_long_opts
+                 "description=", "template=", "batch_size="] + custom_long_opts
     options = {'params_file': '', 'learning_rate': 0.1, 'momentum': 0.9,
                'load_params': False, 'update': 'momentum', 'description': '',
-               'template': 'res_net'}
+               'template': 'res_net', 'batch_size': 128}
     help_msg = """-p <paramfile> -l <learning_rate> -m <momentum> -u <update algorithm> -d
                   <job description> -t <template>"""
     try:
