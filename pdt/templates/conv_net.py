@@ -1,6 +1,6 @@
 import numpy as np
 
-from dddt.templates.common import *
+from pdt.templates.common import *
 import theano
 import lasagne
 

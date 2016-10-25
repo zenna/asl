@@ -1,9 +1,7 @@
-from dddt.types import *
-from dddt.train_tf import *
-from dddt.common import *
-
-# theano.config.optimizer = 'None'
-# theano.config.optimizer = 'fast_compile'
+from pdt.types import *
+from pdt.train_tf import *
+from pdt.common import *
+from common import handle_options, load_train_save
 
 
 def number_adt(options, niters=3, number_shape=(5,), batch_size=64,
@@ -88,7 +86,6 @@ def number_adt(options, niters=3, number_shape=(5,), batch_size=64,
                               generators, gen_to_inputs, train_outs)
     return number_adt, number_pdt
 
-from common import handle_options, load_train_save
 
 def main(argv):
     # Args

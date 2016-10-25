@@ -1,14 +1,14 @@
-import theano
 import numpy as np
 
-from dddt import *
+from pdt import *
 from mnist import *
 # from ig.util import *
-from dddt.train_tf import *
-from dddt.common import *
-from dddt.io import *
-from dddt.types import *
 from common import handle_options, load_train_save
+from pdt.train_tf import *
+from pdt.common import *
+from pdt.io import *
+from pdt.types import *
+
 
 def rand_rotation_matrix(deflection=1.0, randnums=None, floatX='float32'):
     """
