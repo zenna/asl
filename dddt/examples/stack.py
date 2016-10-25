@@ -5,6 +5,8 @@ from dddt.train_tf import *
 from dddt.common import *
 from dddt.io import *
 from dddt.types import *
+from common import handle_options, load_train_save
+
 
 def stack_adt(train_data, options, stack_shape=(1, 28, 28), push_args={},
               pop_args={}, empty_stack_args={}, item_shape=(1, 28, 28),
@@ -96,21 +98,6 @@ def stack_unstack(n, stack, offset=0):
 
     return stacks + imgs
 
-def load_train_save(options, adt, pbt, sfx, save_dir):
-    options_path = os.path.join(save_dir, "options")
-    save_dict_csv(options_path, options)
-
-    if options['load_params'] is True:
-        adt.load_params(options['params_file'])
-
-    if options['save_params'] is True:
-        path = os.path.join(save_dir, "final" + sfx)
-        adt.save_params(path)
-
-    if options['train'] is True:
-        train(adt, pbt, num_epochs=options['num_epochs'],
-              sfx=sfx, save_dir=save_dir, save_every=options['save_every'],
-              compress=options['compress'])
 
 
 def main(argv):
@@ -124,23 +111,10 @@ def main(argv):
     global save_dir
     global sfx
 
-    options = {}
-    options['nitems'] = (int, 3)
-    options['width'] = (int, 28)
-    options['height'] = (int, 28)
-    options['num_epochs'] = (int, 100)
-    options['save_every'] = (int, 100)
-    options['compress'] = (False,)
-    options['compile_fns'] = (True,)
-    options['save_params'] = (False,)
-    options['adt'] = (str, 'stack')
-    options['template'] = (str, 'res_net')
-    options.update(default_template_kwargs('res_net'))
-    options = handle_args(argv, options)
+    options = handle_options('stack', argv)
 
     X_train, y_train, X_val, y_val, X_test, y_test = load_dataset()
-    sfx = gen_sfx_key(('adt', 'nblocks', 'block_size', 'nfilters'), options)
-    options['template'] = parse_template(options['template'])
+    sfx = gen_sfx_key(('adt', 'nblocks', 'block_size'), options)
 
     empty_stack_args = {'initializer': tf.random_uniform_initializer}
     adt, pdt = stack_adt(X_train, options, push_args=options,

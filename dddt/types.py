@@ -75,8 +75,8 @@ class Interface():
                                            out_shapes=self.out_shapes,
                                            output_args=output_args,
                                            params=params,
+                                           reuse=False,
                                            **self.template_kwargs)
-                scope.reuse_variables()
         # params.lock()
         self.params = params
         self.outputs = outputs
@@ -94,6 +94,7 @@ class Interface():
                                                 out_shapes=self.out_shapes,
                                                 output_args=output_args,
                                                 params=self.params,
+                                                reuse=True,
                                                 **self.template_kwargs)
         return outputs
 
@@ -154,12 +155,18 @@ class Axiom():
         self.lhs = lhs
         self.rhs = rhs
 
-    def get_losses(self, dist=mae):
+    def get_losses(self, dist=mse):
         print("lhs", self.lhs)
         print("rhs", self.rhs)
         losses = [dist(self.lhs[i], self.rhs[i]) for i in range(len(self.lhs))]
         return losses
 
+def hard_unit_bound(t):
+    return t
+    # return tf.minimum(tf.maximum(t, 0.0), 1.0)
+
+def iden(t):
+    return t
 
 class CondAxiom():
     "If cond_lhs= cond_rhs then conseq_lhs = conseq_rhs else alt_lhs = alt_rhs"
@@ -174,15 +181,32 @@ class CondAxiom():
         self.alt_rhs = alt_rhs
         self.num_constraints = len(cond_lhs)
 
-    def get_losses(self, dist=mae):
+    def get_losses(self, dist=mse, uib=iden):
         losses = []
-        for i in self.num_constraints:
-            cond = dist(self.cond_lhs[i], self.cond_rhs)
-            conseq = dist(self.conseq_lhs[i], self.conseq_rhs)
-            alt = dist(self.alt_lhs[i], self.alt_rhs)
-            loss.append(cond*conseq + (1-cond) * alt)
+        for i in range(self.num_constraints):
+            cond = uib(dist(self.cond_lhs[i], self.cond_rhs, reduce_batch=False))
+            conseq = uib(dist(self.conseq_lhs[i], self.conseq_rhs, reduce_batch=False))
+            alt = uib(dist(self.alt_lhs[i], self.alt_rhs, reduce_batch=False))
+            coseq_loss = real_and(real_not(cond), conseq)
+            alt_loss = real_and(cond, alt)
+            either = real_or(coseq_loss, alt_loss, uib=uib)
+            # either = tf.Print(either, [self.cond_lhs[i]], message="hello")
+            losses.append(tf.reduce_mean(either))
         return losses
-        return losses
+
+def real_or(a, b, uib=tf.nn.sigmoid):
+    return uib(a + b)
+
+def real_and(a, b):
+    return a * b
+
+def real_not(a):
+    return 1-a
+
+# def real_xor(a, b):
+#     real_and(real_or(a, b), real_not(real_or())
+
+## Unit Interval Bounds
 
 class BoundAxiom():
     "Constraints a type to be within specifiec bounds"

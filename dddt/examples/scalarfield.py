@@ -4,12 +4,11 @@ import numpy as np
 from dddt import *
 from mnist import *
 # from ig.util import *
-from dddt.train import *
+from dddt.train_tf import *
 from dddt.common import *
 from dddt.io import *
 from dddt.types import *
-
-theano.config.optimizer = 'fast_compile'
+from common import handle_options, load_train_save
 
 def rand_rotation_matrix(deflection=1.0, randnums=None, floatX='float32'):
     """
@@ -54,34 +53,54 @@ def rand_rotation_matrix(deflection=1.0, randnums=None, floatX='float32'):
     M = (np.outer(V, V) - np.eye(3)).dot(R)
     return np.array(M, dtype=floatX)
 
+def euclidean_norm(t, ri):
+    with tf.name_scope("euclidean_norm"):
+        sqr = tf.square(t)
+        norm = tf.reduce_sum(t, reduction_indices=ri)
+    return norm
+
+def sdf_sphere(t):
+    length = euclidean_norm(t, 2)
+    return length - 1.2
+
+def unsign(t):
+    """Convert a signed distance into 0s at negatives"""
+    return tf.nn.relu(t)
+
 def scalar_field_adt(options, field_shape=(100,),
                      npoints=100, batch_size=64, s_args={}, add_args={},
-                     rotate_args={}):
+                     field_args={}, translate_args={}):
     # Types
-    rot_matrix_shape = (3, 3)
+    # rot_matrix_shape = (3, 3)
     points_shape = (npoints, 3)
-    Field = Type(field_shape)
-    Points = Type(points_shape)
-    Scalar = Type((npoints,))
-    Rotation = Type(rot_matrix_shape)
+    Field = Type(field_shape, name="field")
+    Points = Type(points_shape, name="points")
+    Scalar = Type((npoints,), name="scalar")
+    # Rotation = Type(rot_matrix_shape, name="rotation")
+
+    translate_shape = (3,)
+    Translation = Type(translate_shape, name="translate")
 
     # Interface
     s = Interface([Field, Points], [Scalar], 's', **s_args)
     # add = Interface([Field, Points], [Field], 'add', **add_args)
-    rotate = Interface([Field, Rotation], [Field], 'rotate', **rotate_args)
-    funcs = [s, rotate]
+    # rotate = Interface([Field, Rotation], [Field], 'rotate', **rotate_args)
+    translate = Interface([Field, Translation], [Field], 'translate', **translate_args)
+    # funcs = [s, rotate]
+    funcs = [s, translate]
 
     # Constants
-    cube_field = Const(Field)
-    consts = [cube_field]
+    sphere_field = Const(Field, "sphere_field", batch_size, **field_args)
+    consts = [sphere_field]
 
     # Variables
-    rot_matrix = ForAllVar(Rotation)
-    pos = ForAllVar(Points)
-    forallvars = [pos, rot_matrix]
+    # rot_matrix = ForAllVar(Rotation, "rot_matrix")
+    translate_vec = ForAllVar(Translation, "translate_vec")
+    pos = ForAllVar(Points, "pos")
+    forallvars = [pos, translate_vec]
 
     # PreProcessing
-    cube_field_batch = repeat_to_batch(cube_field.input_var, batch_size)
+    sphere_field_batch = sphere_field.batch_input_var
 
     # Axioms
     # Zero field is zero everywhere
@@ -90,28 +109,35 @@ def scalar_field_adt(options, field_shape=(100,),
     # axioms.append(axiom1)
     # axioms.append(axiom2)
 
-    ## if points is within unit cube then should be on, otherwise off
-    # s(cube_field_batch)
-    # cube_axiom = CondAxiom(in_unit_cube(poss[1].input_var), true, s(pos), (1), s(pos), (0,))
+    ## if points is within unit sphere then should be on, otherwise off
+    # poses = s(sphere_field_batch)
+    is_unit_sphere = unsign(sdf_sphere(pos.input_var))
+    sphere_axiom = CondAxiom((is_unit_sphere,), (0.0,),
+                             s(sphere_field_batch, pos.input_var), (1.0,),
+                             s(sphere_field_batch, pos.input_var), (0.0,))
 
     # Rotation axioms
-    (rotated,) = rotate(cube_field_batch, rot_matrix.input_var)
-    axiom_r1 = Axiom(s(rotated, pos.input_var),
-                     s(cube_field_batch, pos.input_var*rot_matrix.input_var))
+    # (rotated,) = rotate(sphere_field_batch, rot_matrix.input_var)
+    (translated,) = translate(sphere_field_batch, translate_vec.input_var)
+    reshape_translate_vec = tf.reshape(translate_vec.input_var, [batch_size, 1, 3])
+    # import pdb; pdb.set_trace()
+    axiom_r1 = Axiom(s(translated, pos.input_var),
+                     s(sphere_field_batch, pos.input_var + reshape_translate_vec))
 
-    axioms = [axiom_r1]
+    axioms = [sphere_axiom]
 
     train_outs = []
     gen_to_inputs = identity
 
     # Generators
     pos_gen = infinite_samples(lambda *x: np.random.rand(*x), batch_size, points_shape)
-    rot_gen = infinite_samples(lambda *x: rand_rotation_matrix(), batch_size, rot_matrix_shape)
-    generators = [pos_gen, rot_gen]
+    # rot_gen = infinite_samples(lambda *x: rand_rotation_matrix(), batch_size, rot_matrix_shape)
+    tran_gen = infinite_samples(lambda *x: np.random.rand(*x), batch_size, translate_shape)
+    generators = [pos_gen, tran_gen]
 
     train_fn, call_fns = compile_fns(funcs, consts, forallvars, axioms, train_outs, options)
     scalar_field_adt = AbstractDataType(funcs, consts, forallvars, axioms,
-                                        name='scalar field')
+                                        name='scalar_field')
     scalar_field_pbt = ProbDataType(scalar_field_adt, train_fn, call_fns,
                                     generators, gen_to_inputs, train_outs)
     return scalar_field_adt, scalar_field_pbt
@@ -128,29 +154,19 @@ def main(argv):
     global sfx
     global save_dir
 
-    cust_options = {}
-    cust_options['train'] = (True,)
-    cust_options['batch_size'] = (int, 512)
-    cust_options['width'] = (int, 28)
-    cust_options['height'] = (int, 28)
-    cust_options['num_epochs'] = (int, 100)
-    cust_options['save_every'] = (int, 100)
-    cust_options['compress'] = (False,)
-    cust_options['compile_fns'] = (True,)
-    cust_options['save_params'] = (True,)
-    cust_options['adt'] = (str, 'scalar_field')
-    cust_options['template'] = (str, 'res_net')
-    cust_options.update(res_net_kwargs())
-    options = handle_args(argv, cust_options)
+    options = handle_options('scalar_field', argv)
+
 
     # voxel_grids = np.load("/home/zenna/data/ModelNet40/alltrain32.npy")
-    options['template'] = parse_template(options['template'])
-    adt, pbt = scalar_field_adt(options, s_args=options, rotate_args=options,
+    field_args = {'initializer': tf.random_uniform_initializer}
+    adt, pdt = scalar_field_adt(options, s_args=options, translate_args=options,
                                 npoints=500, field_shape=(102,),
-                                add_args=options,
+                                add_args=options, field_args=field_args,
                                 batch_size=options['batch_size'])
 
-    sfx = gen_sfx_key(('adt', 'nblocks', 'block_size', 'nfilters'), options)
+    sfx = gen_sfx_key(('adt', 'nblocks', 'block_size'), options)
+    graph = tf.get_default_graph()
+    writer = tf.train.SummaryWriter('/home/zenna/repos/dddt/dddt/log', graph)
 
     save_dir = mk_dir(sfx)
     load_train_save(options, adt, pdt, sfx, save_dir)

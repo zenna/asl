@@ -57,7 +57,7 @@ def circular_indices(lb, ub, thresh):
 def infinite_samples(sampler, batchsize, shape):
     while True:
         to_sample_shape = (batchsize,)+shape
-        yield lasagne.utils.floatX(sampler(*to_sample_shape))
+        yield sampler(*to_sample_shape)
 
 
 def infinite_batches(inputs, batchsize, f=identity, shuffle=False):
@@ -191,11 +191,32 @@ def default_kwargs():
     options['save_params'] = (True,)
     options['template'] = (str, 'res_net')
 
+from optparse import (OptionParser,BadOptionError,AmbiguousOptionError)
+
+class PassThroughOptionParser(OptionParser):
+    """
+    An unknown option pass-through implementation of OptionParser.
+
+    When unknown arguments are encountered, bundle with largs and try again,
+    until rargs is depleted.
+
+    sys.exit(status) will still be called if a known argument is passed
+    incorrectly (e.g. missing arguments or bad argument types, etc.)
+    """
+    def _process_args(self, largs, rargs, values):
+        while rargs:
+            try:
+                OptionParser._process_args(self, largs, rargs, values)
+            except (BadOptionError, AmbiguousOptionError) as e:
+                largs.append(e.opt_str)
+
 
 def handle_args(argv, cust_opts):
     """Handle getting options from command liner arguments"""
     custom_long_opts = ["%s=" % k for k in cust_opts.keys()]
     cust_double_dash = ["--%s" % k for k in cust_opts.keys()]
+    parser = PassThroughOptionParser()
+    parser.add_option('-l', '--learning_rate', dest='learning_rate',nargs=1, type='int')
 
     # Way to set default values
     # some flags affect more than one thing

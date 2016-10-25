@@ -7,9 +7,8 @@ import tensorflow as tf
 
 def get_updates(loss, options):
     if options['update'] == 'momentum':
-        optimizer = tf.train.MomentumOptimizer(loss, params,
-                           learning_rate=options['learning_rate'],
-                           momentum=options['momentum'])
+        optimizer = tf.train.MomentumOptimizer(learning_rate=options['learning_rate'],
+                                               momentum=options['momentum'])
     elif options['update'] == 'adam':
         optimizer = tf.train.AdamOptimizer(learning_rate=options['learning_rate'])
     elif options['update'] == 'rmsprop':
@@ -64,7 +63,7 @@ def compile_fns(funcs, consts, forallvars, axioms, train_outs, options):
     return train_fn, call_fns
 
 
-def train(adt, pdt, num_epochs=1000, summary_gap=100, save_every=10, sfx='',
+def train(adt, pdt, num_epochs=10000, summary_gap=100, save_every=10, sfx='',
           compress=False, save_dir="./"):
     """One epoch is one pass through the data set"""
     print("Starting training...")
@@ -86,8 +85,8 @@ def train(adt, pdt, num_epochs=1000, summary_gap=100, save_every=10, sfx='',
             train_outs_losses = pdt.train_fn(feed_dict, sess)
             train_outs = train_outs_losses[0:ntrain_outs]
             losses = train_outs_losses[ntrain_outs:]
-            print("epoch: ", epoch, " i: ", i, "losses: ", losses)
-            train_err += losses[0]
+            print("epoch:", epoch, " of ", num_epochs, " i: ", i, "losses: ", losses)
+            train_err += losses[-2]
             train_batches += 1
             gens = [next(gen) for gen in pdt.generators]
             # if i % save_every == 0:
