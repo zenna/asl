@@ -1,4 +1,4 @@
-local util = require "dddt.util"
+local util = require "pdt.util"
 local map = util.map
 local res_net = require "res_net"
 local grad = require "autograd"

@@ -1,9 +1,9 @@
 -- Base package
-local dddt = {}
+local pdt = {}
 
 -- Meta info
-dddt.VERSION = '0.1'
-dddt.LICENSE = 'MIT'
+pdt.VERSION = '0.1'
+pdt.LICENSE = 'MIT'
 
 
 hascunn, cunn = pcall(require, 'cunn')
@@ -11,12 +11,12 @@ hascutorch, cutorch = pcall(require, 'cutorch')
 hasdbg, dbg = pcall(require, 'debugger')
 
 -- Sub packages:
-dddt.util = require "dddt.util"
-dddt.templates = require "dddt.templates"
-dddt.types = require "dddt.types"
-dddt.generators = require "dddt.generators"
-dddt.distances = require "dddt.distances"
-dddt.train = require "dddt.train"
+pdt.util = require "pdt.util"
+pdt.templates = require "pdt.templates"
+pdt.types = require "pdt.types"
+pdt.generators = require "pdt.generators"
+pdt.distances = require "pdt.distances"
+pdt.train = require "pdt.train"
 
 -- require "cunn"
 -- if not cutorch then
@@ -25,4 +25,4 @@ dddt.train = require "dddt.train"
 -- end
 --
 
-return dddt
+return pdt

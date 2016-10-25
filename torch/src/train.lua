@@ -1,9 +1,9 @@
 local training = {}
 local grad = require "autograd"
 local gradcheck = require 'autograd.gradcheck' {randomizeInput = false}
-local loss_fn = require("dddt.types.axioms").loss_fn
+local loss_fn = require("pdt.types.axioms").loss_fn
 local torch = require("torch")
-local util = require("dddt.util")
+local util = require("pdt.util")
 
 local function compute_stats(tensor, statistics)
   return util.map(function (s) return s(tensor) end, statistics)

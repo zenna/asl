@@ -6,13 +6,13 @@ import os
 import scipy.ndimage
 import csv
 import time
-import dddt.config
+import pdt.config
 
 ## Backend specific
-if dddt.config.backend == 'tensorflow':
-    from dddt.backend.tensorflow.io import *
-elif dddt.config.backend == 'theano':
-    import dddt.backend.theano.io
+if pdt.config.backend == 'tensorflow':
+    from pdt.backend.tensorflow.io import *
+elif pdt.config.backend == 'theano':
+    import pdt.backend.theano.io
 
 
 ## Primitive Functions

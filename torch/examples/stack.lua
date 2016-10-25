@@ -1,16 +1,16 @@
 local t = require "torch"
-local dddt = require "dddt"
-local util = dddt.util
-local Type = dddt.types.Type
-local eq_axiom = dddt.types.eq_axiom
-local Interface = dddt.types.Interface
-local RandVar = dddt.types.RandVar
-local AbstractDataType = dddt.types.AbstractDataType
-local Spec = dddt.types.Spec
-local Constant = dddt.types.Constant
-local constrain_types = dddt.types.constrain_types
-local gen_param_funcs = dddt.types.gen_param_funcs
-local train = dddt.train
+local pdt = require "pdt"
+local util = pdt.util
+local Type = pdt.types.Type
+local eq_axiom = pdt.types.eq_axiom
+local Interface = pdt.types.Interface
+local RandVar = pdt.types.RandVar
+local AbstractDataType = pdt.types.AbstractDataType
+local Spec = pdt.types.Spec
+local Constant = pdt.types.Constant
+local constrain_types = pdt.types.constrain_types
+local gen_param_funcs = pdt.types.gen_param_funcs
+local train = pdt.train
 local grad = require "autograd"
 
 -- Genereates the stack abstract data type
@@ -113,7 +113,7 @@ end
 
 -- Generators
 local function gen_gen(batch_size, cuda, nitems, data)
-  local item_coroutine = dddt.generators.infinite_minibatches(data, batch_size,  true)
+  local item_coroutine = pdt.generators.infinite_minibatches(data, batch_size,  true)
   return function()
     local items = {}
     for i = 1, nitems do
@@ -161,7 +161,7 @@ local function main()
   print("Options:", opt)
   print("Template Args:", template_kwargs)
 
-  local conv_res_net = dddt.templates.conv_res_net
+  local conv_res_net = pdt.templates.conv_res_net
   local shapes = {Item=util.shape({1, 32, 32}), Stack=util.shape({1, 32, 32})}
   local dtypes = {Item=t.getdefaulttensortype(), Stack=t.getdefaulttensortype()}
   local templates = {push=conv_res_net.gen_conv_res_net,

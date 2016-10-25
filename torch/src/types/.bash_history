@@ -10,7 +10,7 @@ function Type.new(shape, name)
   return self
 end
 constructor(Type)
-dddt.Type = Type
+pdt.Type = Type
 
 function Type:get_shape(add_batch, batch_size)
   if add_batch then

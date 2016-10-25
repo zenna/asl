@@ -3,9 +3,9 @@
 
 -- This is a template for a resial multi layer neural network
 local conv_res_net = {}
-local util = require("dddt.util")
+local util = require("pdt.util")
 local autograd = require("autograd")
-local common = require("dddt.templates.common")
+local common = require("pdt.templates.common")
 local model = autograd.model
 
 local function isimgbatch(input)

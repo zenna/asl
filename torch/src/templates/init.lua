@@ -1,6 +1,6 @@
 -- Standard Templates
 local templates = {
-  conv_res_net = require('dddt.templates.conv_res_net')
+  conv_res_net = require('pdt.templates.conv_res_net')
 }
 
 

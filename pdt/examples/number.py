@@ -1,6 +1,6 @@
-from dddt.types import *
-from dddt.train import *
-from dddt.common import *
+from pdt.types import *
+from pdt.train import *
+from pdt.common import *
 
 # theano.config.optimizer = 'None'
 # theano.config.optimizer = 'fast_compile'

@@ -1,10 +1,10 @@
 # Functions common for examples
-from dddt.io import *
+from pdt.io import *
 import tensortemplates as tt
 from tensortemplates.res_net import *
-# from dddt.templates.conv_net import *
-# from dddt.templates.res_net import *
-# from dddt.templates.warp_conv_net import *
+# from pdt.templates.conv_net import *
+# from pdt.templates.res_net import *
+# from pdt.templates.warp_conv_net import *
 
 def gen_sfx_key(keys, options):
     sfx_dict = {}

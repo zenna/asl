@@ -1,10 +1,10 @@
-from dddt import *
+from pdt import *
 from mnist import *
 # from ig.util import *
-from dddt.train_tf import *
-from dddt.common import *
-from dddt.io import *
-from dddt.types import *
+from pdt.train_tf import *
+from pdt.common import *
+from pdt.io import *
+from pdt.types import *
 
 def stack_adt(train_data, options, stack_shape=(1, 28, 28), push_args={},
               pop_args={}, empty_stack_args={}, item_shape=(1, 28, 28),
@@ -149,7 +149,7 @@ def main(argv):
                     batch_size=options['batch_size'])
 
     graph = tf.get_default_graph()
-    writer = tf.train.SummaryWriter('/home/zenna/repos/dddt/dddt/log', graph)
+    writer = tf.train.SummaryWriter('/home/zenna/repos/pdt/pdt/log', graph)
     save_dir = mk_dir(sfx)
     load_train_save(options, adt, pdt, sfx, save_dir)
     push, pop = pdt.call_fns

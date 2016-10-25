@@ -1,6 +1,6 @@
 import numpy as np
 import tensorflow as tf
-from dddt.config import floatX
+from pdt.config import floatX
 
 def placeholder(shape=None, ndim=None, dtype=floatX, sparse=False, name=None):
     '''Instantiates a placeholder.

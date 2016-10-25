@@ -1,6 +1,6 @@
-dddt = require "types"
+pdt = require "types"
 
-p = dddt.gen_param()
+p = pdt.gen_param()
 p[1] = 3
 print(p)
 x = "thisisthename1-2-2_1,2,3,4"

@@ -1,6 +1,6 @@
-local util = require "dddt.util"
+local util = require "pdt.util"
 local constructor = util.constructor
-local randvar = require("dddt.types.randvar")
+local randvar = require("pdt.types.randvar")
 local TransformedRandVar = randvar.TransformedRandVar
 
 -- Interface

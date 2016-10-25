@@ -1,6 +1,6 @@
-local util = require "dddt.util"
-local ConcreteFunc = require("dddt.types.concretefunc").ConcreteFunc
-local distances = require("dddt.distances")
+local util = require "pdt.util"
+local ConcreteFunc = require("pdt.types.concretefunc").ConcreteFunc
+local distances = require("pdt.distances")
 local mse = distances.mse
 local autograd = require("autograd")
 local mae = autograd.nn.AbsCriterion()

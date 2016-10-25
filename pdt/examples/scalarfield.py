@@ -1,13 +1,13 @@
 import theano
 import numpy as np
 
-from dddt import *
+from pdt import *
 from mnist import *
 # from ig.util import *
-from dddt.train import *
-from dddt.common import *
-from dddt.io import *
-from dddt.types import *
+from pdt.train import *
+from pdt.common import *
+from pdt.io import *
+from pdt.types import *
 
 theano.config.optimizer = 'fast_compile'
 

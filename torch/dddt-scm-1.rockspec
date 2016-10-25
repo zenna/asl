@@ -1,8 +1,8 @@
-package = "dddt"
+package = "pdt"
 version = "scm-1"
 
 source = {
-   url = "https://github.com/zenna/dddt.git",
+   url = "https://github.com/zenna/pdt.git",
 }
 
 description = {

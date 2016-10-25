@@ -1,15 +1,15 @@
 from __future__ import print_function
 
-from dddt.templates import *
-from dddt.distances import *
+from pdt.templates import *
+from pdt.distances import *
 import time
 import sys
 import numpy as np
 from io import *
-from dddt.io import placeholder
-from dddt.config import floatX
-from dddt.distances import *
-from dddt.common import *
+from pdt.io import placeholder
+from pdt.config import floatX
+from pdt.distances import *
+from pdt.common import *
 
 # import theano
 # import theano.tensor as T
@@ -203,7 +203,7 @@ class Const():
         broadcastable = (True,) + (False,) * (len(self.shape) - 1)
         with tf.name_scope(self.const_name()):
             arr = initializer()(self.shape)
-            self.input_var = dddt.common.variable(arr, dtype=type.dtype,
+            self.input_var = pdt.common.variable(arr, dtype=type.dtype,
                                              name=self.const_name(),
                                              broadcastable=broadcastable)
             if do_repeat_to_batch:
