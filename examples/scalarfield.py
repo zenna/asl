@@ -53,19 +53,23 @@ def rand_rotation_matrix(deflection=1.0, randnums=None, floatX='float32'):
     M = (np.outer(V, V) - np.eye(3)).dot(R)
     return np.array(M, dtype=floatX)
 
+
 def euclidean_norm(t, ri):
     with tf.name_scope("euclidean_norm"):
         sqr = tf.square(t)
-        norm = tf.reduce_sum(t, reduction_indices=ri)
+        norm = tf.reduce_sum(sqr, reduction_indices=ri)
     return norm
+
 
 def sdf_sphere(t):
     length = euclidean_norm(t, 2)
     return length - 1.2
 
+
 def unsign(t):
     """Convert a signed distance into 0s at negatives"""
     return tf.nn.relu(t)
+
 
 def scalar_field_adt(options, field_shape=(100,),
                      npoints=100, batch_size=64, s_args={}, add_args={},
