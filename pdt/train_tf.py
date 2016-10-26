@@ -1,4 +1,4 @@
-## Training for tensorflow
+"""Training for tensorflow"""
 import time
 import os
 import numpy as np
@@ -47,6 +47,7 @@ def compile_fns(funcs, consts, forallvars, axioms, train_outs, options):
     outputs = train_outs + losses + [loss]
     optimizer, update_step = get_updates(loss, options)
     outputs.append(update_step)
+
     def train_fn(feed_dict, sess):
         return sess.run(outputs, feed_dict=feed_dict)
 

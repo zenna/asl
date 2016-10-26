@@ -1,15 +1,15 @@
-from dddt import *
+from pdt import *
 from mnist import *
 # from ig.util import *
-from dddt.train_tf import *
-from dddt.common import *
-from dddt.io import *
-from dddt.types import *
+from pdt.train_tf import *
+from pdt.common import *
+from pdt.io import *
+from pdt.types import *
 from common import handle_options, load_train_save
 
 
-def stack_adt(train_data, options, stack_shape=(1, 28, 28), push_args={},
-              pop_args={}, empty_stack_args={}, item_shape=(1, 28, 28),
+def stack_adt(train_data, options, stack_shape=(28, 28, 1), push_args={},
+              pop_args={}, empty_stack_args={}, item_shape=(28, 28, 1),
               batch_size=512, nitems=3):
     """Construct a stack abstract data type"""
     # Types - a Stack of Item
@@ -99,31 +99,21 @@ def stack_unstack(n, stack, offset=0):
     return stacks + imgs
 
 
-
 def main(argv):
-    # Args
-    global options
-    global test_files, train_files
-    global views, outputs, net
-    global push, pop
-    global X_train
-    global adt, pdt
-    global save_dir
-    global sfx
-
     options = handle_options('stack', argv)
 
-    X_train, y_train, X_val, y_val, X_test, y_test = load_dataset()
+    mnist_data = load_dataset()
+    X_train = mnist_data[0].reshape(-1, 28, 28, 1)
     sfx = gen_sfx_key(('adt', 'nblocks', 'block_size'), options)
 
     empty_stack_args = {'initializer': tf.random_uniform_initializer}
     adt, pdt = stack_adt(X_train, options, push_args=options,
-                    nitems=options['nitems'], pop_args=options,
-                    empty_stack_args=empty_stack_args,
-                    batch_size=options['batch_size'])
+                         nitems=options['nitems'], pop_args=options,
+                         empty_stack_args=empty_stack_args,
+                         batch_size=options['batch_size'])
 
     graph = tf.get_default_graph()
-    writer = tf.train.SummaryWriter('/home/zenna/repos/dddt/dddt/log', graph)
+    writer = tf.train.SummaryWriter('/home/zenna/repos/pdt/pdt/log', graph)
     save_dir = mk_dir(sfx)
     load_train_save(options, adt, pdt, sfx, save_dir)
     push, pop = pdt.call_fns

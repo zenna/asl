@@ -6,5 +6,5 @@ pdt is a framework for synthesizing approximate data structures from specificati
 
 To synthesize an stack (of mnist digits) from specification:
 ```
-ipython -- pdt/examples/stack.py --template=res_net --nblocks=1 --block_size=1 -u adam -l 0.01 --nitems=2 --batch_size=256 --train 1
+ipython -- examples/stack.py --template=res_net --nblocks=1 --block_size=1 -u adam -l 0.0001 --nitems=1 --batch_size=128 --train 1 --num_epochs=1000
 ```

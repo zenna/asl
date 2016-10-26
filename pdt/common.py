@@ -1,11 +1,8 @@
-# Functions common for examples
+"""Functions common for examples"""
 from pdt.io import *
+import tensortemplates.res_net as res_net
+import tensortemplates.conv_res_net as conv_res_net
 import tensortemplates as tt
-from tensortemplates.res_net import *
-from tensortemplates.conv_res_net import *
-# from pdt.templates.conv_net import *
-# from pdt.templates.res_net import *
-# from pdt.templates.warp_conv_net import *
 
 
 def gen_sfx_key(keys, options):
@@ -17,4 +14,4 @@ def gen_sfx_key(keys, options):
     return sfx
 
 
-template_module = {'res_net': tt.res_net, 'conv_res_net': tt.conv_res_net}
+template_module = {'res_net': res_net, 'conv_res_net': conv_res_net}
