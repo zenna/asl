@@ -161,6 +161,23 @@ class Axiom():
         losses = [dist(self.lhs[i], self.rhs[i]) for i in range(len(self.lhs))]
         return losses
 
+
+def gt(a, b):
+    return -tf.min(a - b, 0)
+
+
+class GtAxiom():
+    """Greater than axiom"""
+    def __init__(self, lhs, rhs, name=''):
+        assert len(lhs) == len(rhs)
+        self.lhs = lhs
+        self.rhs = rhs
+
+    def get_losses(self, dist=mse):
+        losses = [gt(self.lhs[i], self.rhs[i]) for i in range(len(self.lhs))]
+        return losses
+
+
 def hard_unit_bound(t):
     return t
     # return tf.minimum(tf.maximum(t, 0.0), 1.0)
