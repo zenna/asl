@@ -7,11 +7,11 @@ from pdt.types import (Type, Interface, Const, Axiom, ForAllVar,
 from common import handle_options, load_train_save
 import tensorflow as tf
 import sys
-
+import os
 
 def gen_set_adt(train_data,
                 options,
-                set_shape=(5, 5, 1),
+                set_shape=(11,),
                 item_shape=(28, 28, 1),
                 store_args={},
                 is_in_args={},
@@ -39,7 +39,7 @@ def gen_set_adt(train_data,
     # difference = Interface([Set], [Set, Item], 'pop', **pop_args)
     # subset = Interface([Set, Set], [Boolean], 'pop', **pop_args)
 
-    funcs = [store, is_in]
+    funcs = [store, is_in, is_empty, size]
 
     # train_outs
     train_outs = []
@@ -56,15 +56,17 @@ def gen_set_adt(train_data,
     empty_set_bv = empty_set.batch_input_var
 
     axioms = []
-    axiom_1 = Axiom(is_empty(empty_set_bv), (0.5,))
-    axioms.append(axiom_1)
+    # axiom_1 = Axiom(is_empty(empty_set_bv), (0.5,))
+    # axioms.append(axiom_1)
 
-    # axiom_2 = Axiom(is_empty(store(empty_set_bv, items[0])), (FALSE_NUM,))
-    # axioms.append(axiom_2)
+    (non_empty_store, ) = store(empty_set_bv, items[0])
+    (is_not_empty, ) = is_empty(non_empty_store)
+    axiom_2 = Axiom((is_not_empty, ), (FALSE_NUM,))
+    axioms.append(axiom_2)
 
-    # axiom_3 = Axiom(size(empty_set_bv), (0,))
-    # axioms.append(axiom_3)
-    #
+    axiom_3 = Axiom(size(empty_set_bv), (0.0,))
+    axioms.append(axiom_3)
+
     # axiom4 = Axiom(is_in(empty_set, item1), (TRUE_NUM,))
     # item1_in_set1 = is_in(store(set1, item1))
     # axiom5 = CondAxiom(i1, i2, item1_in_set1, (1,),
@@ -114,7 +116,9 @@ def main(argv):
 
     graph = tf.get_default_graph()
     save_dir = mk_dir(sfx)
-    import pdb; pdb.set_trace()
+
+    path_name = os.path.join(os.environ['DATADIR'], 'graphs', sfx, )
+    tf.train.SummaryWriter(path_name, graph)
 
     load_train_save(options, set_adt, set_pdt, sfx, save_dir)
     push, pop = pdt.call_fns
