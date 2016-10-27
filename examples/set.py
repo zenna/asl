@@ -94,6 +94,7 @@ def gen_set_adt(train_data,
     return set_adt, set_pdt
 
 def main(argv):
+
     options = handle_options('set', argv)
 
     mnist_data = load_dataset()
@@ -113,6 +114,8 @@ def main(argv):
 
     graph = tf.get_default_graph()
     save_dir = mk_dir(sfx)
+    import pdb; pdb.set_trace()
+
     load_train_save(options, set_adt, set_pdt, sfx, save_dir)
     push, pop = pdt.call_fns
 

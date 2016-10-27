@@ -155,7 +155,7 @@ class Axiom():
         self.lhs = lhs
         self.rhs = rhs
 
-    def get_losses(self, dist=mae):
+    def get_losses(self, dist=mse):
         print("lhs", self.lhs)
         print("rhs", self.rhs)
         losses = [dist(self.lhs[i], self.rhs[i]) for i in range(len(self.lhs))]
