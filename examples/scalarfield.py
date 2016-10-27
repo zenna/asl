@@ -148,16 +148,6 @@ def scalar_field_adt(options, field_shape=(100,),
 
 
 def main(argv):
-    # Args
-    global options
-    global test_files, train_files
-    global views, outputs, net
-    global push, pop
-    global X_train
-    global adt, pdt
-    global sfx
-    global save_dir
-
     options = handle_options('scalar_field', argv)
 
 

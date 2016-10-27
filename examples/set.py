@@ -1,16 +1,19 @@
-import theano
-from adt import *
 from mnist import *
-from ig.util import *
-from train import *
-from common import *
-
+from pdt.train_tf import train
+from pdt.common import *
+from pdt.types import Type, Interface, Const, Axiom, CondAxiom, FprAllVar
 # theano.config.optimizer = 'Non    e'
 theano.config.optimizer = 'fast_compile'
 
 
-def set_adt(train_data, options, set_shape=(1, 28, 28), push_args={},
-            pop_args={}, item_shape=(1, 28, 28), batch_size=512, nitems=3):
+def gen_set_adt(train_data,
+            options,
+            set_shape=(1, 28, 28),
+            push_args={},
+            pop_args={},
+            item_shape=(1, 28, 28),
+            batch_size=512,
+            nitems=3):
     # Types
     Set = Type(set_shape)
     Item = Type(item_shape)
@@ -101,7 +104,7 @@ def main(argv):
     sfx = gen_sfx_key(('adt', 'nblocks', 'block_size', 'nfilters'), options)
     options['template'] = parse_template(options['template'])
 
-    adt, pdt = set_adt(X_train, options, push_args=options,
+    adt, pdt = gen_set_adt(X_train, options, push_args=options,
                          nitems=options['nitems'], pop_args=options,
                          batch_size=options['batch_size'])
 
