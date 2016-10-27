@@ -151,7 +151,7 @@ def main(argv):
     options = handle_options('scalar_field', argv)
 
 
-    # voxel_grids = np.load("/home/zenna/data/ModelNet40/alltrain32.npy")
+    # voxel_grids = np.load("/DATADIR/data/ModelNet40/alltrain32.npy")
     field_args = {'initializer': tf.random_uniform_initializer}
     adt, pdt = scalar_field_adt(options, s_args=options, translate_args=options,
                                 npoints=500, field_shape=(102,),
@@ -160,7 +160,6 @@ def main(argv):
 
     sfx = gen_sfx_key(('adt', 'nblocks', 'block_size'), options)
     graph = tf.get_default_graph()
-    writer = tf.train.SummaryWriter('/home/zenna/repos/dddt/dddt/log', graph)
 
     save_dir = mk_dir(sfx)
     load_train_save(options, adt, pdt, sfx, save_dir)

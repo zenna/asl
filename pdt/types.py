@@ -8,7 +8,7 @@ import numpy as np
 from io import *
 from pdt.io import placeholder
 from pdt.config import floatX
-from pdt.distances import *
+from pdt.distances import mse, mae
 from pdt.common import *
 
 # import theano
@@ -155,7 +155,7 @@ class Axiom():
         self.lhs = lhs
         self.rhs = rhs
 
-    def get_losses(self, dist=mse):
+    def get_losses(self, dist=mae):
         print("lhs", self.lhs)
         print("rhs", self.rhs)
         losses = [dist(self.lhs[i], self.rhs[i]) for i in range(len(self.lhs))]

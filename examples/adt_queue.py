@@ -81,7 +81,6 @@ def main(argv):
                          batch_size=options['batch_size'])
 
     graph = tf.get_default_graph()
-    tf.train.SummaryWriter('/home/zenna/repos/pdt/pdt/log', graph)
     save_dir = mk_dir(sfx)
     load_train_save(options, queue_adt, queue_pdt, sfx, save_dir)
     enqueue, dequeue = queue_pdt.call_fns

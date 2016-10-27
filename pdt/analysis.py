@@ -1,7 +1,7 @@
 
 
 def show_imgs():
-    imgs = np.load("/home/zenna/omhome/repos/ig/data/whitenoiseimgs.npy")
+    # imgs = np.load("ig/data/whitenoiseimgs.npy")
     nimgs = imgs.shape[0]
     nstacks = int(np.floor(float(nimgs)/2))
     for i in range(nstacks):

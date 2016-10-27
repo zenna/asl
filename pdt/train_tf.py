@@ -14,6 +14,7 @@ def get_updates(loss, options):
     elif options['update'] == 'rmsprop':
         optimizer = tf.train.RMSPropOptimizer(learning_rate=options['learning_rate'])
     update_step = optimizer.minimize(loss)
+    assert False
     return optimizer, update_step
 
 

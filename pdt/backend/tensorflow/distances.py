@@ -1,5 +1,6 @@
 import tensorflow as tf
 
+
 def bound_loss(x, a, b):
     """Euclidean distance to interval [a, b]"""
     a = tf.constant(a, shape=x.get_shape())
@@ -10,8 +11,10 @@ def bound_loss(x, a, b):
     g = tf.select(x>b, x-b, tf.select(x<a, a-x, zero))
     return tf.reduce_mean(g,reduction_indices=dims_bar_batch(g))
 
+
 def all_but_batch_dims(t):
     return tuple(range(t.get_shape().ndims))[1:]
+
 
 def mse(a, b, reduce_batch=True):
     """Mean square error"""
@@ -21,6 +24,7 @@ def mse(a, b, reduce_batch=True):
         reduction_indices = all_but_batch_dims(a)
     eps = 1e-9
     return tf.reduce_mean(tf.square(a - b)+eps,reduction_indices=reduction_indices)
+
 
 def mae(a, b):
     """Mean absolute error"""

@@ -1,27 +1,40 @@
-from mnist import *
-from pdt.train_tf import train
-from pdt.common import *
-from pdt.types import Type, Interface, Const, Axiom, CondAxiom, FprAllVar
-# theano.config.optimizer = 'Non    e'
-theano.config.optimizer = 'fast_compile'
+from mnist import load_dataset
+from pdt.train_tf import compile_fns
+from pdt.common import gen_sfx_key
+from pdt.io import infinite_batches, identity, mk_dir
+from pdt.types import (Type, Interface, Const, Axiom, ForAllVar,
+                       AbstractDataType, ProbDataType)
+from common import handle_options, load_train_save
+import tensorflow as tf
+import sys
 
 
 def gen_set_adt(train_data,
-            options,
-            set_shape=(1, 28, 28),
-            push_args={},
-            pop_args={},
-            item_shape=(1, 28, 28),
-            batch_size=512,
-            nitems=3):
+                options,
+                set_shape=(5, 5, 1),
+                item_shape=(28, 28, 1),
+                store_args={},
+                is_in_args={},
+                size_args={},
+                is_empty_args={},
+                empty_set_args={},
+                batch_size=512,
+                nitems=3):
     # Types
-    Set = Type(set_shape)
-    Item = Type(item_shape)
+    Set = Type(set_shape, 'Set')
+    Item = Type(item_shape, 'Item')
+    Integer = Type((1,), 'Integer')
+    Bool = Type((1,), 'Bool')
+
+    TRUE_NUM = 1.0
+    FALSE_NUM = 0.0
 
     # Interface
+
     store = Interface([Set, Item], [Set], 'store', **store_args)
     is_in = Interface([Set, Item], [Bool], 'is_in', **is_in_args)
     size = Interface([Set], [Integer], 'size', **size_args)
+    is_empty = Interface([Set], [Bool], 'is_empty', **is_empty_args)
     # union = Interface([Set, Item], [Set], 'push', **push_args)
     # difference = Interface([Set], [Set, Item], 'pop', **pop_args)
     # subset = Interface([Set, Set], [Boolean], 'pop', **pop_args)
@@ -33,85 +46,75 @@ def gen_set_adt(train_data,
     gen_to_inputs = identity
 
     # Consts
-    empty_set = Const(Set)
+    empty_set = Const(Set, 'empty_set', batch_size, **empty_set_args)
     consts = [empty_set]
 
     # Vars
-    # set1 = ForAllVar(Set)
-    items = [ForAllVar(Item) for i in range(nitems)]
+    items = [ForAllVar(Item, 'item_%s' % i) for i in range(nitems)]
     forallvars = items
 
-    axiom1 = Axiom(is_empty(empty_set), (0,))
-    axiom2 = Axiom(is_empty(store(set1, item1)), (1,))
-    axiom3 = Axiom(size(empty_set), (0,))
-    axiom4 = Axiom(is_in(empty_set, item1), (0,))
-    item1_in_set1 = is_in(store(set1, item1))
-    axiom5 = CondAxiom(i1, i2, item1_in_set1, (1,),
-                               item1_in_set1, (is_in(set1, i1)))
+    empty_set_bv = empty_set.batch_input_var
 
-    # union axioms
-    axiom6 = Axiom(union(empty_set, set2), set2)
-    axiom7 = Axiom(union(store(set1, item1), set2),
-                   store(union(set1, set2), item1))
+    axioms = []
+    axiom_1 = Axiom(is_empty(empty_set_bv), (0.5,))
+    axioms.append(axiom_1)
 
-    # intersect axioms
-    axiom8 = Axiom(intersect(empty_set, set2), empty_set)
-    intersect_store = intersect(store(set1,), item1, set2)
-    axiom9 = CondAxiom(is_in(T, item1), (1,),
-                       intersect_store, store(intersect(set1, set2), item1),
-                       intersect_store, interect(set1, set2))
+    # axiom_2 = Axiom(is_empty(store(empty_set_bv, items[0])), (FALSE_NUM,))
+    # axioms.append(axiom_2)
+
+    # axiom_3 = Axiom(size(empty_set_bv), (0,))
+    # axioms.append(axiom_3)
+    #
+    # axiom4 = Axiom(is_in(empty_set, item1), (TRUE_NUM,))
+    # item1_in_set1 = is_in(store(set1, item1))
+    # axiom5 = CondAxiom(i1, i2, item1_in_set1, (1,),
+    #                            item1_in_set1, (is_in(set1, i1)))
+
+    # # union axioms
+    # axiom6 = Axiom(union(empty_set, set2), set2)
+    # axiom7 = Axiom(union(store(set1, item1), set2),
+    #                store(union(set1, set2), item1))
+    #
+    # # intersect axioms
+    # axiom8 = Axiom(intersect(empty_set, set2), empty_set)
+    # intersect_store = intersect(store(set1,), item1, set2)
+    # axiom9 = CondAxiom(is_in(T, item1), (1,),
+    #                    intersect_store, store(intersect(set1, set2), item1),
+    #                    intersect_store, interect(set1, set2))
 
     # Generators
     generators = [infinite_batches(train_data, batch_size, shuffle=True)
                   for i in range(nitems)]
     train_fn, call_fns = compile_fns(funcs, consts, forallvars, axioms,
                                      train_outs, options)
-    set_adt = AbstractDataType(funcs, consts, forallvars, axioms, name='set')
-    set_pdt = ProbDataType(set_adt, train_fn, call_fns, generators,
-                           gen_to_inputs, train_outs)
+    set_adt = AbstractDataType(funcs, consts, forallvars, axioms,
+                                 name='set')
+    set_pdt = ProbDataType(set_adt, train_fn, call_fns,
+                             generators, gen_to_inputs, train_outs)
     return set_adt, set_pdt
 
 def main(argv):
-    # Args
-    global options
-    global test_files, train_files
-    global views, outputs, net
-    global push, pop
-    global X_train
-    global adt, pdt
-    global save_dir
-    global sfx
+    options = handle_options('set', argv)
 
-    cust_options = {}
-    cust_options['nitems'] = (int, 3)
-    cust_options['width'] = (int, 28)
-    cust_options['height'] = (int, 28)
-    cust_options['num_epochs'] = (int, 100)
-    cust_options['save_every'] = (int, 100)
-    cust_options['compile_fns'] = (True,)
-    cust_options['save_params'] = (True,)
-    cust_options['train'] = (True,)
-    cust_options['nblocks'] = (int, 1)
-    cust_options['block_size'] = (int, 2)
-    cust_options['batch_size'] = (int, 512)
-    cust_options['nfilters'] = (int, 24)
-    cust_options['layer_width'] = (int, 50)
-    cust_options['adt'] = (str, 'set')
-    cust_options['template'] = (str, 'res_net')
-    options = handle_args(argv, cust_options)
+    mnist_data = load_dataset()
+    X_train = mnist_data[0].reshape(-1, 28, 28, 1)
+    sfx = gen_sfx_key(('adt', 'nblocks', 'block_size'), options)
 
-    X_train, y_train, X_val, y_val, X_test, y_test = load_dataset()
-    sfx = gen_sfx_key(('adt', 'nblocks', 'block_size', 'nfilters'), options)
-    options['template'] = parse_template(options['template'])
+    empty_set_args = {'initializer': tf.random_uniform_initializer}
+    set_adt, set_pdt = gen_set_adt(X_train,
+                                   options,
+                                   store_args=options,
+                                   is_in_args=options,
+                                   size_args=options,
+                                   is_empty_args=options,
+                                   empty_set_args=empty_set_args,
+                                   nitems=options['nitems'],
+                                   batch_size=options['batch_size'])
 
-    adt, pdt = gen_set_adt(X_train, options, push_args=options,
-                         nitems=options['nitems'], pop_args=options,
-                         batch_size=options['batch_size'])
-
+    graph = tf.get_default_graph()
     save_dir = mk_dir(sfx)
-    load_train_save(options, adt, pdt, sfx, save_dir)
+    load_train_save(options, set_adt, set_pdt, sfx, save_dir)
     push, pop = pdt.call_fns
-    loss, set, img, new_set, new_img = validate_set_img_rec(new_img, X_train, push, pop, 0, 1)
 
 
 if __name__ == "__main__":

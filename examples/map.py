@@ -131,7 +131,6 @@ def main(argv):
                                    batch_size=options['batch_size'])
 
     graph = tf.get_default_graph()
-    writer = tf.train.SummaryWriter('/home/zenna/repos/pdt/pdt/log', graph)
     save_dir = mk_dir(sfx)
     load_train_save(options, map_adt, map_pdt, sfx, save_dir)
     push, pop = map_pdt.call_fns
