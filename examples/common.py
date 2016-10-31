@@ -26,7 +26,10 @@ def handle_options(adt, argv):
     parser.add_option('-t', '--template', dest='template', nargs=1, type='string')
     (poptions, args) = parser.parse_args(argv)
     options = {}
-    options['template'] = poptions.template
+    if poptions.template is None:
+        options['template'] = 'res_net'
+    else:
+        options['template'] = poptions.template
     template_kwargs = template_module[options['template']].kwargs()
     options.update(template_kwargs)
     options['train'] = (True,)

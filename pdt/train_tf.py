@@ -13,6 +13,8 @@ def get_updates(loss, options):
         optimizer = tf.train.AdamOptimizer(learning_rate=options['learning_rate'])
     elif options['update'] == 'rmsprop':
         optimizer = tf.train.RMSPropOptimizer(learning_rate=options['learning_rate'])
+    else:
+        assert False, "Unknown loss minimizer"
     update_step = optimizer.minimize(loss)
     return optimizer, update_step
 

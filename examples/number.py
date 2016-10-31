@@ -4,30 +4,42 @@ from pdt.common import *
 from common import handle_options, load_train_save
 
 
-def number_adt(options, niters=3, number_shape=(5,), batch_size=64,
-               succ_args={}, add_args={}, mul_args={},
-               encode_args={}, decode_args={}, zero_args={}):
+def gen_number_adt(options,
+                   niters=3,
+                   number_shape=(5,),
+                   batch_size=64,
+                   succ_args={},
+                   add_args={},
+                   mul_args={},
+                   encode_args={},
+                   decode_args={},
+                   zero_args={}):
     # Types
     Number = Type(number_shape, "number")
     BinInteger = Type((1,), "bin_integer")  # A python integer
 
     # Interface
+    funcs = []
     succ = Interface([Number], [Number], 'succ', **succ_args)
-    # add = Interface([Number, Number], [Number], 'add', **add_args)
+    funcs.append(succ)
+    add = Interface([Number, Number], [Number], 'add', **add_args)
+    funcs.append(add)
     # mul = Interface([Number, Number], [Number], 'mul', **mul_args)
     encode = Interface([BinInteger], [Number], 'encode', **encode_args)
+    funcs.append(encode)
     decode = Interface([Number], [BinInteger], 'decode', **decode_args)
-    funcs = [succ, encode, decode]
+    funcs.append(decode)
+    # funcs = [succ, encode, decode]
     # funcs = [succ, add, mul, encode, decode]
 
     # Vars
     # a = ForAllVar(Number)
     # b = ForAllVar(Number)
-    bi = ForAllVar(BinInteger, "bi")
-    # bj = ForAllVar(BinInteger)
+    bi = ForAllVar(BinInteger, "b_i")
+    bj = ForAllVar(BinInteger, "b_j")
 
     # forallvars = [bi, bj]
-    forallvars = [bi]
+    forallvars = [bi, bj]
 
     # Consts
     zero = Const(Number, "zero", batch_size, **zero_args)
@@ -38,17 +50,23 @@ def number_adt(options, niters=3, number_shape=(5,), batch_size=64,
     # axioms
     # biv = tf.Print(bi.input_var, [bi.input_var], message="buv!")
     biv = bi.input_var
+    bjv = bj.input_var
     (encoded1,) = encode(biv)
+    (encoded2,) = encode(bjv)
     # encoded1 = tf.Print(encoded1, [encoded1], message="message!")
     # (encoded2,) = encode(bj)
+    axioms = []
 
     axiom_zero = Axiom(decode(zero_batch), (0.0,))
+    axioms.append(axiom_zero)
 
     axiom_ed = Axiom(decode(encoded1), (biv,))
+    axioms.append(axiom_ed)
+
     (succ_encoded,) = succ(encoded1)
     axiom_succ_ed = Axiom(decode(succ_encoded), (bi.input_var + 1,))
+    axioms.append(axiom_succ_ed)
     #
-    axioms = [axiom_ed, axiom_succ_ed]
     #
     # a = encoded1
     # b = encoded2
@@ -56,9 +74,16 @@ def number_adt(options, niters=3, number_shape=(5,), batch_size=64,
     # (succ_b,) = succ(b)
     # mul_a_succ_b = mul(a, succ_b)
     # mul_axiom2_rhs = mul(a, b) + [a]
-    #
-    # add_axiom1 = Axiom(add(a, zero_batch), (a,))
-    # add_axiom2 = Axiom(add(a, succ_b), succ(*add(a, b)))
+
+    # n + 0 = n
+    add_axiom1 = Axiom(add(encoded1, zero_batch), (encoded1,))
+    axioms.append(add_axiom1)
+
+    # a + succ(b) == succ(a + b)
+    (succ_j, ) = succ(encoded2)
+    add_axiom2 = Axiom(add(encoded1, succ_j), succ(*add(encoded1, succ_j)))
+    axioms.append(add_axiom2)
+
     # mul_axiom1 = Axiom(mul(a, zero_batch), (zero_batch,))
     # mul_axiom2 = Axiom(mul(a, succ_b), add(*mul_axiom2_rhs))
     # arith_axioms = [add_axiom1, add_axiom2, mul_axiom1, mul_axiom2]
@@ -73,7 +98,7 @@ def number_adt(options, niters=3, number_shape=(5,), batch_size=64,
         # # import pdb; pdb.set_trace()
         return q
     generators = [infinite_samples(realistic_nums, batch_size, (1,))
-                  for i in range(1)]
+                  for i in range(2)]
 
     train_outs = []
     gen_to_inputs = identity
@@ -88,31 +113,24 @@ def number_adt(options, niters=3, number_shape=(5,), batch_size=64,
 
 
 def main(argv):
-    # Args
-    global options
-    global test_files, train_files
-    global views, outputs, net
-    global push, pop
-    global X_train
-    global adt, pdt
-    global sfx
-    global save_dir
-
     options = handle_options('number', argv)
     sfx = gen_sfx_key(('adt', 'template', 'nblocks', 'block_size'), options)
     zero_args = {'initializer': tf.random_uniform_initializer}
 
 
-    adt, pdt = number_adt(options,
-                          number_shape=(5,),
-                          succ_args=options, add_args=options,
-                          mul_args=options, encode_args=options,
-                          decode_args=options,
-                          zero_args=zero_args,
-                          batch_size=options['batch_size'])
+    adt, pdt = gen_number_adt(options,
+                              number_shape=(5,),
+                              succ_args=options,
+                              add_args=options,
+                              mul_args=options,
+                              encode_args=options,
+                              decode_args=options,
+                              zero_args=zero_args,
+                              batch_size=options['batch_size'])
 
     save_dir = mk_dir(sfx)
     load_train_save(options, adt, pdt, sfx, save_dir)
 
 if __name__ == "__main__":
     main(sys.argv[1:])
+    # ipython -- number.py -l 0.0001 -u adam --batch_size=512
