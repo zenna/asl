@@ -6,6 +6,7 @@ import tensorflow as tf
 
 
 def get_updates(loss, options):
+
     if options['update'] == 'momentum':
         optimizer = tf.train.MomentumOptimizer(learning_rate=options['learning_rate'],
                                                momentum=options['momentum'])
@@ -66,12 +67,11 @@ def compile_fns(funcs, consts, forallvars, axioms, train_outs, options):
     return train_fn, call_fns
 
 
-def train(adt, pdt, num_epochs=10000, summary_gap=100, save_every=10, sfx='',
+def train(adt, pdt, sess, num_epochs=10000, summary_gap=100, save_every=10, sfx='',
           compress=False, save_dir="./"):
     """One epoch is one pass through the data set"""
     print("Starting training...")
-    sess = tf.Session()
-    sess.run(tf.initialize_all_variables())
+
     stats = {'loss_vars': [], 'loss_sums': []}
     for epoch in range(num_epochs):
         train_err = 0
@@ -109,6 +109,5 @@ def train(adt, pdt, num_epochs=10000, summary_gap=100, save_every=10, sfx='',
             #     path = os.path.join(save_dir, sfx2)
             #     # adt.save_params(path, compress=compress)
         print("epoch: ", epoch, " Total loss per epoch: ", train_err)
-
-    path = os.path.join(save_dir, "final" + sfx)
-    adt.save_params(path)
+    # path = os.path.join(save_dir, "final" + sfx)
+    # adt.save_params(path)

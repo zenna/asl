@@ -98,6 +98,19 @@ class Interface():
                                                 **self.template_kwargs)
         return outputs
 
+    def to_python_lambda(self, sess):
+        """Generate a callable python function for this interface function"""
+
+        def func(*args, sess=sess):
+            assert len(args) == len(self.inputs), "Expected %s inputs, got %s" % (len(self.inputs), len(args))
+            feed_dict = dict(zip(self.inputs, args))
+            outputs = sess.run(self.outputs, feed_dict=feed_dict)
+            return outputs
+
+        func.__doc__ = """"%s : [] -> []""" % self.name # TODO FINISH
+
+        return func
+
     def input_name(self, type, input_id):
         """
         push_0_Stack

@@ -7,6 +7,8 @@ from pdt.train_tf import *
 def load_train_save(options, adt, pbt, sfx, save_dir):
     options_path = os.path.join(save_dir, "options")
     save_dict_csv(options_path, options)
+    sess = tf.Session()
+    sess.run(tf.initialize_all_variables())
 
     if options['load_params'] is True:
         adt.load_params(options['params_file'])
@@ -16,9 +18,11 @@ def load_train_save(options, adt, pbt, sfx, save_dir):
         adt.save_params(path)
 
     if options['train'] is True:
-        train(adt, pbt, num_epochs=options['num_epochs'],
+        train(adt, pbt, sess, num_epochs=options['num_epochs'],
               sfx=sfx, save_dir=save_dir, save_every=options['save_every'],
               compress=options['compress'])
+
+    return sess
 
 
 def handle_options(adt, argv):

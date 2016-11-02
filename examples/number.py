@@ -81,7 +81,7 @@ def gen_number_adt(options,
 
     # a + succ(b) == succ(a + b)
     (succ_j, ) = succ(encoded2)
-    add_axiom2 = Axiom(add(encoded1, succ_j), succ(*add(encoded1, succ_j)))
+    add_axiom2 = Axiom(add(encoded1, succ_j), succ(*add(encoded1, encoded2)))
     axioms.append(add_axiom2)
 
     # mul_axiom1 = Axiom(mul(a, zero_batch), (zero_batch,))
@@ -111,8 +111,12 @@ def gen_number_adt(options,
                               generators, gen_to_inputs, train_outs)
     return number_adt, number_pdt
 
+# def save():
+#     all_variables = tf.all_variables()
+#     savers = [saver = tf.train.Saver()
 
 def main(argv):
+    global adt, pdt, sess
     options = handle_options('number', argv)
     sfx = gen_sfx_key(('adt', 'template', 'nblocks', 'block_size'), options)
     zero_args = {'initializer': tf.random_uniform_initializer}
@@ -129,7 +133,7 @@ def main(argv):
                               batch_size=options['batch_size'])
 
     save_dir = mk_dir(sfx)
-    load_train_save(options, adt, pdt, sfx, save_dir)
+    sess = load_train_save(options, adt, pdt, sfx, save_dir)
 
 if __name__ == "__main__":
     main(sys.argv[1:])
