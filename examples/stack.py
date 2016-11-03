@@ -59,11 +59,11 @@ def stack_adt(train_data,
         pop_stack = stack
         for j in range(i, -1, -1):
             (pop_stack, pop_item) = pop(pop_stack)
-            axiom = Axiom((pop_item,), (items[j].input_var,))
+            axiom = Axiom((pop_item,), (items[j].input_var,), 'item-eq%s-%s' %(i, j))
             axioms.append(axiom)
 
             # Stack equivalence
-            axiom = Axiom((pop_stack,), (stacks[j],))
+            axiom = Axiom((pop_stack,), (stacks[j],), 'stack-eq%s-%s' %(i, j))
             axioms.append(axiom)
     train_fn, call_fns = compile_fns(funcs, consts, forallvars, axioms,
                                      train_outs, options)

@@ -163,6 +163,7 @@ class Axiom():
         assert len(lhs) == len(rhs)
         self.lhs = lhs
         self.rhs = rhs
+        self.name = name
 
     def get_losses(self, dist=mse):
         print("lhs", self.lhs)

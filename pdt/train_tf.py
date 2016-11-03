@@ -101,6 +101,7 @@ def train(adt,
             train_batches += 1
             gens = [next(gen) for gen in pdt.generators]
             if i % save_every == 0:
+                print(dict(zip([axiom.name for axiom in adt.axioms], losses[0:-1])))
                 save_path = os.path.join(save_dir, "model.ckpt")
                 save_path = saver.save(sess, save_path)
                 print("Model saved in file: %s" % save_path)
