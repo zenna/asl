@@ -95,6 +95,14 @@ def stack_unstack(n, stack, offset=0):
 def mnistshow(x):
     plt.imshow(x.reshape(28, 28))
 
+def internal_plot(images, push, pop, empty):
+    stack = empty
+    for i in range(len(images)):
+        mnistshow(stack)
+        plt.figure()
+        (stack,) = push(stack, images[i])
+    mnistshow(stack)
+
 def main(argv):
     global adt, pdt, sess, X_train, sfx
     options = handle_options('stack', argv)

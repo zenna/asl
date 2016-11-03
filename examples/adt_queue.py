@@ -1,7 +1,7 @@
 from mnist import load_dataset
 from pdt.train_tf import compile_fns
 from pdt.common import gen_sfx_key
-from pdt.util.io import infinite_batches, identity, mk_dir
+from pdt.util.io import  mk_dir
 from pdt.util.misc import *
 from pdt.util.generators import infinite_samples, infinite_batches
 from pdt.types import (Type, Interface, Const, Axiom, ForAllVar,
