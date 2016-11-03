@@ -12,7 +12,7 @@ from common import handle_options, load_train_save
 
 def stack_adt(train_data,
               options,
-              stack_shape=(28, 28, 1),
+              stack_shape=(5, 5, 1),
               push_args={},
               pop_args={},
               empty_stack_args={},
@@ -63,8 +63,8 @@ def stack_adt(train_data,
             axioms.append(axiom)
 
             # Stack equivalence
-            axiom = Axiom((pop_stack,), (stacks[j],), 'stack-eq%s-%s' %(i, j))
-            axioms.append(axiom)
+            # axiom = Axiom((pop_stack,), (stacks[j],), 'stack-eq%s-%s' %(i, j))
+            # axioms.append(axiom)
     train_fn, call_fns = compile_fns(funcs, consts, forallvars, axioms,
                                      train_outs, options)
     stack_adt = AbstractDataType(funcs, consts, forallvars, axioms,

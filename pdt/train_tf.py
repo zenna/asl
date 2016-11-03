@@ -71,7 +71,7 @@ def train(adt,
           pdt,
           sess,
           num_epochs=10000,
-          summary_gap=100,
+          summary_gap=500,
           save_every=10,
           sfx='',
           compress=False,
@@ -102,9 +102,9 @@ def train(adt,
             gens = [next(gen) for gen in pdt.generators]
             if i % save_every == 0:
                 print(dict(zip([axiom.name for axiom in adt.axioms], losses[0:-1])))
-                save_path = os.path.join(save_dir, "model.ckpt")
-                save_path = saver.save(sess, save_path)
-                print("Model saved in file: %s" % save_path)
+                # save_path = os.path.join(save_dir, "model.ckpt")
+                # save_path = saver.save(sess, save_path)
+                # print("Model saved in file: %s" % save_path)
             #     # Savs statistics
             #     loss_sum = np.sum(losses)
             #     stats['loss_sums'].append(loss_sum)
