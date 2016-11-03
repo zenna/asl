@@ -1,141 +1,10 @@
-import sys
-import numpy as np
 import getopt
 import os
-import scipy.ndimage
 import csv
 import time
 import pdt.config
-
-## Backend specific
-if pdt.config.backend == 'tensorflow':
-    from pdt.backend.tensorflow.io import *
-elif pdt.config.backend == 'theano':
-    import pdt.backend.theano.io
-
-
-## Primitive Functions
-## ------------------
-def upper_div(x, y):
-    a, b = divmod(x, y)
-    if b == 0:
-        return a
-    else:
-        return a + 1
-
-def identity(x):
-    return x
-
-
-def upper_div(x, y):
-    a, b = divmod(x, y)
-    if b == 0:
-        return a
-    else:
-        return a + 1
-
-
-
-def circular_indices(lb, ub, thresh):
-    indices = []
-    while True:
-        stop = min(ub, thresh)
-        ix = np.arange(lb, stop)
-        indices.append(ix)
-        if stop != ub:
-            diff = ub - stop
-            lb = 0
-            ub = diff
-        else:
-            break
-
-    return np.concatenate(indices)
-
-
-# Minibatching
-def infinite_samples(sampler, batchsize, shape):
-    while True:
-        to_sample_shape = (batchsize,)+shape
-        yield sampler(*to_sample_shape)
-
-
-def infinite_batches(inputs, batchsize, f=identity, shuffle=False):
-    start_idx = 0
-    nelements = len(inputs)
-    indices = np.arange(nelements)
-    if shuffle:
-        indices = np.arange(len(inputs))
-        np.random.shuffle(indices)
-    while True:
-        end_idx = start_idx + batchsize
-        if end_idx > nelements:
-            diff = end_idx - nelements
-            excerpt = np.concatenate([indices[start_idx:nelements], indices[0:diff]])
-            start_idx = diff
-            if shuffle:
-                indices = np.arange(len(inputs))
-                np.random.shuffle(indices)
-        else:
-            excerpt = indices[start_idx:start_idx + batchsize]
-            start_idx = start_idx + batchsize
-        yield f(inputs[excerpt])
-
-#
-# def infinite_batches(inputs, batchsize, f, shuffle=False):
-#     start_idx = 0
-#     nelements = len(inputs)
-#     indices = np.arange(nelements)
-#     if shuffle:
-#         indices = np.arange(len(inputs))
-#         np.random.shuffle(indices)
-#     while True:
-#         data = yield
-#         end_idx = start_idx + batchsize
-#         if end_idx > nelements:
-#             diff = end_idx - nelements
-#             excerpt = np.concatenate([indices[start_idx:nelements],
-#                                       indices[0:diff]])
-#             start_idx = diff
-#             if shuffle:
-#                 indices = np.arange(len(inputs))
-#                 np.random.shuffle(indices)
-#         else:
-#             excerpt = indices[start_idx:start_idx + batchsize]
-#             start_idx = start_idx + batchsize
-#         yield f(inputs[excerpt], data)
-
-
-def constant_batches(x, f):
-    while True:
-        data = yield
-        yield f(x, data)
-
-
-def iterate_batches(inputs, batchsize, shuffle=False):
-    if shuffle:
-        indices = np.arange(len(inputs))
-        np.random.shuffle(indices)
-    for start_idx in range(0, len(inputs) - batchsize + 1, batchsize):
-        if shuffle:
-            excerpt = indices[start_idx:start_idx + batchsize]
-        else:
-            excerpt = slice(start_idx, start_iiteratedx + batchsize)
-        yield inputs[excerpt]
-
-# Dict Functions
-def stringy(ls):
-    out = ""
-    for l in ls:
-        out = out + str(l) + "_"
-    return out
-
-
-def stringy_dict(d):
-    out = ""
-    for (key, val) in d.items():
-        if val is not None and val is not '':
-            out = out + "%s_%s__" % (str(key), str(val))
-    return out
+import sys
+from optparse import (OptionParser,BadOptionError,AmbiguousOptionError)
 
 
 def save_params(fname, params):
@@ -145,6 +14,7 @@ def save_params(fname, params):
         writer.writerow([key, value])
     f.close()
 
+
 def save_dict_csv(fname, params):
     f = open(fname, 'w')
     writer = csv.writer(f)
@@ -152,10 +22,6 @@ def save_dict_csv(fname, params):
         writer.writerow([str(key), str(value)])
     f.close()
 
-def npz_to_array(npzfile):
-    """"Get a list of numpy arrays from a npz file"""
-    nitems = len(npzfile.keys())
-    return [npzfile['arr_%s' % i]  for i in range(nitems)]
 
 def get_filepaths(directory):
     """
@@ -175,8 +41,10 @@ def get_filepaths(directory):
     return file_paths  # Self-explanatory.
 
 
+
 def default_kwargs():
     """Default kwargs"""
+    assert(False)
     options = {}
     options['learning_rate'] = (float, 0.1)
     options['update'] = (str, 'momentum')
@@ -185,15 +53,14 @@ def default_kwargs():
     options['description'] = (str, None)
     options['batch_size'] = (int, 128)
     options['save_every'] = (int, 100)
-    options['compress'] = (False,)
+    options['compress'] = (boolify, 0,)
     options['num_epochs'] = (int, 10)
-    options['compile_fns'] = (True,)
-    options['save_params'] = (False,)
+    options['compile_fns'] = (boolify, 1)
+    options['save_params'] = (boolify, True)
     options['template'] = (str, 'res_net')
-    options['train'] = (True,)
+    options['train'] = (boolify, True)
     return options
 
-from optparse import (OptionParser,BadOptionError,AmbiguousOptionError)
 
 class PassThroughOptionParser(OptionParser):
     """
@@ -261,15 +128,14 @@ def handle_args(argv, cust_opts):
         elif opt in ("-t", "--template"):
             options['template'] = arg
         elif opt in cust_double_dash:
+
             opt_key = opt[2:]  # remove --
             cust = cust_opts[opt_key]
-            if len(cust) == 1:
-                options[opt_key] = True
-            elif len(cust) == 2:
-                f, default = cust
-                options[opt_key] = f(arg)
-            else:
-                sys.exit()
+            assert len(cust) == 2
+            f, default = cust
+            options[opt_key] = f(arg)
+
+    # import pdb; pdb.set_trace()
 
     # add defaults back
     for (key, val) in cust_opts.items():
@@ -284,7 +150,7 @@ def mk_dir(sfx=''):
     "Create directory with timestamp"
     datadir = os.environ['DATADIR']
     newdirname = str(time.time()) + sfx
-    full_dir_name = os.path.join(datadir, newdirname)
+    full_dir_name = os.path.join(datadir, "pdt", newdirname)
     print("Data will be saved to", full_dir_name)
     os.mkdir(full_dir_name)
     return full_dir_name

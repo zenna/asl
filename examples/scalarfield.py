@@ -6,7 +6,7 @@ from mnist import *
 from common import handle_options, load_train_save
 from pdt.train_tf import *
 from pdt.common import *
-from pdt.io import *
+from pdt.util.io import *
 from pdt.types import *
 
 

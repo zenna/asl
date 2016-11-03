@@ -1,15 +1,13 @@
 from __future__ import print_function
 
-from pdt.templates import *
 from pdt.distances import *
 import time
-import sys
 import numpy as np
 from io import *
-from pdt.io import placeholder
 from pdt.config import floatX
 from pdt.distances import mse, mae
 from pdt.common import *
+from pdt.util.backend import variable, repeat_to_batch, placeholder
 
 # import theano
 # import theano.tensor as T
@@ -17,8 +15,6 @@ from pdt.common import *
 # from lasagne.utils import floatX
 # from theano common.variable theano import function
 # from theano import confi  g
-
-sys.setrecursionlimit(40000)
 
 
 def typed_arg_name(type_name, arg_name):
@@ -257,9 +253,9 @@ class Const():
         broadcastable = (True,) + (False,) * (len(self.shape) - 1)
         with tf.name_scope(self.const_name()):
             arr = initializer()(self.shape)
-            self.input_var = pdt.common.variable(arr, dtype=type.dtype,
-                                             name=self.const_name(),
-                                             broadcastable=broadcastable)
+            self.input_var = variable(arr, dtype=type.dtype,
+                                      name=self.const_name(),
+                                      broadcastable=broadcastable)
             if do_repeat_to_batch:
                 self.batch_input_var = repeat_to_batch(self.input_var, batch_size)
 

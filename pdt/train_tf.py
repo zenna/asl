@@ -67,8 +67,16 @@ def compile_fns(funcs, consts, forallvars, axioms, train_outs, options):
     return train_fn, call_fns
 
 
-def train(adt, pdt, sess, num_epochs=10000, summary_gap=100, save_every=10, sfx='',
-          compress=False, save_dir="./"):
+def train(adt,
+          pdt,
+          sess,
+          num_epochs=10000,
+          summary_gap=100,
+          save_every=10,
+          sfx='',
+          compress=False,
+          save_dir="./",
+          saver=None):
     """One epoch is one pass through the data set"""
     print("Starting training...")
 
@@ -92,14 +100,16 @@ def train(adt, pdt, sess, num_epochs=10000, summary_gap=100, save_every=10, sfx=
             train_err += losses[-2]
             train_batches += 1
             gens = [next(gen) for gen in pdt.generators]
-            # if i % save_every == 0:
+            if i % save_every == 0:
+                save_path = os.path.join(save_dir, "model.ckpt")
+                save_path = saver.save(sess, save_path)
+                print("Model saved in file: %s" % save_path)
             #     # Savs statistics
             #     loss_sum = np.sum(losses)
             #     stats['loss_sums'].append(loss_sum)
             #     loss_var = np.var(losses)
             #     stats['loss_vars'].append(loss_var)
             #     stat_sfx = "epoch_%s_run_%s_stats" % (epoch, i)
-            #     stats_path = os.path.join(save_dir, stat_sfx)
             #     if compress:
             #         np.savez_compressed(stats_path, **stats)
             #     else:
