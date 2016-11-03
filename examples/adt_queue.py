@@ -68,6 +68,7 @@ def gen_queue_adt(train_data,
 
 
 def main(argv):
+    global queue_adt, queue_pdt, sess, X_train, sfx
     options = handle_options('queue', argv)
 
     mnist_data = load_dataset()
@@ -75,15 +76,16 @@ def main(argv):
     sfx = gen_sfx_key(('adt', 'nblocks', 'block_size'), options)
 
     empty_queue_args = {'initializer': tf.random_uniform_initializer}
-    queue_adt, queue_pdt = gen_queue_adt(X_train, options, enqueue_args=options,
-                         nitems=options['nitems'], dequeue_args=options,
-                         empty_queue_args=empty_queue_args,
-                         batch_size=options['batch_size'])
+    queue_adt, queue_pdt = gen_queue_adt(X_train,
+                                         options,
+                                         enqueue_args=options,
+                                         nitems=options['nitems'],
+                                         dequeue_args=options,
+                                         empty_queue_args=empty_queue_args,
+                                         batch_size=options['batch_size'])
 
-    graph = tf.get_default_graph()
     save_dir = mk_dir(sfx)
-    load_train_save(options, queue_adt, queue_pdt, sfx, save_dir)
-    enqueue, dequeue = queue_pdt.call_fns
+    sess = load_train_save(options, queue_adt, queue_pdt, sfx, save_dir)
 
 
 if __name__ == "__main__":

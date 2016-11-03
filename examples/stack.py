@@ -12,7 +12,7 @@ from common import handle_options, load_train_save
 
 def stack_adt(train_data,
               options,
-              stack_shape=(5, 5, 1),
+              stack_shape=(28, 28, 1),
               push_args={},
               pop_args={},
               empty_stack_args={},

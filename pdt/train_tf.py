@@ -79,7 +79,7 @@ def train(adt,
           saver=None):
     """One epoch is one pass through the data set"""
     print("Starting training...")
-
+    j = 0
     stats = {'loss_vars': [], 'loss_sums': []}
     for epoch in range(num_epochs):
         train_err = 0
@@ -100,11 +100,12 @@ def train(adt,
             train_err += losses[-2]
             train_batches += 1
             gens = [next(gen) for gen in pdt.generators]
-            if i % save_every == 0:
+            if j % save_every == 0:
                 print(dict(zip([axiom.name for axiom in adt.axioms], losses[0:-1])))
-                # save_path = os.path.join(save_dir, "model.ckpt")
-                # save_path = saver.save(sess, save_path)
-                # print("Model saved in file: %s" % save_path)
+                save_path = os.path.join(save_dir, "model.ckpt")
+                save_path = saver.save(sess, save_path)
+                print("Model saved in file: %s" % save_path)
+            j = j + 1
             #     # Savs statistics
             #     loss_sum = np.sum(losses)
             #     stats['loss_sums'].append(loss_sum)
