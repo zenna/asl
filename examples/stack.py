@@ -1,4 +1,3 @@
-from pdt import *
 from mnist import *
 # from ig.util import *
 from pdt.train_tf import *
