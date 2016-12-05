@@ -75,7 +75,7 @@ def unsign(t):
 
 def gen_scalar_field_adt(train_data,
                          options,
-                         field_shape=(100,),
+                         field_shape=(8, 8, 8),
                          voxel_grid_shape=(32, 32, 32),
                          npoints=100,
                          batch_size=64,

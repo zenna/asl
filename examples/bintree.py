@@ -1,12 +1,32 @@
-def binary_tree(train_data, binary_tree_shape = (500,), item_shape = (28*28,),  batch_size = 256):
-    BinTree = Type(binary_tree_shape)
-    Item = Type(item_shape)
-    make = Interface([BinTree, Item, BinTree],[BinTree], res_net, layer_width=500)
-    left_tree = Interface([BinTree], [BinTree], res_net, layer_width=500)
-    right_tree = Interface([BinTree], [BinTree], res_net, layer_width=500)
-    get_item = Interface([BinTree], [Item], res_net, layer_width=500)
+from mnist import *
+# from ig.util import *
+from pdt.train_tf import *
+from pdt.common import *
+from pdt.util.misc import *
+from pdt.util.io import mk_dir
+from pdt.util.generators import infinite_samples, infinite_batches
+from pdt.types import *
+from common import handle_options, load_train_save
+
+
+def gen_binary_tree_adt(train_data,
+                        options,
+                        binary_tree_shape=(28, 28, 1),
+                        left_tree_args={},
+                        right_tree_args={},
+                        get_item_args={},
+                        item_shape=(28*28,),
+                        batch_size=512):
+    """Construct a Binary Tree Data Structure"""
+    BinTree = Type(binary_tree_shape. 'Binary_Tree')
+    Item = Type(item_shape, 'Item')
+    make = Interface([BinTree, Item, BinTree], [BinTree], 'make', **make_args)
+    left_tree = Interface([BinTree], [BinTree], 'left_tree', left_tree_args)
+    right_tree = Interface([BinTree], [BinTree], 'right_tree', right_tree_args)
+    get_item = Interface([BinTree], [Item], 'get_item', get_item_args)
     # is_empty = Interface([BinTree], [BoolType])
 
+    # Vars
     bintree1 = ForAllVar(BinTree)
     bintree2 = ForAllVar(BinTree)
     item1 = ForAllVar(Item)
@@ -26,54 +46,38 @@ def binary_tree(train_data, binary_tree_shape = (500,), item_shape = (28*28,),  
     axioms = [axiom2, axiom4, axiom6]
     forallvars = [bintree1, bintree2, item1]
     generators = [infinite_samples(np.random.rand, batch_size, binary_tree_shape),
-                 infinite_samples(np.random.rand, batch_size, binary_tree_shape),
-                 infinite_minibatches(train_data, batch_size, True)]
-    train_fn, call_fns = compile_fns(interfaces, forallvars, axioms, options)
-    train(train_fn, generators)
+                  infinite_samples(np.random.rand, batch_size, binary_tree_shape),
+                  infinite_minibatches(train_data, batch_size, True)]
+
+    train_fn, call_fns = compile_fns(funcs, consts, forallvars, axioms,
+                                     train_outs, options)
+    binary_tree_adt = AbstractDataType(funcs, consts, forallvars, axioms,
+                                       name='binary_tree')
+    binary_tree_pdt = ProbDataType(binary_tree_adt, train_fn, call_fns,
+                                   generators, gen_to_inputs, train_outs)
+    return binary_tree_adt, binary_tree_pdt
 
 
-    # stack_example_conv(X_train, options)
-    # binary_tree(X_train.reshape(50000,28*28))
-    # scalar_field_example()
+def main(argv):
+    global adt, pdt, sess
+    options = handle_options('number', argv)
+    sfx = gen_sfx_key(('adt', 'template', 'nblocks', 'block_size'), options)
+    zero_args = {'initializer': tf.random_uniform_initializer}
 
 
-# def associative_array(keyed_table_shape = (100,)):
-#     # Types
-#     KeyedTable = Type(keyed_table_shape)
-#     Key = Type(key_shape)
-#     Value = Type(val_shape)
-#     # Interface
-#     update = Interface([KeyedTable, Key, Value], [KeyedTable])
-#     delete = Interface([KeyedTable Key], [KeyedTable])
-#     find = Interface([KeyedTable, Key], [Value])
-#     # is_in = Interface([KeyedTable Key], [BoolType])
-#     # is_empty = Interface([KeyedTable], [BoolType])
-#     # interface = [store, delete, find, is_in, is_empty]
-#     interface = [update, delete, find]
-#
-#     # Variables
-#     item1 = ForAllVar(Value)
-#     key1 = ForAllVar(Key)
-#     key2 = ForAllVar(Key)
-#     kt1 = ForAllVar(KeyedTable)
-#
-#     axiom1 = find(update(kt1, )))
-#
-#
-#     Item = Type(item_shape)
-#     make = Interface([BinTree, Item, BinTree],[BinTree], res_net, layer_width=500)
-#     left_tree = Interface([BinTree], [BinTree], res_net, layer_width=500)
-#     right_tree = Interface([BinTree], [BinTree], res_net, layer_width=500)
-#     get_item = Interface([BinTree], [Item], res_net, layer_width=500)
-# #
-# # def hierarhical_concept():
-# #     ...
-#
-# def hierarhical_concept():
-#     a = 3
-#
-# def turing_machine(state_shape=(10,), Symbol(1,)):
-#     State = Type(state_shape)
-#     Symbol = Type(symbol)
-#
-#     Q_s = Constant(0)
+    adt, pdt = gen_binary_tree_adt(options,
+                                   number_shape=(5,),
+                                   succ_args=options,
+                                   add_args=options,
+                                   mul_args=options,
+                                   encode_args=options,
+                                   decode_args=options,
+                                   zero_args=zero_args,
+                                   batch_size=options['batch_size'])
+
+    save_dir = mk_dir(sfx)
+    sess = load_train_save(options, adt, pdt, sfx, save_dir)
+
+if __name__ == "__main__":
+    main(sys.argv[1:])
+    # ipython -- number.py -l 0.0001 -u adam --batch_size=512
