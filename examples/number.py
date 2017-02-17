@@ -126,7 +126,7 @@ def main(argv):
 
 
     adt, pdt = gen_number_adt(options,
-                              number_shape=(5,),
+                              number_shape=(10,),
                               succ_args=options,
                               add_args=options,
                               mul_args=options,
@@ -141,3 +141,16 @@ def main(argv):
 if __name__ == "__main__":
     main(sys.argv[1:])
     # ipython -- number.py -l 0.0001 -u adam --batch_size=512
+    interface = {f.name:f for f in adt.funcs}
+    add = interface['add'].to_python_lambda(sess)
+    succ = interface['succ'].to_python_lambda(sess)
+    decode = interface['decode'].to_python_lambda(sess)
+    encode = interface['encode'].to_python_lambda(sess)
+
+    vecs = [encode([[i]])[0] for i in range(20)]
+
+    zero = adt.consts[0].input_var.eval(sess)
+    succ_vecs = [zero]
+    for i in range(20 - 1):
+        succ_ed = succ(succ_vecs[-1])
+        succ_vecs.append(succ_ed[0])
