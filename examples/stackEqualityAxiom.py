@@ -9,26 +9,26 @@ from pdt.types import *
 from common import handle_options, load_train_save
 
 
-def stack_adt(train_data,
+def eqstack_adt(train_data,
               options,
-              stack_shape=(28, 28, 1),
+              eqstack_shape=(28, 28, 1),
               push_args={},
               pop_args={},
-              empty_stack_args={},
+              empty_eqstack_args={},
               item_shape=(28, 28, 1),
               batch_size=512,
               nitems=3):
-    """Construct a stack abstract data type"""
-    # Types - a Stack of Item
-    Stack = Type(stack_shape, 'Stack')
+    """Construct a eqstack abstract data type"""
+    # Types - a Eqstack of Item
+    Eqstack = Type(eqstack_shape, 'Eqstack')
     Item = Type(item_shape, 'Item')
 
     # Interface
 
-    # Push an Item onto a Stack to create a new stack
-    push = Interface([Stack, Item], [Stack], 'push', **push_args)
-    # Pop an Item from a stack, returning a new stack and the item
-    pop = Interface([Stack], [Stack, Item], 'pop', **pop_args)
+    # Push an Item onto a Eqstack to create a new eqstack
+    push = Interface([Eqstack, Item], [Eqstack], 'push', **push_args)
+    # Pop an Item from a eqstack, returning a new eqstack and the item
+    pop = Interface([Eqstack], [Eqstack, Item], 'pop', **pop_args)
     funcs = [push, pop]
 
     # train_outs
@@ -36,12 +36,12 @@ def stack_adt(train_data,
     gen_to_inputs = identity
 
     # Consts
-    # The empty stack is the stack with no items
-    empty_stack = Const(Stack, 'empty_stack', batch_size, **empty_stack_args)
-    consts = [empty_stack]
+    # The empty eqstack is the eqstack with no items
+    empty_eqstack = Const(Eqstack, 'empty_eqstack', batch_size, **empty_eqstack_args)
+    consts = [empty_eqstack]
 
     # Vars
-    # stack1 = ForAllVar(Stack)
+    # eqstack1 = ForAllVar(Eqstack)
     items = [ForAllVar(Item, str(i)) for i in range(nitems)]
     forallvars = items
 
@@ -50,74 +50,74 @@ def stack_adt(train_data,
 
     # Axioms
     axioms = []
-    stack = empty_stack.batch_input_var
-    stacks = [stack]
+    eqstack = empty_eqstack.batch_input_var
+    eqstacks = [eqstack]
     for i in range(nitems):
-        (stack,) = push(stack, items[i].input_var)
-        stacks.append(stack)
-        pop_stack = stack
+        (eqstack,) = push(eqstack, items[i].input_var)
+        eqstacks.append(eqstack)
+        pop_eqstack = eqstack
         for j in range(i, -1, -1):
-            (pop_stack, pop_item) = pop(pop_stack)
+            (pop_eqstack, pop_item) = pop(pop_eqstack)
             axiom = Axiom((pop_item,), (items[j].input_var,), 'item-eq%s-%s' %(i, j))
             axioms.append(axiom)
 
-            # Stack equivalence
-            axiom = Axiom((pop_stack,), (stacks[j],), 'stack-eq%s-%s' %(i, j))
+            # Eqstack equivalence
+            axiom = Axiom((pop_eqstack,), (eqstacks[j],), 'eqstack-eq%s-%s' %(i, j))
             axioms.append(axiom)
     train_fn, call_fns = compile_fns(funcs, consts, forallvars, axioms,
                                      train_outs, options)
-    stack_adt = AbstractDataType(funcs, consts, forallvars, axioms,
-                                 name='stack')
-    stack_pdt = ProbDataType(stack_adt, train_fn, call_fns,
+    eqstack_adt = AbstractDataType(funcs, consts, forallvars, axioms,
+                                 name='eqstack')
+    eqstack_pdt = ProbDataType(eqstack_adt, train_fn, call_fns,
                              generators, gen_to_inputs, train_outs)
-    return stack_adt, stack_pdt
+    return eqstack_adt, eqstack_pdt
 
 
-def stack_unstack(n, stack, offset=0):
+def eqstack_uneqstack(n, eqstack, offset=0):
     lb = 0 + offset
     ub = 1 + offset
     imgs = []
-    stacks = []
-    stacks.append(stack)
+    eqstacks = []
+    eqstacks.append(eqstack)
     for i in range(n):
         new_img = floatX(X_train[lb+i:ub+i])
         imgs.append(new_img)
-        (stack,) = push(stack,new_img)
-        stacks.append(stack)
+        (eqstack,) = push(eqstack,new_img)
+        eqstacks.append(eqstack)
 
     for i in range(n):
-        (stack, old_img) = pop(stack)
-        stacks.append(stack)
+        (eqstack, old_img) = pop(eqstack)
+        eqstacks.append(eqstack)
         imgs.append(old_img)
 
-    return stacks + imgs
+    return eqstacks + imgs
 
 def mnistshow(x):
     plt.imshow(x.reshape(28, 28))
 
 def internal_plot(images, push, pop, empty):
-    stack = empty
+    eqstack = empty
     for i in range(len(images)):
-        mnistshow(stack)
+        mnistshow(eqstack)
         plt.figure()
-        (stack,) = push(stack, images[i])
-    mnistshow(stack)
+        (eqstack,) = push(eqstack, images[i])
+    mnistshow(eqstack)
 
 def main(argv):
     global adt, pdt, sess, X_train, sfx
-    options = handle_options('stack', argv)
+    options = handle_options('eqstack', argv)
 
     mnist_data = load_dataset()
     X_train = mnist_data[0].reshape(-1, 28, 28, 1)
     sfx = gen_sfx_key(('adt', 'nblocks', 'block_size'), options)
 
-    empty_stack_args = {'initializer': tf.random_uniform_initializer}
-    adt, pdt = stack_adt(X_train,
+    empty_eqstack_args = {'initializer': tf.random_uniform_initializer}
+    adt, pdt = eqstack_adt(X_train,
                          options,
                          push_args=options,
                          nitems=options['nitems'],
                          pop_args=options,
-                         empty_stack_args=empty_stack_args,
+                         empty_eqstack_args=empty_eqstack_args,
                          batch_size=options['batch_size'])
 
     save_dir = mk_dir(sfx)
