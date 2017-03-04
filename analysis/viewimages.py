@@ -1,14 +1,14 @@
 
 # Initalization
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 interface = {f.name:f for f in adt.funcs}
 push = interface['push'].to_python_lambda(sess)
 pop = interface['pop'].to_python_lambda(sess)
 zero = adt.consts[0].input_var.eval(sess) # empty data structure
-plt.imshow(zero[0,:,:,0]) # initial image of empty 
-
-
+plt.imshow(zero[0,:,:,0]) # initial image of empty
 # Look at the first n pushed items and what the n popped items look like
 def testPushPop(n, zero, input_data, testname):
     curr_struc = zero

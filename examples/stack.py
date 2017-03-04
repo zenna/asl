@@ -7,6 +7,7 @@ from pdt.util.io import mk_dir
 from pdt.util.generators import infinite_samples, infinite_batches
 from pdt.types import *
 from common import handle_options, load_train_save
+import pdb
 
 
 def stack_adt(train_data,
@@ -72,25 +73,22 @@ def stack_adt(train_data,
                              generators, gen_to_inputs, train_outs)
     return stack_adt, stack_pdt
 
+def mse(a, b):
+    return np.mean(np.square(a - b))
 
-def stack_unstack(n, stack, offset=0):
-    lb = 0 + offset
-    ub = 1 + offset
-    imgs = []
-    stacks = []
-    stacks.append(stack)
-    for i in range(n):
-        new_img = floatX(X_train[lb+i:ub+i])
-        imgs.append(new_img)
-        (stack,) = push(stack,new_img)
+def stack_unstack(nitems, push, pop, empty, items):
+    stack = empty
+    stacks = [stack]
+    losses = []
+    for i in range(nitems):
+        (stack,) = push(stack, items[i])
         stacks.append(stack)
-
-    for i in range(n):
-        (stack, old_img) = pop(stack)
-        stacks.append(stack)
-        imgs.append(old_img)
-
-    return stacks + imgs
+        pop_stack = stack
+        for j in range(i, -1, -1):
+            (pop_stack, pop_item) = pop(pop_stack)
+            loss = mse(pop_item, items[j])
+            losses.append(loss)
+    return np.sum(losses), losses
 
 def mnistshow(x):
     plt.imshow(x.reshape(28, 28))
@@ -109,8 +107,9 @@ def main(argv):
 
     mnist_data = load_dataset()
     X_train = mnist_data[0].reshape(-1, 28, 28, 1)
-    sfx = gen_sfx_key(('adt', 'nblocks', 'block_size'), options)
-
+    #sfx = gen_sfx_key(('adt', 'nblocks', 'block_size'), options)
+    sfx = gen_sfx_key(('adt', 'nitems'), options)
+    
     empty_stack_args = {'initializer': tf.random_uniform_initializer}
     adt, pdt = stack_adt(X_train,
                          options,
@@ -124,4 +123,5 @@ def main(argv):
     sess = load_train_save(options, adt, pdt, sfx, save_dir)
 
 if __name__ == "__main__":
+    pdb.set_trace()
     main(sys.argv[1:])
