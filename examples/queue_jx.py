@@ -64,6 +64,7 @@ def queue_adt(train_data,
         (queue,) = push(queue, items[i].input_var) # pushed the item onto the queue
         queues.append(queue)
         pop_queue = queue
+        
         for j in range(i+1):
             (pop_queue, pop_item) = pop(pop_queue) # when you pop item from queue
             axiom = Axiom((pop_item,), (items[j].input_var,), 'item-eq%s-%s' %(i, j))
