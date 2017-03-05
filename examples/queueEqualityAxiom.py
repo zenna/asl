@@ -77,7 +77,7 @@ def eqqueue_adt(train_data,
         # Eqqueue equivalence, Case 2: Orig queue had items
         else:
             (test_pop_eqqueue, test_pop_item) = pop(orig_eqqueue)
-            (test_push_eqqueue, ) = push(test_pop_eqqueue)
+            (test_push_eqqueue, ) = push(test_pop_eqqueue, items[i].input_var)
             axiom = Axiom((pop_eqqueue,), (test_push_eqqueue,), 'eqqueue-eq%s-%s' %(i, j)) #queue.push(i)[0].pop()[0] == queue.pop()[0].push(i)[0]
             axioms.append(axiom)
 
