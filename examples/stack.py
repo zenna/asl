@@ -109,7 +109,7 @@ def main(argv):
     X_train = mnist_data[0].reshape(-1, 28, 28, 1)
     #sfx = gen_sfx_key(('adt', 'nblocks', 'block_size'), options)
     sfx = gen_sfx_key(('adt', 'nitems'), options)
-    
+
     empty_stack_args = {'initializer': tf.random_uniform_initializer}
     adt, pdt = stack_adt(X_train,
                          options,
