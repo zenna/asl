@@ -115,7 +115,8 @@ def main(argv):
 
     mnist_data = load_dataset()
     X_train = mnist_data[0].reshape(-1, 28, 28, 1)
-    sfx = gen_sfx_key(('adt', 'nblocks', 'block_size'), options)
+    #sfx = gen_sfx_key(('adt', 'nblocks', 'block_size'), options)
+    sfx = gen_sfx_key(('adt', 'nitems'), options)
 
     empty_queue_args = {'initializer': tf.random_uniform_initializer}
     adt, pdt = queue_adt(X_train,
