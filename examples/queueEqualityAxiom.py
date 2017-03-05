@@ -74,6 +74,8 @@ def eqqueue_adt(train_data,
         # Eqqueue equivalence, Case 1: Orig queue was empty
         if i==0:
             axiom = Axiom((pop_eqqueue,), (orig_eqqueue,), 'eqqueue-eq%s-%s' %(i, j))
+            axioms.append(axiom)
+
         # Eqqueue equivalence, Case 2: Orig queue had items
         else:
             (test_pop_eqqueue, test_pop_item) = pop(orig_eqqueue)
