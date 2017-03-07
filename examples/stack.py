@@ -6,7 +6,7 @@ from pdt.util.misc import *
 from pdt.util.io import mk_dir
 from pdt.util.generators import infinite_samples, infinite_batches
 from pdt.types import *
-from common import handle_options, load_train_save
+from common import handle_options
 
 
 def stack_adt(train_data,
@@ -64,8 +64,10 @@ def stack_adt(train_data,
             # Stack equivalence
             # axiom = Axiom((pop_stack,), (stacks[j],), 'stack-eq%s-%s' %(i, j))
             # axioms.append(axiom)
-    train_fn, call_fns = compile_fns(funcs, consts, forallvars, axioms,
-                                     train_outs, options)
+    # train_fn, call_fns = compile_fns(funcs, consts, forallvars, axioms,
+                                    #  train_outs, options)
+    train_fn = None
+    call_fns = None
     stack_adt = AbstractDataType(funcs, consts, forallvars, axioms,
                                  name='stack')
     stack_pdt = ProbDataType(stack_adt, train_fn, call_fns,
@@ -121,7 +123,9 @@ def main(argv):
                          batch_size=options['batch_size'])
 
     save_dir = mk_dir(sfx)
-    sess = load_train_save(options, adt, pdt, sfx, save_dir)
+    options['sfx'] = sfx
+    sess = train(adt, pdt, options, save_dir, sfx)
+
 
 if __name__ == "__main__":
     main(sys.argv[1:])

@@ -25,6 +25,27 @@ def load_train_save(options, adt, pbt, sfx, save_dir):
               compress=options['compress'], saver=saver)
 
     return sess
+# 
+# def load_train_save2(options, adt, pbt, sfx, save_dir):
+#     options_path = os.path.join(save_dir, "options")
+#     save_dict_csv(options_path, options)
+#     sess = tf.Session()
+#     sess.run(tf.initialize_all_variables())
+#     saver = tf.train.Saver()
+#
+#     if options['load_params'] is True:
+#         saver.restore(sess, options['params_file'])
+#         # adt.load_params(options['params_file'])
+#
+#     # if options['save_params'] is True:
+#     #     path = os.path.join(save_dir, "final" + sfx)
+#     #     # adt.save_params(path)
+#
+#     if options['train'] is True:
+#
+#     train(adt, pbt, sess, options)
+#
+#     return sess
 
 def boolify(x):
     if x in ['0', 0, False, 'False', 'false']:
