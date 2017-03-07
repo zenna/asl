@@ -68,19 +68,19 @@ def eqqueue_adt(train_data,
 
         # Item equivalence
         (pop_eqqueue, pop_item) = pop(pop_eqqueue) # when you pop item from eqqueue
-        axiom = Axiom((pop_item,), (items[j].input_var,), 'item-eq%s-%s' %(i, j))
+        axiom = Axiom((pop_item,), (items[i].input_var,), 'item-eq%s-%s' %(i, i))
         axioms.append(axiom)
 
         # Eqqueue equivalence, Case 1: Orig queue was empty
         if i==0:
-            axiom = Axiom((pop_eqqueue,), (orig_eqqueue,), 'eqqueue-eq%s-%s' %(i, j))
+            axiom = Axiom((pop_eqqueue,), (orig_eqqueue,), 'eqqueue-eq%s-%s' %(i, i))
             axioms.append(axiom)
 
         # Eqqueue equivalence, Case 2: Orig queue had items
         else:
             (test_pop_eqqueue, test_pop_item) = pop(orig_eqqueue)
             (test_push_eqqueue, ) = push(test_pop_eqqueue, items[i].input_var)
-            axiom = Axiom((pop_eqqueue,), (test_push_eqqueue,), 'eqqueue-eq%s-%s' %(i, j)) #queue.push(i)[0].pop()[0] == queue.pop()[0].push(i)[0]
+            axiom = Axiom((pop_eqqueue,), (test_push_eqqueue,), 'eqqueue-eq%s-%s' %(i, i)) #queue.push(i)[0].pop()[0] == queue.pop()[0].push(i)[0]
             axioms.append(axiom)
 
         # Set next queue to support one more item 
