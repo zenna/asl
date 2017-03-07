@@ -123,5 +123,4 @@ def main(argv):
     sess = load_train_save(options, adt, pdt, sfx, save_dir)
 
 if __name__ == "__main__":
-    pdb.set_trace()
     main(sys.argv[1:])
