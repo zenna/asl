@@ -1,4 +1,3 @@
-
 # Initalization
 import matplotlib
 matplotlib.use('Agg')
@@ -36,6 +35,15 @@ def testPushPop(n, zero, input_data, testname):
         plt.imshow(output_img.reshape(28,28))
         plt.savefig('{}_output_{}.png'.format(testname, i+1))
         curr_struc = new_struc
+
+# testPushPop(2, zero, X_train, 'queue2_n2')
+
+
+# stack w/ 2: 1488669343.6124659adt_stack__nitems_2__
+# stack w/ 5: /home/jackiexu/adt_data/pdt/1488669346.590199adt_stack__nitems_5__/model.ckpt - training more
+
+# queue w/ 2: /home/jackiexu/adt_data/pdt/1488669344.378259adt_queue__nitems_2__/model.ckpt
+# queue w/ 5: /home/jackiexu/adt_data/pdt/1488669345.000821adt_queue__nitems_5__/model.ckpt
 
 
 # Try to push and pop at different rates; TODO

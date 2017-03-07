@@ -76,6 +76,7 @@ def stack_adt(train_data,
 def mse(a, b):
     return np.mean(np.square(a - b))
 
+# Check for loss from one example of pushing and popping
 def stack_unstack(nitems, push, pop, empty, items):
     stack = empty
     stacks = [stack]
