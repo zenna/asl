@@ -138,11 +138,6 @@ class Interface():
         else:
             np.savez(fname, *param_values)
 
-    def compile(self):
-        print("Compiling func")
-        call_fn = function(self.inputs, self.outputs, name=self.name)
-        return call_fn
-
 
 class ForAllVar():
     "Universally quantified variable"
