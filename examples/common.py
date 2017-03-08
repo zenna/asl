@@ -25,7 +25,7 @@ def load_train_save(options, adt, pbt, sfx, save_dir):
               compress=options['compress'], saver=saver)
 
     return sess
-# 
+#
 # def load_train_save2(options, adt, pbt, sfx, save_dir):
 #     options_path = os.path.join(save_dir, "options")
 #     save_dict_csv(options_path, options)
@@ -70,7 +70,7 @@ def handle_options(adt, argv):
     options['nitems'] = (int, 3)
     options['width'] = (int, 28)
     options['height'] = (int, 28)
-    options['num_epochs'] = (int, 100)
+    options['num_iterations'] = (int, 100)
     options['save_every'] = (int, 100)
     options['batch_size'] = (int, 512)
     options['compress'] = (boolify, 0)

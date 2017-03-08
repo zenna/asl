@@ -7,7 +7,7 @@ from pdt.train_tf import *
 from pdt.common import *
 from pdt.util.misc import *
 from pdt.util.io import mk_dir
-from pdt.util.generators import infinite_samples, infinite_batches
+from wacacore.util.generators import infinite_samples, infinite_batches
 from pdt.types import *
 from common import handle_options, load_train_save
 
@@ -187,6 +187,7 @@ def main(argv):
     options = handle_options('scalar_field', argv)
     voxels_path = os.path.join(os.environ['DATADIR'], 'ModelNet40', 'alltrain32.npy')
     voxel_grids = np.load(voxels_path)
+    voxel_grids = voxel_grids
     field_args = {'initializer': tf.random_uniform_initializer}
     adt, pdt = gen_scalar_field_adt(voxel_grids,
                                     options,

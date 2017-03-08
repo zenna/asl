@@ -11,7 +11,7 @@ def get_losses(axioms):
     losses = {}
     for i, axiom in enumerate(axioms):
         for j, loss in enumerate(axiom.get_losses()):
-            losses['ax%s_%s_%s' % (axiom.name, i, j)] = loss
+            losses['ax_%s_%s_%s' % (axiom.name, i, j)] = loss
     return losses
 
 def get_fetches(axioms, options):
