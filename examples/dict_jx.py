@@ -24,15 +24,17 @@ def dict_adt(train_data,
     Item = Type(item_shape, 'Item')
 
     # Interface
-
     #TODO: Change / define functions
 
-    # Push an Item onto a dict to create a new dict
-    push = Interface([Dict, Item], [Dict], 'push', **push_args) 
-    #push = Interface([Dict, Item], [Dict], 'push', **push_args)
-    
-    # Pop an Item from a dict, returning a new dict and the item
-    pop = Interface([Dict], [Dict, Item], 'pop', **pop_args)
+    # Insert Key / Value into dict
+    insert = Interface([Dict, Key, Value], [Dict], 'insert', **insert_args)
+
+    # Search Value of Key in dict
+    search = Interface([Dict, Key], [Value], 'search', **search_args)
+
+    # Remove Key 
+    remove = Interface([Dict, Key], [Dict], 'remove', **remove_args)
+
     funcs = [push, pop]
 
     # train_outs
