@@ -8,6 +8,8 @@ from pdt.train_tf import *
 from pdt.common import *
 from pdt.util.io import *
 from pdt.types import *
+from wacacore.util.generators import infinite_samples, infinite_batches
+
 
 
 def rand_rotation_matrix(deflection=1.0, randnums=None, floatX='float32'):
@@ -139,7 +141,8 @@ def scalar_field_adt(options, field_shape=(100,),
     tran_gen = infinite_samples(lambda *x: np.random.rand(*x), batch_size, translate_shape)
     generators = [pos_gen, tran_gen]
 
-    train_fn, call_fns = compile_fns(funcs, consts, forallvars, axioms, train_outs, options)
+    train_fn, call_fns = None, None
+    #compile_fns(funcs, consts, forallvars, axioms, train_outs, options)
     scalar_field_adt = AbstractDataType(funcs, consts, forallvars, axioms,
                                         name='scalar_field')
     scalar_field_pbt = ProbDataType(scalar_field_adt, train_fn, call_fns,

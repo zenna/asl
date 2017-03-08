@@ -7,7 +7,7 @@ from pdt.train_tf import *
 from pdt.common import *
 from pdt.util.misc import *
 from pdt.util.io import mk_dir
-from pdt.util.generators import infinite_samples, infinite_batches
+from wacacore.util.generators import infinite_samples, infinite_batches
 from pdt.types import *
 from common import handle_options, load_train_save
 
@@ -173,7 +173,8 @@ def gen_scalar_field_adt(train_data,
     voxel_gen = infinite_batches(train_data, batch_size, shuffle=True)
     generators.append(voxel_gen)
 
-    train_fn, call_fns = compile_fns(funcs, consts, forallvars, axioms, train_outs, options)
+    # train_fn, call_fns = compile_fns(funcs, consts, forallvars, axioms, train_outs, options)
+    train_fn, call_fns = None, None
     scalar_field_adt = AbstractDataType(funcs, consts, forallvars, axioms,
                                         name='scalar_field')
     scalar_field_pbt = ProbDataType(scalar_field_adt, train_fn, call_fns,
@@ -186,6 +187,7 @@ def main(argv):
     options = handle_options('scalar_field', argv)
     voxels_path = os.path.join(os.environ['DATADIR'], 'ModelNet40', 'alltrain32.npy')
     voxel_grids = np.load(voxels_path)
+    voxel_grids = voxel_grids
     field_args = {'initializer': tf.random_uniform_initializer}
     adt, pdt = gen_scalar_field_adt(voxel_grids,
                                     options,
@@ -201,7 +203,8 @@ def main(argv):
 
     sfx = gen_sfx_key(('adt', 'nblocks', 'block_size'), options)
     save_dir = mk_dir(sfx)
-    sess = load_train_save(options, adt, pdt, sfx, save_dir)
+    options['sfx'] = sfx
+    sess = train(adt, pdt, options, save_dir, sfx)
 
 if __name__ == "__main__":
     main(sys.argv[1:])

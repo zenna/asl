@@ -3,7 +3,8 @@ import itertools
 
 def run_batch_scripts():
   nitems = [2, 5]
-  scripts = ['stack.py', 'stackEqualityAxiom.py', 'queue_jx.py', 'queueEqualityAxiom.py']
+  #scripts = ['stack.py', 'stackEqualityAxiom.py', 'queue_jx.py', 'queueEqualityAxiom.py']
+  scripts = ['queueEqualityAxiom.py']
   l = [nitems, scripts]
   
   for i in itertools.product(nitems,scripts):
