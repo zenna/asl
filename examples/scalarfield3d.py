@@ -184,6 +184,7 @@ def gen_scalar_field_adt(train_data,
 
 def main(argv):
     global options, voxel_grids, adt, pdt, sess
+    import pdb; pdb.set_trace()
     options = handle_options('scalar_field', argv)
     voxels_path = os.path.join(os.environ['DATADIR'], 'ModelNet40', 'alltrain32.npy')
     voxel_grids = np.load(voxels_path)
