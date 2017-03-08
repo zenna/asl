@@ -127,7 +127,8 @@ def main(argv):
                          empty_queue_args=empty_queue_args,
                          batch_size=options['batch_size'])
 
-    save_dir = mk_dir(sfx)
+    datadir = os.path.join(os.environ['DATADIR'], "pdt")
+    save_dir = mk_dir(sfx, datadir=datadir)
     options['sfx'] = sfx
     sess = train(adt, pdt, options, save_dir, sfx)
 
