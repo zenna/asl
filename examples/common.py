@@ -31,7 +31,6 @@ def handle_options(adt, argv):
     options['batch_size'] = (int, 512)
     options['compress'] = (boolify, 0)
     options['compile_fns'] = (boolify, 1)
-    options['save_params'] = (boolify, 1)
     options['adt'] = (str, adt)
     options = handle_args(argv, options)
     options['template'] = template_module[options['template']].template
