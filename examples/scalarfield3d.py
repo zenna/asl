@@ -9,7 +9,7 @@ from wacacore.util.misc import *
 from wacacore.util.io import mk_dir
 from wacacore.util.generators import infinite_samples, infinite_batches
 from pdt.types import *
-from common import handle_options, load_train_save
+from common import handle_options
 
 
 def rand_rotation_matrix(deflection=1.0, randnums=None, floatX='float32'):
@@ -184,7 +184,7 @@ def gen_scalar_field_adt(train_data,
 
 def main(argv):
     global options, voxel_grids, adt, pdt, sess
-    import pdb; pdb.set_trace()
+    #import pdb; pdb.set_trace()
     options = handle_options('scalar_field', argv)
     voxels_path = os.path.join(os.environ['DATADIR'], 'ModelNet40', 'alltrain32.npy')
     voxel_grids = np.load(voxels_path)
