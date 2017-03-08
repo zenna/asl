@@ -2,11 +2,11 @@ from mnist import *
 # from ig.util import *
 from pdt.train_tf import *
 from pdt.common import *
-from pdt.util.misc import *
-from pdt.util.io import mk_dir
-from pdt.util.generators import infinite_samples, infinite_batches
+from wacacore.util.misc import *
+from wacacore.util.io import mk_dir
+from wacacore.util.generators import infinite_samples, infinite_batches
 from pdt.types import *
-from common import handle_options, load_train_save
+from common import handle_options
 
 
 def queue_adt(train_data,
@@ -27,9 +27,9 @@ def queue_adt(train_data,
     # Interface
 
     # Push an Item onto a queue to create a new queue
-    push = Interface([Queue, Item], [Queue], 'push', **push_args) 
+    push = Interface([Queue, Item], [Queue], 'push', **push_args)
     #push = Interface([Queue, Item], [Queue], 'push', **push_args)
-    
+
     # Pop an Item from a queue, returning a new queue and the item
     pop = Interface([Queue], [Queue, Item], 'pop', **pop_args)
     funcs = [push, pop]
@@ -53,7 +53,7 @@ def queue_adt(train_data,
 
     # Axioms
     '''
-    When push N items onto queue, then pop N item off a queue, 
+    When push N items onto queue, then pop N item off a queue,
         want to get the N items in the same order that you pushed them.
 
     '''
@@ -64,15 +64,14 @@ def queue_adt(train_data,
         (queue,) = push(queue, items[i].input_var) # pushed the item onto the queue
         queues.append(queue)
         pop_queue = queue
-        
+
         for j in range(i+1):
             (pop_queue, pop_item) = pop(pop_queue) # when you pop item from queue
             axiom = Axiom((pop_item,), (items[j].input_var,), 'item-eq%s-%s' %(i, j))
             axioms.append(axiom)
 
-            
-    train_fn, call_fns = compile_fns(funcs, consts, forallvars, axioms,
-                                     train_outs, options)
+
+    train_fn, call_fns = None, None
     queue_adt = AbstractDataType(funcs, consts, forallvars, axioms,
                                  name='queue')
     queue_pdt = ProbDataType(queue_adt, train_fn, call_fns,
@@ -129,7 +128,8 @@ def main(argv):
                          batch_size=options['batch_size'])
 
     save_dir = mk_dir(sfx)
-    sess = load_train_save(options, adt, pdt, sfx, save_dir)
+    options['sfx'] = sfx
+    sess = train(adt, pdt, options, save_dir, sfx)
 
 if __name__ == "__main__":
     main(sys.argv[1:])

@@ -91,7 +91,7 @@ def handle_args(argv, cust_opts):
             sys.exit()
         elif opt in ("-p", "--params_file"):
             options['params_file'] = arg
-            options['load_params'] = True
+            options['load'] = True
         elif opt in ("-l", "--learning_rate"):
             options['learning_rate'] = float(arg)
         elif opt in ("-m", "--momentum"):

@@ -1,5 +1,5 @@
 """Training for tensorflow"""
-from pdt.util.io import *
+from wacacore.util.io import *
 import time
 import os
 import numpy as np
@@ -52,7 +52,7 @@ def train(adt,
     sess.run(tf.initialize_all_variables())
     saver = tf.train.Saver()
 
-    if options['load_params'] is True:
+    if options['load'] is True:
         saver.restore(sess, options['params_file'])
 
     if options['train'] is True:
