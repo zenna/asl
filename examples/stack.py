@@ -2,9 +2,9 @@ from mnist import *
 # from ig.util import *
 from pdt.train_tf import *
 from pdt.common import *
-from pdt.util.misc import *
-from pdt.util.io import mk_dir
-from pdt.util.generators import infinite_samples, infinite_batches
+from wacacore.util.misc import *
+from wacacore.util.io import mk_dir
+from wacacore.util.generators import infinite_samples, infinite_batches
 from pdt.types import *
 from common import handle_options
 

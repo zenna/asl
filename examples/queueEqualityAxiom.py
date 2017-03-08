@@ -1,12 +1,11 @@
 from mnist import *
-# from ig.util import *
 from pdt.train_tf import *
-from pdt.common import *
-from pdt.util.misc import *
-from pdt.util.io import mk_dir
-from wacacore.util.generators import infinite_samples, infinite_batches
 from pdt.types import *
-from common import handle_options, load_train_save
+from pdt.common import *
+from wacacore.util.misc import *
+from wacacore.util.io import mk_dir
+from wacacore.util.generators import infinite_samples, infinite_batches
+from common import handle_options
 
 
 def eqqueue_adt(train_data,
@@ -27,9 +26,9 @@ def eqqueue_adt(train_data,
     # Interface
 
     # Push an Item onto a eqqueue to create a new eqqueue
-    push = Interface([Eqqueue, Item], [Eqqueue], 'push', **push_args) 
+    push = Interface([Eqqueue, Item], [Eqqueue], 'push', **push_args)
     #push = Interface([Eqqueue, Item], [Eqqueue], 'push', **push_args)
-    
+
     # Pop an Item from a eqqueue, returning a new eqqueue and the item
     pop = Interface([Eqqueue], [Eqqueue, Item], 'pop', **pop_args)
     funcs = [push, pop]
@@ -53,7 +52,7 @@ def eqqueue_adt(train_data,
 
     # Axioms
     '''
-    When push N items onto eqqueue, then pop N item off a eqqueue, 
+    When push N items onto eqqueue, then pop N item off a eqqueue,
         want to get the N items in the same order that you pushed them.
 
     '''
@@ -83,11 +82,11 @@ def eqqueue_adt(train_data,
             axiom = Axiom((pop_eqqueue,), (test_push_eqqueue,), 'eqqueue-eq%s-%s' %(i, i)) #queue.push(i)[0].pop()[0] == queue.pop()[0].push(i)[0]
             axioms.append(axiom)
 
-        # Set next queue to support one more item 
+        # Set next queue to support one more item
         eqqueue=push_eqqueue
-            
-    train_fn, call_fns = compile_fns(funcs, consts, forallvars, axioms,
-                                     train_outs, options)
+
+    #FIXME: Remove train_fn and call_fns from datastructure
+    train_fn, call_fns = None, None
     eqqueue_adt = AbstractDataType(funcs, consts, forallvars, axioms,
                                  name='eqqueue')
     eqqueue_pdt = ProbDataType(eqqueue_adt, train_fn, call_fns,
@@ -144,7 +143,8 @@ def main(argv):
                          batch_size=options['batch_size'])
 
     save_dir = mk_dir(sfx)
-    sess = load_train_save(options, adt, pdt, sfx, save_dir)
+    options['sfx'] = sfx
+    sess = train(adt, pdt, options, save_dir, sfx)
 
 if __name__ == "__main__":
     main(sys.argv[1:])
