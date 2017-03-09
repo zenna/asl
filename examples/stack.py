@@ -109,9 +109,7 @@ def main(argv):
 
     mnist_data = load_dataset()
     X_train = mnist_data[0].reshape(-1, 28, 28, 1)
-    #sfx = gen_sfx_key(('adt', 'nblocks', 'block_size'), options)
-    sfx = gen_sfx_key(('adt', 'nitems'), options)
-
+    dirname = gen_sfx_key(('adt', 'nitems'), options)
     empty_stack_args = {'initializer': tf.random_uniform_initializer}
     adt, pdt = stack_adt(X_train,
                          options,
@@ -122,9 +120,8 @@ def main(argv):
                          batch_size=options['batch_size'])
 
     datadir = os.path.join(os.environ['DATADIR'], "pdt")
-    save_dir = mk_dir(sfx, datadir=datadir)
-    options['sfx'] = sfx
-    sess = train(adt, pdt, options, save_dir, sfx)
+    options['dirname'] = dirname
+    sess = train(adt, pdt, options)
 
 
 if __name__ == "__main__":
