@@ -1,7 +1,8 @@
 import sys
-from pdt.common import *
 from pdt.train_tf import *
 from wacacore.util.io import handle_args
+from tensortemplates.module import template_module
+import os
 
 def boolify(x):
     if x in ['0', 0, False, 'False', 'false']:
@@ -32,6 +33,7 @@ def handle_options(adt, argv):
     options['compress'] = (boolify, 0)
     options['compile_fns'] = (boolify, 1)
     options['adt'] = (str, adt)
+    options['datadir'] = (str, os.path.join(os.environ['DATADIR'], "pdt"))
     options = handle_args(argv, options)
     options['template'] = template_module[options['template']].template
     return options

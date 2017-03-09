@@ -40,17 +40,15 @@ def the_gen(generators, forallvars):
 
 def train(adt,
           pdt,
-          options,
-          num_iterations=10000):
+          options):
     """Train the abstract data type"""
     fetch, loss_updates = get_fetches(adt.axioms, options)
     generators = [the_gen(pdt.generators, adt.forallvars)]
     sess = tf.Session()
     sess.run(tf.initialize_all_variables())
-    import pdb; pdb.set_trace()
 
-    if inn(options, 'save', 'dirname', 'params_file', 'load'):
-        ops = prep_save(sess, *getn(options, 'save', 'dirname', 'params_file', 'load'))
+    if inn(options, 'save', 'dirname', 'params_file', 'datadir', 'load'):
+        ops = prep_save(sess, *getn(options, 'save', 'dirname', 'params_file', 'datadir', 'load'))
         options.update(ops)
 
     callbacks = [save_options, save_every_n, save_everything_last]
@@ -62,8 +60,6 @@ def train(adt,
                    generators,
                    test_generators=None,
                    loss_ratios=None,
-                   test_every=100,
-                   num_iterations=num_iterations,
-                   callbacks=callbacks)
-
+                   callbacks=callbacks,
+                   **options)
     return sess
