@@ -61,7 +61,7 @@ def main(argv):
     global push, pop
     global X_train
     global adt, pdt
-    global save_dir
+    global savedir
     global sfx
 
     cust_options = {}
@@ -90,8 +90,8 @@ def main(argv):
                          nitems=options['nitems'], pop_args=options,
                          batch_size=options['batch_size'])
 
-    save_dir = mk_dir(sfx)
-    load_train_save(options, adt, pdt, sfx, save_dir)
+    savedir = mk_dir(sfx)
+    load_train_save(options, adt, pdt, sfx, savedir)
     push, pop = pdt.call_fns
     loss, record, img, new_record, new_img = validate_record_img_rec(new_img, X_train, push, pop, 0, 1)
 

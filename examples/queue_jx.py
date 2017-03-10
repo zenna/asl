@@ -128,9 +128,9 @@ def main(argv):
                          batch_size=options['batch_size'])
 
     datadir = os.path.join(os.environ['DATADIR'], "pdt")
-    save_dir = mk_dir(sfx, datadir=datadir)
+    savedir = mk_dir(sfx, datadir=datadir)
     options['sfx'] = sfx
-    sess = train(adt, pdt, options, save_dir, sfx)
+    sess = train(adt, pdt, options, savedir, sfx)
 
 if __name__ == "__main__":
     main(sys.argv[1:])

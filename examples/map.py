@@ -131,8 +131,8 @@ def main(argv):
                                    batch_size=options['batch_size'])
 
     graph = tf.get_default_graph()
-    save_dir = mk_dir(sfx)
-    load_train_save(options, map_adt, map_pdt, sfx, save_dir)
+    savedir = mk_dir(sfx)
+    load_train_save(options, map_adt, map_pdt, sfx, savedir)
     push, pop = map_pdt.call_fns
 
 

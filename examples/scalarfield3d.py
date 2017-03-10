@@ -1,14 +1,10 @@
-import numpy as np
-
 from pdt import *
-from mnist import *
-# from ig.util import *
 from pdt.train_tf import *
-from pdt.common import *
+from pdt.types import *
 from wacacore.util.misc import *
 from wacacore.util.io import mk_dir
 from wacacore.util.generators import infinite_samples, infinite_batches
-from pdt.types import *
+import numpy as np
 from common import handle_options
 
 
@@ -202,10 +198,9 @@ def main(argv):
                                     field_args=field_args,
                                     batch_size=options['batch_size'])
 
-    sfx = gen_sfx_key(('adt', 'nblocks', 'block_size'), options)
-    save_dir = mk_dir(sfx)
-    options['sfx'] = sfx
-    sess = train(adt, pdt, options, save_dir, sfx)
+    options['dirname'] = gen_sfx_key(('adt', 'nitems'), options)
+    sess = train(adt, pdt, options)
+
 
 if __name__ == "__main__":
     main(sys.argv[1:])

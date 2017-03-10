@@ -86,8 +86,8 @@ def main(argv):
                                          empty_queue_args=empty_queue_args,
                                          batch_size=options['batch_size'])
 
-    save_dir = mk_dir(sfx)
-    sess = load_train_save(options, queue_adt, queue_pdt, sfx, save_dir)
+    savedir = mk_dir(sfx)
+    sess = load_train_save(options, queue_adt, queue_pdt, sfx, savedir)
 
 
 if __name__ == "__main__":
