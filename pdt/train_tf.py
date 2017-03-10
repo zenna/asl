@@ -41,6 +41,7 @@ def train(adt,
     generators = [the_gen(pdt.generators, adt.forallvars)]
     sess = tf.Session()
     saver = tf.train.Saver()
+    options['saver'] = saver
     if do_load(options):
         prep_load(sess, saver, options['params_file'])
     else:

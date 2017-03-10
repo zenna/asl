@@ -75,8 +75,8 @@ def main(argv):
                                    zero_args=zero_args,
                                    batch_size=options['batch_size'])
 
-    save_dir = mk_dir(sfx)
-    sess = load_train_save(options, adt, pdt, sfx, save_dir)
+    savedir = mk_dir(sfx)
+    sess = load_train_save(options, adt, pdt, sfx, savedir)
 
 if __name__ == "__main__":
     main(sys.argv[1:])

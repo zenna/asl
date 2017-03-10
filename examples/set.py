@@ -115,12 +115,12 @@ def main(argv):
                                    batch_size=options['batch_size'])
 
     graph = tf.get_default_graph()
-    save_dir = mk_dir(sfx)
+    savedir = mk_dir(sfx)
 
     path_name = os.path.join(os.environ['DATADIR'], 'graphs', sfx, )
     tf.train.SummaryWriter(path_name, graph)
 
-    load_train_save(options, set_adt, set_pdt, sfx, save_dir)
+    load_train_save(options, set_adt, set_pdt, sfx, savedir)
     push, pop = pdt.call_fns
 
 

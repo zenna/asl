@@ -203,9 +203,9 @@ def main(argv):
                                     batch_size=options['batch_size'])
 
     sfx = gen_sfx_key(('adt', 'nblocks', 'block_size'), options)
-    save_dir = mk_dir(sfx)
+    savedir = mk_dir(sfx)
     options['sfx'] = sfx
-    sess = train(adt, pdt, options, save_dir, sfx)
+    sess = train(adt, pdt, options, savedir, sfx)
 
 if __name__ == "__main__":
     main(sys.argv[1:])
