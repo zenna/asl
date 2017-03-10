@@ -45,10 +45,9 @@ def train(adt,
     if do_load(options):
         prep_load(sess, saver, options['params_file'])
     else:
-        tf.initialize_all_variables()
+        sess.run(tf.initialize_all_variables())
     if do_save(options):
         options['savedir'] = prep_save(options['dirname'], options['datadir'])
-
     callbacks = [save_options, save_every_n, save_everything_last]
 
     if options['train'] is True:
