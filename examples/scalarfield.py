@@ -164,8 +164,8 @@ def main(argv):
     sfx = gen_sfx_key(('adt', 'nblocks', 'block_size'), options)
     graph = tf.get_default_graph()
 
-    save_dir = mk_dir(sfx)
-    load_train_save(options, adt, pdt, sfx, save_dir)
+    savedir = mk_dir(sfx)
+    load_train_save(options, adt, pdt, sfx, savedir)
 
 if __name__ == "__main__":
    main(sys.argv[1:])

@@ -6,7 +6,6 @@ import numpy as np
 from io import *
 from pdt.config import floatX
 from pdt.distances import mse, mae
-from pdt.common import *
 from pdt.util.backend import variable, repeat_to_batch, placeholder
 
 # import theano
