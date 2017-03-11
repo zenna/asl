@@ -2,8 +2,16 @@ from wacacore.train.hyper import rand_product
 import os
 import subprocess
 
+def stringify(k, v):
+    if v is True:
+        return "--%s" % k
+    elif v is False:
+        return ""
+    else:
+        return "--%s=%s" % (k, v)
+
 def make_batch_string(options):
-    batch_string = ["--%s=%s" % (k, v) for k, v in options.items()]
+    batch_string = [stringify(k, v) for k, v in options.items()]
     return batch_string
 
 
@@ -18,6 +26,7 @@ def hyper_search():
                'save': True,
                'num_iterations': 100000,
                'save_every':1000,
+               'learning_rate': 0.001,
                'batch_size': [256, 512],
                'datadir': os.path.join(os.environ['DATADIR'], "pdt"),
                'nblocks': [1, 2, 3, 4],
@@ -29,7 +38,7 @@ def hyper_search():
                        'batch_size',
                     #    'field_shape',
                        'nl']
-    rand_product(run_sbatch, options, var_option_keys, 2, nrepeats=1, prefix='scalarfieldf')
+    rand_product(run_sbatch, options, var_option_keys, 10, nrepeats=1, prefix='scalarfieldf')
 
 if __name__ == "__main__":
     hyper_search()

@@ -48,7 +48,7 @@ def train(adt,
         sess.run(tf.initialize_all_variables())
     if do_save(options):
         options['savedir'] = prep_save(options['dirname'], options['datadir'])
-    callbacks = [save_options, save_every_n, save_everything_last]
+    callbacks = [save_options, save_every_n, save_everything_last, nan_cancel]
 
     if options['train'] is True:
         train_loop(sess,

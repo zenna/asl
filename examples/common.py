@@ -11,17 +11,15 @@ def boolify(x):
     elif x in ['1', 1, True, 'True', 'true']:
         return True
     else:
-        assert False, "couldn't convert to bool"
+        assert False, "couldn't convert %s  to bool" % x
 
 def default_options():
     "Get default options for pdt training"
     options = {}
-    options['train'] = (boolify, 1)
     options['num_iterations'] = (int, 100)
     options['save_every'] = (int, 100)
     options['batch_size'] = (int, 512)
-    options['compress'] = (boolify, 0)
-    options['compile_fns'] = (boolify, 1)
+    options['dirname'] = (str, "dirname")
     options['datadir'] = (str, os.path.join(os.environ['DATADIR'], "pdt"))
     return options
 

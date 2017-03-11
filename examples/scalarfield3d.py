@@ -199,13 +199,12 @@ def run(options):
                                     add_args=options,
                                     field_args=field_args,
                                     batch_size=options['batch_size'])
-
-    options['dirname'] = gen_sfx_key(('adt',), options)
     sess = train(adt, pdt, options)
 
 def main(argv):
     print("ARGV", argv)
     options = handle_options('scalar_field', argv)
+    options['dirname'] = gen_sfx_key(('adt',), options)
     run(options)
 
 
