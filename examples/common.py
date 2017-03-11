@@ -1,16 +1,29 @@
 import sys
 from pdt.train_tf import *
 from wacacore.util.io import handle_args
-from tensortemplates.module import template_module
+from tensortemplates.module import template_module, nl_module
 import os
 
 def boolify(x):
+    "Convert `x` into a Boolean"
     if x in ['0', 0, False, 'False', 'false']:
         return False
     elif x in ['1', 1, True, 'True', 'true']:
         return True
     else:
         assert False, "couldn't convert to bool"
+
+def default_options():
+    "Get default options for pdt training"
+    options = {}
+    options['train'] = (boolify, 1)
+    options['num_iterations'] = (int, 100)
+    options['save_every'] = (int, 100)
+    options['batch_size'] = (int, 512)
+    options['compress'] = (boolify, 0)
+    options['compile_fns'] = (boolify, 1)
+    options['datadir'] = (str, os.path.join(os.environ['DATADIR'], "pdt"))
+    return options
 
 def handle_options(adt, argv):
     parser = PassThroughOptionParser()
@@ -21,19 +34,11 @@ def handle_options(adt, argv):
         options['template'] = 'res_net'
     else:
         options['template'] = poptions.template
-    template_kwargs = template_module[options['template']].kwargs()
-    options.update(template_kwargs)
-    options['train'] = (boolify, 1)
-    options['nitems'] = (int, 3)
-    options['width'] = (int, 28)
-    options['height'] = (int, 28)
-    options['num_iterations'] = (int, 100)
-    options['save_every'] = (int, 100)
-    options['batch_size'] = (int, 512)
-    options['compress'] = (boolify, 0)
-    options['compile_fns'] = (boolify, 1)
+    template_options = template_module[options['template']].kwargs()
+    options.update(template_options)
+    options.update(default_options())
     options['adt'] = (str, adt)
-    options['datadir'] = (str, os.path.join(os.environ['DATADIR'], "pdt"))
     options = handle_args(argv, options)
     options['template'] = template_module[options['template']].template
+    options['nl'] = nl_module[options['nl']]
     return options

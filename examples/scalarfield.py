@@ -150,10 +150,7 @@ def scalar_field_adt(options, field_shape=(100,),
     return scalar_field_adt, scalar_field_pbt
 
 
-def main(argv):
-    options = handle_options('scalar_field', argv)
-
-
+def run(options):
     # voxel_grids = np.load("/DATADIR/data/ModelNet40/alltrain32.npy")
     field_args = {'initializer': tf.random_uniform_initializer}
     adt, pdt = scalar_field_adt(options, s_args=options, translate_args=options,
@@ -166,6 +163,10 @@ def main(argv):
 
     savedir = mk_dir(sfx)
     load_train_save(options, adt, pdt, sfx, savedir)
+
+def main():
+    options = handle_options('scalar_field', argv)
+    run(options)
 
 if __name__ == "__main__":
    main(sys.argv[1:])
