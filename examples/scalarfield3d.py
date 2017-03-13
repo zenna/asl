@@ -178,29 +178,39 @@ def gen_scalar_field_adt(train_data,
     return scalar_field_adt, scalar_field_pbt
 
 
-def main(argv):
-    global options, voxel_grids, adt, pdt, sess
-    #import pdb; pdb.set_trace()
-    options = handle_options('scalar_field', argv)
-    voxels_path = os.path.join(os.environ['DATADIR'], 'ModelNet40', 'alltrain32.npy')
+def run(options):
+    global voxel_grids, adt, pdt, sess
+    datadir = os.environ['DATADIR']
+    voxels_path = os.path.join(datadir, 'ModelNet40', 'alltrain32.npy')
     voxel_grids = np.load(voxels_path)
     voxel_grids = voxel_grids
     field_args = {'initializer': tf.random_uniform_initializer}
+    # Default params
+    npoints = options['npoints'] if 'npoints' in options else 500
+    field_shape = options['field_shape'] if 'field_shape' in options else (100,)
     adt, pdt = gen_scalar_field_adt(voxel_grids,
                                     options,
                                     s_args=options,
                                     translate_args=options,
                                     npoints=500,
-                                    field_shape=(102,),
+                                    field_shape=field_shape,
                                     encode_args=options,
                                     decode_args=options,
                                     add_args=options,
                                     field_args=field_args,
                                     batch_size=options['batch_size'])
-
-    options['dirname'] = gen_sfx_key(('adt', 'nitems'), options)
     sess = train(adt, pdt, options)
 
+def main(argv):
+    print("ARGV", argv)
+    options = handle_options('scalar_field', argv)
+    options['dirname'] = gen_sfx_key(('adt',), options)
+    run(options)
+
+
+def scalar_field_options():
+    options = {'field_shape': (eval, (50,))}
+    return options
 
 if __name__ == "__main__":
     main(sys.argv[1:])
