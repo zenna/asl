@@ -26,16 +26,16 @@ def dict_adt(train_data,
     # Interface
     #TODO: Change / define functions
 
-    # Insert Key / Value into dict
+    # Insert Key / Value into Dict
     insert = Interface([Dict, Key, Value], [Dict], 'insert', **insert_args)
 
-    # Search Value of Key in dict
+    # Search Value of Key in Dict
     search = Interface([Dict, Key], [Value], 'search', **search_args)
 
-    # Remove Key 
+    # Remove Key from Dict
     remove = Interface([Dict, Key], [Dict], 'remove', **remove_args)
 
-    funcs = [push, pop]
+    funcs = [insert, search, remove]
 
     # train_outs
     train_outs = []
@@ -56,23 +56,33 @@ def dict_adt(train_data,
 
     # Axioms
     # TODO: Define the Axioms for dictionaries
+    # TODO: Define how to train the dictionary
     '''
-    When push N items onto dict, then pop N item off a dict, 
-        want to get the N items in the same order that you pushed them.
+    Axioms
+    1. When insert (key, value) and then search for value associated with key, should get the same value as what was inserted
+    1.5. When insert new value for a given key, then should get the last value that was inserted
+    2. When search for (key, value) that doesn't exist, then dictionary stays the same, return nothing
+    3. When remove (key, value), when search for (key, value), return nothing
+
+    Training
+    - Notes: each image is unique and can be a unique dictionary
+    - Could take every Nth element and use as a key, then add the next (n-1) images as values of the key
+        - Check that the new values get added then returned fine
+    - Remove M keys from the 
 
     '''
     axioms = []
     dict = empty_dict.batch_input_var
     dicts = [dict]
     for i in range(nitems):
-        (dict,) = push(dict, items[i].input_var) # pushed the item onto the dict
+        # (dict,) = push(dict, items[i].input_var) # pushed the item onto the dict
         dicts.append(dict)
-        pop_dict = dict
+        # pop_dict = dict
         
-        for j in range(i+1):
-            (pop_dict, pop_item) = pop(pop_dict) # when you pop item from dict
-            axiom = Axiom((pop_item,), (items[j].input_var,), 'item-eq%s-%s' %(i, j))
-            axioms.append(axiom)
+        # for j in range(i+1):
+        #     (pop_dict, pop_item) = pop(pop_dict) # when you pop item from dict
+        #     axiom = Axiom((pop_item,), (items[j].input_var,), 'item-eq%s-%s' %(i, j))
+            # axioms.append(axiom)
 
             
     train_fn, call_fns = compile_fns(funcs, consts, forallvars, axioms,
@@ -84,24 +94,24 @@ def dict_adt(train_data,
     return dict_adt, dict_pdt
 
 
-def dict_undict(n, dict, offset=0):
-    lb = 0 + offset
-    ub = 1 + offset
-    imgs = []
-    dicts = []
-    dicts.append(dict)
-    for i in range(n):
-        new_img = floatX(X_train[lb+i:ub+i])
-        imgs.append(new_img)
-        (dict,) = push(dict,new_img)
-        dicts.append(dict)
+# def dict_undict(n, dict, offset=0):
+#     lb = 0 + offset
+#     ub = 1 + offset
+#     imgs = []
+#     dicts = []
+#     dicts.append(dict)
+#     for i in range(n):
+#         new_img = floatX(X_train[lb+i:ub+i])
+#         imgs.append(new_img)
+#         (dict,) = push(dict,new_img)
+#         dicts.append(dict)
 
-    for i in range(n):
-        (dict, old_img) = pop(dict)
-        dicts.append(dict)
-        imgs.append(old_img)
+#     for i in range(n):
+#         (dict, old_img) = pop(dict)
+#         dicts.append(dict)
+#         imgs.append(old_img)
 
-    return dicts + imgs
+#     return dicts + imgs
 
 def mnistshow(x):
     plt.imshow(x.reshape(28, 28))

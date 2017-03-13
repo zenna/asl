@@ -7,7 +7,6 @@ from wacacore.util.generators import infinite_samples, infinite_batches
 from pdt.types import *
 from common import handle_options
 
-
 def stack_adt(train_data,
               options,
               stack_shape=(28, 28, 1),

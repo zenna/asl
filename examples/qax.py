@@ -13,15 +13,17 @@ def q_ax(empty, push, pop, items):
     eqqueues = [eqqueue]
     for i in range(nitems):
         orig_eqqueue = copy.deepcopy(eqqueue)
-        print("orig_q", orig_eqqueue)
+        #print("orig_q", orig_eqqueue)
         (push_eqqueue,) = push(orig_eqqueue, items[i]) # pushed the item onto the eqqueue
         eqqueues.append(push_eqqueue)
         pop_eqqueue = copy.deepcopy(push_eqqueue)
-        print("push_q", push_eqqueue)
-        for j in range(i+1):
+        #print("push_q", push_eqqueue)
+        
+        # Only perform check for the first pushed item
+        for j in range(1):
             # Item equivalence
             (pop_eqqueue, pop_item) = pop(pop_eqqueue) # when you pop item from queue
-            print("pop_q", pop_eqqueue)
+            #print("pop_q", pop_eqqueue)
             axiom = Axiom((pop_item,), (items[j],), 'item-eq%s-%s' %(i, j))
             axioms.append(axiom)
 
@@ -34,13 +36,12 @@ def q_ax(empty, push, pop, items):
             else:
                 (test_pop_eqqueue, test_pop_item) = pop(orig_eqqueue)
                 (test_push_eqqueue, ) = push(test_pop_eqqueue, items[i])
-                print("test_push_q", test_push_eqqueue)
-                print("pop_q (sanitycheck)", pop_eqqueue)
+                #print("test_push_q", test_push_eqqueue)
+                #print("pop_q (sanitycheck)", pop_eqqueue)
                 axiom = Axiom((pop_eqqueue,), (test_push_eqqueue,), 'eqqueue-eq%s-%s' %(i, j)) #queue.push(i)[0].pop()[0] == queue.pop()[0].push(i)[0]
                 axioms.append(axiom)
         # Set next queue to support one more item 
         eqqueue=copy.deepcopy(push_eqqueue)
-        print()
     return axioms
 
 
