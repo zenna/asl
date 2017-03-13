@@ -2,7 +2,7 @@ import sys
 from mnist import *
 from pdt.types import * 
 from common import handle_options
-from wacacore.util.misc import *
+from wacacore.util.io import *
 
 
 def scalarField2D(train_data,
@@ -47,7 +47,7 @@ def main(argv):
     mnist_data = load_dataset()
     X_train = mnist_data[0].reshape(-1, 28, 28, 1)
     options = handle_options('field', argv)
-    options['dirname'] = gen_sfx_key(('adt'), options)
+    options['dirname'] = gen_sfx_key(('adt',), options)
 
     adt, pdt = scalarField2D(X_train, batch_size=options['batch_size'])
     sess = train(adt, pdt, options)
