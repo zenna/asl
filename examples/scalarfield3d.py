@@ -18,16 +18,48 @@ from pdt.types import *
 from pdt.adversarial import adversarial_losses
 from wacacore.util.misc import *
 from wacacore.util.io import mk_dir
-from wacacore.util.generators import infinite_samples, 
+from wacacore.util.generators import infinite_samples, infinite_batches 
 import numpy as np
 from common import handle_options
+import tensorflow as tf
+from tensorflow.contrib import rnn
+
 import pdb
 
 def encode_tf(inputs):
     assert len(inputs) == 1
     voxels = inputs[0]
     import pdb; pdb.set_trace()
-    op = tf.nn.conv3d(inputs)
+
+    ## 3d conv net
+    # op = tf.nn.conv3d(inputs)
+
+def create_encode(field_shape, n_input, n_steps):
+    '''
+
+    '''
+    n_hidden = product(field_shape)
+
+    def encode_tf(inputs):
+        '''
+        inputs will be (?, 3, 1000)
+        '''
+        assert len(inputs) == 1
+        voxels = inputs[0]
+        # import pdb; pdb.set_trace()
+
+        ## 3d conv net
+        # op = tf.nn.conv3d(inputs)
+
+        ## RNN
+        voxels = tf.transpose(voxels, [1,0,2])
+        voxels = tf.reshape(voxels, [-1, n_input])
+        voxels = tf.split(voxels, n_steps, 0)
+        lstm_cell = rnn.BasicLSTMCell(n_hidden, forget_bias=1.0)
+        outputs, states = rnn.static_rnn(lstm_cell, voxels, dtype=tf.float32)
+        return [outputs[-1]]
+
+    return encode_tf
 
 
 def rand_rotation_matrix(deflection=1.0, randnums=None, floatX='float32'):
@@ -122,7 +154,9 @@ def gen_scalar_field_adt(train_data,
     descriminator = Interface([Field], [Bool], 'descriminator', template=s_args)
     funcs.append(descriminator)
 
-    encode = Interface([VoxelGrid], [Field], 'encode', tf_interface=encode_tf)
+    n_input = 300
+    n_steps = 10
+    encode = Interface([VoxelGrid], [Field], 'encode', tf_interface=create_encode(field_shape, n_input, n_steps))
     funcs.append(encode)
 
     decode = Interface([Field], [VoxelGrid], 'decode', template=decode_args)
@@ -185,7 +219,7 @@ def gen_scalar_field_adt(train_data,
     test_generators.append(test_sample_space_gen)
 
     scalar_field_adt = AbstractDataType(funcs=funcs,
-                                        const=consts,
+                                        consts=consts,
                                         forallvars=forallvars,
                                         axioms=axioms,
                                         losses=losses,
@@ -204,7 +238,8 @@ def voxel_indices(voxels, limit):
 
     """
     n,x,y,z = voxels.shape
-    output = np.zeros((n,3,limit))
+    output = np.ones((n,3,limit))
+    output = output * -1
 
     # obtain occupied voxels
     for v in range(len(voxels)):
@@ -227,7 +262,10 @@ def run(options):
     datadir = os.environ['DATADIR']
     voxels_path = os.path.join(datadir, 'ModelNet40', 'alltrain32.npy')
     voxel_grids = np.load(voxels_path)
-    pdb.set_trace()
+    limit = 1000
+    voxel_grids = voxel_indices(voxel_grids, limit)
+    # pdb.set_trace()
+
     test_size = 512
     train_voxel_grids = voxel_grids[0:-test_size]
     test_voxel_grids = voxel_grids[test_size:]
@@ -239,6 +277,7 @@ def run(options):
     adt, pdt = gen_scalar_field_adt(train_voxel_grids,
                                     test_voxel_grids,
                                     options,
+                                    voxel_grid_shape=(3, limit),
                                     s_args=options,
                                     translate_args=options,
                                     npoints=500,
