@@ -55,26 +55,11 @@ class Interface():
         self.rhs = rhs
         self.template = template = template_kwargs['template']
         self.template_kwargs = template_kwargs
-        self.inputs = [type.tensor(add_batch=True, name=self.input_name(type, i))
-                       for i, type in enumerate(lhs)]
         params = Params()
         self.inp_shapes = [type.get_shape(add_batch=True) for type in lhs]
         self.out_shapes = [type.get_shape(add_batch=True) for type in rhs]
-        # output_args = {'batch_norm_update_averages' : True,
-        #                'batch_norm_use_averages' : True}
-        output_args = {'deterministic': True}
-        with tf.name_scope(self.name):
-            with tf.variable_scope(self.name) as scope:
-                outputs, params = template(self.inputs,
-                                           inp_shapes=self.inp_shapes,
-                                           out_shapes=self.out_shapes,
-                                           output_args=output_args,
-                                           params=params,
-                                           reuse=False,
-                                           **self.template_kwargs)
-        # params.lock()
-        self.params = params
-        self.outputs = outputs
+        # Initially false because the first __call__ should gen parameters
+        self.reuse = False
 
     def __call__(self, *raw_args):
         args = [arg.input_var if hasattr(arg, 'input_var') else arg for arg in raw_args]
@@ -82,15 +67,17 @@ class Interface():
         # output_args = {'batch_norm_update_averages' : True, 'batch_norm_use_averages' : False}
         output_args = {'deterministic': True}
         with tf.name_scope(self.name):
-            with tf.variable_scope(self.name) as scope:
-                scope.reuse_variables()
+            with tf.variable_scope(self.name, reuse=self.reuse) as scope:
+                tf.get_variable_scope().name
                 outputs, params = self.template(args,
                                                 inp_shapes=self.inp_shapes,
                                                 out_shapes=self.out_shapes,
                                                 output_args=output_args,
-                                                params=self.params,
-                                                reuse=True,
+                                                # params=self.params,
+                                                reuse=self.reuse,
                                                 **self.template_kwargs)
+        # And from now on reuse parameters
+        self.reuse=True
         return outputs
 
     def to_python_lambda(self, sess):
@@ -238,6 +225,13 @@ class BoundAxiom():
         return [bound_loss(self.input_var).mean()]
 
 
+class Loss():
+    "A value to be minimized"
+
+    def __init__(self, loss, name):
+        self.loss = loss
+        self.name = name
+
 class Const():
     def __init__(self, type, name, batch_size, initializer, do_repeat_to_batch=True):
         self.type = type
@@ -338,11 +332,12 @@ class Params():
 
 
 class AbstractDataType():
-    def __init__(self, funcs, consts, forallvars, axioms, name=''):
+    def __init__(self, funcs, consts, forallvars, axioms, losses, name=''):
         self.funcs = funcs
         self.consts = consts
         self.forallvars = forallvars
         self.axioms = axioms
+        self.losses = losses
         self.name = name
 
     def load_params(self, sfx):

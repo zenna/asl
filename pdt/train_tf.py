@@ -8,7 +8,7 @@ import os
 import numpy as np
 import tensorflow as tf
 
-def get_losses(axioms):
+def get_axiom_losses(axioms):
     """Accumulate losses forall axiom in axioms, forall equation in axiom"""
     losses = {}
     for i, axiom in enumerate(axioms):
@@ -16,12 +16,25 @@ def get_losses(axioms):
             losses['ax_%s_%s_%s' % (axiom.name, i, j)] = loss
     return losses
 
-def get_fetches(axioms, options):
+def get_loss_losses(losses):
+    ret_losses = {}
+    for i, loss in enumerate(losses):
+        ret_losses['loss_%s_%s' % (loss.name, i)] = loss.loss
+    return ret_losses
+
+def get_all_losses(adt):
+    """Accumulate losses forall axiom in axioms, forall equation in axiom"""
+    a = get_axiom_losses(adt.axioms)
+    a.update(get_loss_losses(adt.losses))
+    return a
+
+def get_fetches(adt, options):
     fetch = {}
-    losses = get_losses(axioms)
+    losses = get_all_losses(adt)
     loss = sum(losses.values())
     fetch['losses'] = losses
     fetch['loss'] = loss
+    # fetch['numerics'] = tf.add_check_numerics_ops()
     optimizer, update_step = get_updates(loss, options)
     loss_updates = [update_step]
     return fetch, loss_updates
@@ -37,7 +50,7 @@ def train(adt,
           pdt,
           options):
     """Train the abstract data type"""
-    fetch, loss_updates = get_fetches(adt.axioms, options)
+    fetch, loss_updates = get_fetches(adt, options)
     generators = [the_gen(pdt.generators, adt.forallvars)]
     sess = tf.Session()
     saver = tf.train.Saver()
@@ -59,4 +72,4 @@ def train(adt,
                    loss_ratios=None,
                    callbacks=callbacks,
                    **options)
-    return sess
+    return ses

@@ -84,9 +84,10 @@ def gen_scalar_field_adt(train_data,
                          translate_args={}):
     # Types
     # rot_matrix_shape = (3, 3)
+    sample_space_shape = (10,)
     points_shape = (npoints, 3)
     Field = Type(field_shape, name="Field")
-    SampleSpace = Type((10,), name="SampleSpace")
+    SampleSpace = Type(sample_space_shape, name="SampleSpace")
     Bool = Type((1,), name="Bool")
 
     # Points = Type(points_shape, name="points")
@@ -102,8 +103,10 @@ def gen_scalar_field_adt(train_data,
     # s = Interface([Field, Points], [Scalar], 's', **s_args)
 
     # A random variable over sample
-    generator = Interface([SampleSpace], [Field], 'sample', **s_args)
+    generator = Interface([SampleSpace], [Field], 'benerator', **s_args)
+    funcs.append(generator)
     descriminator = Interface([Field], [Bool], 'descriminator', **s_args)
+    funcs.append(descriminator)
 
     # funcs.append(s)
     #
@@ -188,12 +191,26 @@ def gen_scalar_field_adt(train_data,
     voxel_gen = infinite_batches(train_data, batch_size, shuffle=True)
     generators.append(voxel_gen)
 
+    sample_space_gen =  infinite_samples(np.random.rand,
+                                         (batch_size),
+                                         sample_space_shape,
+                                         add_batch=True)
+    generators.append(sample_space_gen)
+
     # train_fn, call_fns = compile_fns(funcs, consts, forallvars, axioms, train_outs, options)
     train_fn, call_fns = None, None
-    scalar_field_adt = AbstractDataType(funcs, consts, forallvars, axioms,
+    scalar_field_adt = AbstractDataType(funcs,
+                                        consts,
+                                        forallvars,
+                                        axioms,
+                                        losses,
                                         name='scalar_field')
-    scalar_field_pbt = ProbDataType(scalar_field_adt, train_fn, call_fns,
-                                    generators, gen_to_inputs, train_outs)
+    scalar_field_pbt = ProbDataType(scalar_field_adt,
+                                    train_fn,
+                                    call_fns,
+                                    generators,
+                                    gen_to_inputs,
+                                    train_outs)
     return scalar_field_adt, scalar_field_pbt
 
 
