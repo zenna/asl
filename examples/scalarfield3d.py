@@ -21,6 +21,7 @@ from wacacore.util.io import mk_dir
 from wacacore.util.generators import infinite_samples, 
 import numpy as np
 from common import handle_options
+import pdb
 
 def encode_tf(inputs):
     assert len(inputs) == 1
@@ -197,12 +198,36 @@ def gen_scalar_field_adt(train_data,
                                     train_outs)
     return scalar_field_adt, scalar_field_pbt
 
+def voxel_indices(voxels, limit):
+    """
+    Convert voxel data_set (n, 32, 32, 32) to (n, 3, m)
+
+    """
+    n,x,y,z = voxels.shape
+    output = np.zeros((n,3,limit))
+
+    # obtain occupied voxels
+    for v in range(len(voxels)):
+        voxel = voxels[v]
+        x_list,y_list,z_list = np.where(voxel)
+        assert len(x_list)==len(y_list)
+        assert len(y_list)==len(z_list)
+
+        # fill in output tensor
+        if v < limit:
+            for i in range(len(x_list)):
+                output[v][0] = x_list[i]
+                output[v][1] = y_list[i]
+                output[v][2] = z_list[i]
+    return output
+
 
 def run(options):
     global voxel_grids, adt, pdt, sess
     datadir = os.environ['DATADIR']
     voxels_path = os.path.join(datadir, 'ModelNet40', 'alltrain32.npy')
     voxel_grids = np.load(voxels_path)
+    pdb.set_trace()
     test_size = 512
     train_voxel_grids = voxel_grids[0:-test_size]
     test_voxel_grids = voxel_grids[test_size:]
