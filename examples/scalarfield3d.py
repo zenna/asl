@@ -1,6 +1,7 @@
 from pdt import *
 from pdt.train_tf import *
 from pdt.types import *
+from pdt.adversarial import adversarial_losses
 from wacacore.util.misc import *
 from wacacore.util.io import mk_dir
 from wacacore.util.generators import infinite_samples, infinite_batches
@@ -84,7 +85,10 @@ def gen_scalar_field_adt(train_data,
     # Types
     # rot_matrix_shape = (3, 3)
     points_shape = (npoints, 3)
-    Field = Type(field_shape, name="field")
+    Field = Type(field_shape, name="Field")
+    SampleSpace = Type((10,), name="SampleSpace")
+    Bool = Type((1,), name="Bool")
+
     # Points = Type(points_shape, name="points")
     # Scalar = Type((npoints,), name="scalar")
     VoxelGrid = Type(voxel_grid_shape, name="voxel_grid")
@@ -96,6 +100,11 @@ def gen_scalar_field_adt(train_data,
     # Interface
     funcs = []
     # s = Interface([Field, Points], [Scalar], 's', **s_args)
+
+    # A random variable over sample
+    generator = Interface([SampleSpace], [Field], 'sample', **s_args)
+    descriminator = Interface([Field], [Bool], 'descriminator', **s_args)
+
     # funcs.append(s)
     #
     # translate = Interface([Field, Translation], [Field], 'translate', **translate_args)
@@ -123,6 +132,9 @@ def gen_scalar_field_adt(train_data,
 
     voxel_grid = ForAllVar(VoxelGrid, "voxel_grid")
     forallvars.append(voxel_grid)
+
+    sample_space = ForAllVar(SampleSpace, "sample_space")
+    forallvars.append(sample_space)
 
     # PreProcessing
     # sphere_field_batch = sphere_field.batch_input_var
@@ -154,6 +166,13 @@ def gen_scalar_field_adt(train_data,
     # # import pdb; pdb.set_trace()
     # axiom_r1 = Axiom(s(translated, pos.input_var),
     #                  s(sphere_field_batch, pos.input_var + reshape_translate_vec))
+
+    # Other loss terms
+    data_sample = encoded_field
+    losses = adversarial_losses(sample_space,
+                                data_sample,
+                                generator,
+                                descriminator)
 
     train_outs = []
     gen_to_inputs = identity
