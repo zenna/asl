@@ -35,8 +35,9 @@ def get_fetches(adt, options):
     fetch['losses'] = losses
     fetch['loss'] = loss
     # fetch['numerics'] = tf.add_check_numerics_ops()
-    optimizer, update_step = get_updates(loss, options)
-    loss_updates = [update_step]
+    # optimizer, update_step = get_updates(loss, options)
+    # loss_updates = [update_step]
+    loss_updates = [get_updates(loss, options)[1] for loss in losses.values()]
     return fetch, loss_updates
 
 
@@ -51,7 +52,8 @@ def train(adt,
           options):
     """Train the abstract data type"""
     fetch, loss_updates = get_fetches(adt, options)
-    generators = [the_gen(pdt.generators, adt.forallvars)]
+    train_generators = [the_gen(pdt.train_generators, adt.forallvars)]
+    test_generators = [the_gen(pdt.test_generators, adt.forallvars)]
     sess = tf.Session()
     saver = tf.train.Saver()
     options['saver'] = saver
@@ -67,9 +69,9 @@ def train(adt,
         train_loop(sess,
                    loss_updates,
                    fetch,
-                   generators,
-                   test_generators=None,
+                   train_generators=train_generators,
+                   test_generators=test_generators,
                    loss_ratios=None,
                    callbacks=callbacks,
                    **options)
-    return ses
+    return sess

@@ -356,11 +356,10 @@ class AbstractDataType():
 class ProbDataType():
     """ A probabilistic data type gives a function (space) to each funcs,
         a value to each constant and a random variable to each diti=rbution"""
-    def __init__(self, adt, train_fn, call_fns, generators, gen_to_inputs,
+    def __init__(self, adt, train_generators, test_generators, gen_to_inputs,
                  train_outs):
         self.adt = adt
-        self.train_fn = train_fn
-        self.call_fns = call_fns
-        self.generators = generators
+        self.train_generators = train_generators
+        self.test_generators = test_generators
         self.gen_to_inputs = gen_to_inputs
         self.train_outs = train_outs

@@ -1,3 +1,8 @@
+# 1. Add training loss
+# 2. Add visualization
+# 2. Change uniform to gaussian
+# 3, Add dropout
+
 from pdt import *
 from pdt.train_tf import *
 from pdt.types import *
@@ -71,6 +76,7 @@ def unsign(t):
 
 
 def gen_scalar_field_adt(train_data,
+                         test_data,
                          options,
                          field_shape=(8, 8, 8),
                          voxel_grid_shape=(32, 32, 32),
@@ -163,13 +169,6 @@ def gen_scalar_field_adt(train_data,
     axiom_enc_dec = Axiom((decoded_vox_grid, ), (voxel_grid.input_var, ), 'enc_dec')
     axioms.append(axiom_enc_dec)
 
-    # Rotation axioms
-    # (translated,) = translate(sphere_field_batch, translate_vec.input_var)
-    # reshape_translate_vec = tf.reshape(translate_vec.input_var, [batch_size, 1, 3])
-    # # import pdb; pdb.set_trace()
-    # axiom_r1 = Axiom(s(translated, pos.input_var),
-    #                  s(sphere_field_batch, pos.input_var + reshape_translate_vec))
-
     # Other loss terms
     data_sample = encoded_field
     losses = adversarial_losses(sample_space,
@@ -181,24 +180,35 @@ def gen_scalar_field_adt(train_data,
     gen_to_inputs = identity
 
     # Generators
-    generators = []
+    train_generators = []
+    test_generators = []
     # pos_gen = infinite_samples(np.random.rand, batch_size, points_shape)
-    # generators.append(pos_gen)
+    # train_generators.append(pos_gen)
     #
     # tran_gen = infinite_samples(np.random.rand, batch_size, translate_shape)
-    # generators.append(tran_gen)
+    # train_generators.append(tran_gen)
 
     voxel_gen = infinite_batches(train_data, batch_size, shuffle=True)
-    generators.append(voxel_gen)
+    train_generators.append(voxel_gen)
+
+    # Test
+    test_voxel_gen = infinite_batches(test_data, batch_size, shuffle=True)
+    test_generators.append(test_voxel_gen)
+
 
     sample_space_gen =  infinite_samples(np.random.rand,
                                          (batch_size),
                                          sample_space_shape,
                                          add_batch=True)
-    generators.append(sample_space_gen)
+    train_generators.append(sample_space_gen)
 
-    # train_fn, call_fns = compile_fns(funcs, consts, forallvars, axioms, train_outs, options)
-    train_fn, call_fns = None, None
+    # Test
+    test_sample_space_gen = infinite_samples(np.random.rand,
+                                             (batch_size),
+                                             sample_space_shape,
+                                             add_batch=True)
+    test_generators.append(test_sample_space_gen)
+
     scalar_field_adt = AbstractDataType(funcs,
                                         consts,
                                         forallvars,
@@ -206,9 +216,8 @@ def gen_scalar_field_adt(train_data,
                                         losses,
                                         name='scalar_field')
     scalar_field_pbt = ProbDataType(scalar_field_adt,
-                                    train_fn,
-                                    call_fns,
-                                    generators,
+                                    train_generators,
+                                    test_generators,
                                     gen_to_inputs,
                                     train_outs)
     return scalar_field_adt, scalar_field_pbt
@@ -219,12 +228,14 @@ def run(options):
     datadir = os.environ['DATADIR']
     voxels_path = os.path.join(datadir, 'ModelNet40', 'alltrain32.npy')
     voxel_grids = np.load(voxels_path)
-    voxel_grids = voxel_grids
+    train_voxel_grids = voxel_grids[0:128]
+    test_voxel_grids = voxel_grids[128:256]
     field_args = {'initializer': tf.random_uniform_initializer}
     # Default params
     npoints = options['npoints'] if 'npoints' in options else 500
     field_shape = options['field_shape'] if 'field_shape' in options else (100,)
-    adt, pdt = gen_scalar_field_adt(voxel_grids,
+    adt, pdt = gen_scalar_field_adt(train_voxel_grids,
+                                    test_voxel_grids,
                                     options,
                                     s_args=options,
                                     translate_args=options,
