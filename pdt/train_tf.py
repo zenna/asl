@@ -1,6 +1,7 @@
 """Training for tensorflow"""
+from pdt.types import Loss
 from wacacore.util.io import *
-from wacacore.train.common import train_loop, get_updates, do_load, do_save, prep_load, prep_save
+from wacacore.train.common import *
 from wacacore.util.misc import inn, getn
 from wacacore.train.callbacks import *
 import time
@@ -8,36 +9,42 @@ import os
 import numpy as np
 import tensorflow as tf
 
+
 def get_axiom_losses(axioms):
     """Accumulate losses forall axiom in axioms, forall equation in axiom"""
-    losses = {}
+    losses = []
     for i, axiom in enumerate(axioms):
         for j, loss in enumerate(axiom.get_losses()):
-            losses['ax_%s_%s_%s' % (axiom.name, i, j)] = loss
+            losses.append(Loss(loss, 'ax_%s_%s_%s' % (axiom.name, i, j)))
     return losses
 
-def get_loss_losses(losses):
-    ret_losses = {}
-    for i, loss in enumerate(losses):
-        ret_losses['loss_%s_%s' % (loss.name, i)] = loss.loss
-    return ret_losses
 
 def get_all_losses(adt):
     """Accumulate losses forall axiom in axioms, forall equation in axiom"""
-    a = get_axiom_losses(adt.axioms)
-    a.update(get_loss_losses(adt.losses))
-    return a
+    return get_axiom_losses(adt.axioms) + adt.losses
+
 
 def get_fetches(adt, options):
-    fetch = {}
+    "Create one update functon per loss term"
     losses = get_all_losses(adt)
-    loss = sum(losses.values())
-    fetch['losses'] = losses
-    fetch['loss'] = loss
-    # fetch['numerics'] = tf.add_check_numerics_ops()
-    # optimizer, update_step = get_updates(loss, options)
-    # loss_updates = [update_step]
-    loss_updates = [get_updates(loss, options)[1] for loss in losses.values()]
+    losses_dict = {loss.name: loss.loss for loss in losses}
+    sum_loss = sum([loss.loss for loss in losses])
+    fetch = {}
+    fetch['losses'] = losses_dict
+    fetch['loss'] = sum_loss
+    if 'debug' in options and options['debug'] is True:
+        fetch['numerics'] = tf.add_check_numerics_ops()
+
+    loss_updates = []
+    for l in losses:
+        params = []
+        if l.restrict_to is not None:
+            for i in l.restrict_to:
+                params += i.get_params()
+        else:
+            params = None
+        update = updates(l.loss, params, options)[1]
+        loss_updates.append(update)
     return fetch, loss_updates
 
 
@@ -47,6 +54,7 @@ def the_gen(generators, forallvars):
         feed_dict = {forallvars[i].input_var: inputs[i] for i in range(len(inputs))}
         yield feed_dict
 
+
 def train(adt,
           pdt,
           options):
@@ -55,15 +63,32 @@ def train(adt,
     train_generators = [the_gen(pdt.train_generators, adt.forallvars)]
     test_generators = [the_gen(pdt.test_generators, adt.forallvars)]
     sess = tf.Session()
+
+    # Saving and Loading
     saver = tf.train.Saver()
     options['saver'] = saver
     if do_load(options):
         prep_load(sess, saver, options['params_file'])
     else:
-        sess.run(tf.initialize_all_variables())
+        init = tf.global_variables_initializer()
+        sess.run(init)
     if do_save(options):
         options['savedir'] = prep_save(options['dirname'], options['datadir'])
-    callbacks = [save_options, save_every_n, save_everything_last, nan_cancel]
+
+    # Summaries
+    summaries_dir = os.path.join(options['savedir'], "summaries")
+    summaries = variable_summaries(fetch['losses'])
+    fetch['summaries'] = summaries
+    writers = setup_file_writers(options['savedir'], sess)
+    options['writers'] = writers
+    #
+    # callbacks = [save_options,
+    #              save_every_n,
+    #              save_everything_last,
+    #              nan_cancel,
+    #              summary_writes]
+
+    callbacks = [every_n(summary_writes, 10)]
 
     if options['train'] is True:
         train_loop(sess,

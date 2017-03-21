@@ -1,12 +1,12 @@
-from __future__ import print_function
-
+from pdt.config import floatX
+from pdt.distances import mse, mae
+from pdt.util.backend import variable, repeat_to_batch, placeholder
 from pdt.distances import *
 import time
 import numpy as np
 from io import *
-from pdt.config import floatX
-from pdt.distances import mse, mae
-from pdt.util.backend import variable, repeat_to_batch, placeholder
+import tensorflow as tf
+from tensorflow import Tensor
 
 # import theano
 # import theano.tensor as T
@@ -80,6 +80,15 @@ class Interface():
         self.reuse=True
         return outputs
 
+    def get_params(self, trainable=False):
+        "Get the variables associated with this interface"
+        if trainable:
+            variables = tf.GraphKeys.TRAINABLE_VARIABLES
+        else:
+            variables = tf.GraphKeys.GLOBAL_VARIABLES
+        return tf.get_collection(variables,
+                                 scope=self.name)
+
     def to_python_lambda(self, sess):
         """Generate a callable python function for this interface function"""
 
@@ -99,31 +108,6 @@ class Interface():
         """
         return "%s-%s-%s" % (self.name, type.name, input_id)
 
-    def get_params(self, **tags):
-        return self.params.get_params(**tags)
-
-    def load_params(self, param_values):
-        params = self.params.get_params()
-        assert len(param_values) == len(params), "Invalid param file"
-        for i in range(len(params)):
-            params[i].set_value(param_values[i])
-
-    def load_params_fname(self, fname):
-        params_file = np.load(fname)
-        param_values = npz_to_array(params_file)
-        return self.load_params(param_values)
-
-    def save_params(self, fname, compress=True):
-        params = self.params.get_params()
-        param_values = [param.get_value() for param in params]
-        print("Params", params)
-        print("Param Sizes", [p.get_value().shape for p in params])
-        print("Before Set Means", [p.get_value().mean() for p in params])
-        if compress:
-            np.savez_compressed(fname, *param_values)
-        else:
-            np.savez(fname, *param_values)
-
 
 class ForAllVar():
     "Universally quantified variable"
@@ -140,11 +124,12 @@ class ForAllVar():
 
 
 class Axiom():
-    def __init__(self, lhs, rhs, name=''):
+    def __init__(self, lhs, rhs, name, restrict_to=None):
         assert len(lhs) == len(rhs)
         self.lhs = lhs
         self.rhs = rhs
         self.name = name
+        self.restrict_to = None if restrict_to is None else restrict_to
 
     def get_losses(self, dist=mse):
         print("lhs", self.lhs)
@@ -228,12 +213,21 @@ class BoundAxiom():
 class Loss():
     "A value to be minimized"
 
-    def __init__(self, loss, name):
+    def __init__(self, loss: Tensor,  name: str, restrict_to=None):
+        """Create a loss term, only functions and constants in `restrict_to`
+        (unless it is None) will be optimized to minimize this loss"""
         self.loss = loss
         self.name = name
+        self.restrict_to = None if restrict_to is None else restrict_to
+
 
 class Const():
-    def __init__(self, type, name, batch_size, initializer, do_repeat_to_batch=True):
+    def __init__(self,
+                 type: Type,
+                 name: str,
+                 batch_size: int,
+                 initializer,
+                 do_repeat_to_batch=True):
         self.type = type
         self.shape = type.get_shape(add_batch=True, batch_size=1)
         self.name = name
