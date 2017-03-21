@@ -1,22 +1,16 @@
-# Optimization groups
-
-# -for a given loss term I may want to update not all the functions
-# - so theres a mapping from Interface to Loss
-# - Its a many to many mapping, one axiom may be used to update many functions
-# - and one function may be for many mapping
-
-# Add 3d conv net
+# add exponential decay to weights
 
 # add convergence test
 
 # 3d conv net
 
-# run on openmind
+# Add visualization
 
-#  Add visualization
-# 2. Change uniform to gaussian
-# 3, Add dropout
-# openmind
+# Change uniform to gaussian
+
+# Add dropout
+
+# Get rid of pdt
 
 from pdt import *
 from pdt.train_tf import *
@@ -24,9 +18,15 @@ from pdt.types import *
 from pdt.adversarial import adversarial_losses
 from wacacore.util.misc import *
 from wacacore.util.io import mk_dir
-from wacacore.util.generators import infinite_samples, infinite_batches
+from wacacore.util.generators import infinite_samples, 
 import numpy as np
 from common import handle_options
+
+def encode_tf(inputs):
+    assert len(inputs) == 1
+    voxels = inputs[0]
+    import pdb; pdb.set_trace()
+    op = tf.nn.conv3d(inputs)
 
 
 def rand_rotation_matrix(deflection=1.0, randnums=None, floatX='float32'):
@@ -105,7 +105,6 @@ def gen_scalar_field_adt(train_data,
                          translate_args={}):
     # Types
     sample_space_shape = (10,)
-    points_shape = (npoints, 3)
 
     Field = Type(field_shape, name="Field")
     SampleSpace = Type(sample_space_shape, name="SampleSpace")
@@ -116,16 +115,16 @@ def gen_scalar_field_adt(train_data,
     funcs = []
 
     # A random variable over sample
-    generator = Interface([SampleSpace], [Field], 'generator', **s_args)
+    generator = Interface([SampleSpace], [Field], 'generator', template=s_args)
     funcs.append(generator)
 
-    descriminator = Interface([Field], [Bool], 'descriminator', **s_args)
+    descriminator = Interface([Field], [Bool], 'descriminator', template=s_args)
     funcs.append(descriminator)
 
-    encode = Interface([VoxelGrid], [Field], 'encode', **encode_args)
+    encode = Interface([VoxelGrid], [Field], 'encode', tf_interface=encode_tf)
     funcs.append(encode)
 
-    decode = Interface([Field], [VoxelGrid], 'decode', **decode_args)
+    decode = Interface([Field], [VoxelGrid], 'decode', template=decode_args)
     funcs.append(decode)
 
     # Constants
@@ -184,12 +183,13 @@ def gen_scalar_field_adt(train_data,
                                              add_batch=True)
     test_generators.append(test_sample_space_gen)
 
-    scalar_field_adt = AbstractDataType(funcs,
-                                        consts,
-                                        forallvars,
-                                        axioms,
-                                        losses,
+    scalar_field_adt = AbstractDataType(funcs=funcs,
+                                        const=consts,
+                                        forallvars=forallvars,
+                                        axioms=axioms,
+                                        losses=losses,
                                         name='scalar_field')
+
     scalar_field_pbt = ProbDataType(scalar_field_adt,
                                     train_generators,
                                     test_generators,
@@ -203,8 +203,10 @@ def run(options):
     datadir = os.environ['DATADIR']
     voxels_path = os.path.join(datadir, 'ModelNet40', 'alltrain32.npy')
     voxel_grids = np.load(voxels_path)
-    train_voxel_grids = voxel_grids[0:128]
-    test_voxel_grids = voxel_grids[128:256]
+    test_size = 512
+    train_voxel_grids = voxel_grids[0:-test_size]
+    test_voxel_grids = voxel_grids[test_size:]
+
     field_args = {'initializer': tf.random_uniform_initializer}
     # Default params
     npoints = options['npoints'] if 'npoints' in options else 500

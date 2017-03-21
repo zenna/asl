@@ -49,17 +49,28 @@ class Type():
             return self.shape
 
 class Interface():
-    def __init__(self, lhs, rhs, name, **template_kwargs):
+    def __init__(self, lhs, rhs, name, template=None, tf_interface=None):
         self.name = name
         self.lhs = lhs
         self.rhs = rhs
-        self.template = template = template_kwargs['template']
-        self.template_kwargs = template_kwargs
-        params = Params()
         self.inp_shapes = [type.get_shape(add_batch=True) for type in lhs]
         self.out_shapes = [type.get_shape(add_batch=True) for type in rhs]
+
         # Initially false because the first __call__ should gen parameters
         self.reuse = False
+        assert not (template is None and tf_interface is None)
+        if tf_interface is not None:
+            self.tf_interface = tf_interface
+        else:
+            template_f = template['template']
+            def tf_func(inputs):
+                output, params = template_f(inputs,
+                                            inp_shapes=self.inp_shapes,
+                                            out_shapes=self.out_shapes,
+                                            reuse=self.reuse,
+                                            **template)
+                return output
+            self.tf_interface = tf_func
 
     def __call__(self, *raw_args):
         args = [arg.input_var if hasattr(arg, 'input_var') else arg for arg in raw_args]
@@ -68,14 +79,8 @@ class Interface():
         output_args = {'deterministic': True}
         with tf.name_scope(self.name):
             with tf.variable_scope(self.name, reuse=self.reuse) as scope:
-                tf.get_variable_scope().name
-                outputs, params = self.template(args,
-                                                inp_shapes=self.inp_shapes,
-                                                out_shapes=self.out_shapes,
-                                                output_args=output_args,
-                                                # params=self.params,
-                                                reuse=self.reuse,
-                                                **self.template_kwargs)
+                outputs = self.tf_interface(args)
+
         # And from now on reuse parameters
         self.reuse=True
         return outputs

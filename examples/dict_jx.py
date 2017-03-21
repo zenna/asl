@@ -68,13 +68,14 @@ def dict_adt(train_data,
     - Notes: each image is unique and can be a unique dictionary
     - Could take every Nth element and use as a key, then add the next (n-1) images as values of the key
         - Check that the new values get added then returned fine
-    - Remove M keys from the 
+    - Remove key from dictionary
 
     '''
     axioms = []
     dict = empty_dict.batch_input_var
     dicts = [dict]
     for i in range(nitems):
+        if i%3==0:
         # (dict,) = push(dict, items[i].input_var) # pushed the item onto the dict
         dicts.append(dict)
         # pop_dict = dict
