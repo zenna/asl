@@ -1,6 +1,27 @@
+# Optimization groups
+
+# -for a given loss term I may want to update not all the functions
+# - so theres a mapping from Interface to Loss
+# - Its a many to many mapping, one axiom may be used to update many functions
+# - and one function may be for many mapping
+
+# Add 3d conv net
+
+# add convergence test
+
+# 3d conv net
+
+# run on openmind
+
+#  Add visualization
+# 2. Change uniform to gaussian
+# 3, Add dropout
+# openmind
+
 from pdt import *
 from pdt.train_tf import *
 from pdt.types import *
+from pdt.adversarial import adversarial_losses
 from wacacore.util.misc import *
 from wacacore.util.io import mk_dir
 from wacacore.util.generators import infinite_samples, infinite_batches
@@ -70,6 +91,7 @@ def unsign(t):
 
 
 def gen_scalar_field_adt(train_data,
+                         test_data,
                          options,
                          field_shape=(8, 8, 8),
                          voxel_grid_shape=(32, 32, 32),
@@ -82,24 +104,23 @@ def gen_scalar_field_adt(train_data,
                          field_args={},
                          translate_args={}):
     # Types
-    # rot_matrix_shape = (3, 3)
+    sample_space_shape = (10,)
     points_shape = (npoints, 3)
-    Field = Type(field_shape, name="field")
-    # Points = Type(points_shape, name="points")
-    # Scalar = Type((npoints,), name="scalar")
+
+    Field = Type(field_shape, name="Field")
+    SampleSpace = Type(sample_space_shape, name="SampleSpace")
+    Bool = Type((1,), name="Bool")
     VoxelGrid = Type(voxel_grid_shape, name="voxel_grid")
 
-    # Rotation = Type(rot_matrix_shape, name="rotation")
-    # translate_shape = (3,)
-    # Translation = Type(translate_shape, name="translate")
-
-    # Interface
+    # Interfaces
     funcs = []
-    # s = Interface([Field, Points], [Scalar], 's', **s_args)
-    # funcs.append(s)
-    #
-    # translate = Interface([Field, Translation], [Field], 'translate', **translate_args)
-    # funcs.append(translate)
+
+    # A random variable over sample
+    generator = Interface([SampleSpace], [Field], 'generator', **s_args)
+    funcs.append(generator)
+
+    descriminator = Interface([Field], [Bool], 'descriminator', **s_args)
+    funcs.append(descriminator)
 
     encode = Interface([VoxelGrid], [Field], 'encode', **encode_args)
     funcs.append(encode)
@@ -109,38 +130,18 @@ def gen_scalar_field_adt(train_data,
 
     # Constants
     consts = []
-    # sphere_field = Const(Field, "sphere_field", batch_size, **field_args)
-    # consts = [sphere_field]
 
     # Variables
-    # rot_matrix = ForAllVar(Rotation, "rot_matrix")
     forallvars = []
-    # translate_vec = ForAllVar(Translation, "translate_vec")
-    # forallvars.append(translate_vec)
-    #
-    # pos = ForAllVar(Points, "pos")
-    # forallvars.append(pos)
 
     voxel_grid = ForAllVar(VoxelGrid, "voxel_grid")
     forallvars.append(voxel_grid)
 
-    # PreProcessing
-    # sphere_field_batch = sphere_field.batch_input_var
+    sample_space = ForAllVar(SampleSpace, "sample_space")
+    forallvars.append(sample_space)
 
     # Axioms
     axioms = []
-    # Zero field is zero everywhere
-    # axiom1 = Axiom(s(zero_field_batch, poss[0]), (0,))
-    # axiom2 = Axiom(s(zero_field_batch, poss[1]), (0,))
-    # axioms.append(axiom1)
-    # axioms.append(axiom2)
-
-    # if points is within unit sphere then should be on, otherwise off
-    # poses = s(sphere_field_batch)
-    # is_unit_sphere = unsign(sdf_sphere(pos.input_var))
-    # sphere_axiom = CondAxiom((is_unit_sphere,), (0.0,),
-    #                          s(sphere_field_batch, pos.input_var), (1.0,),
-    #                          s(sphere_field_batch, pos.input_var), (0.0,))
 
     # Encode Decode
     (encoded_field, ) = encode(voxel_grid.input_var)
@@ -148,33 +149,52 @@ def gen_scalar_field_adt(train_data,
     axiom_enc_dec = Axiom((decoded_vox_grid, ), (voxel_grid.input_var, ), 'enc_dec')
     axioms.append(axiom_enc_dec)
 
-    # Rotation axioms
-    # (translated,) = translate(sphere_field_batch, translate_vec.input_var)
-    # reshape_translate_vec = tf.reshape(translate_vec.input_var, [batch_size, 1, 3])
-    # # import pdb; pdb.set_trace()
-    # axiom_r1 = Axiom(s(translated, pos.input_var),
-    #                  s(sphere_field_batch, pos.input_var + reshape_translate_vec))
+    # Other loss terms
+    data_sample = encoded_field
+    losses = adversarial_losses(sample_space,
+                                data_sample,
+                                generator,
+                                descriminator)
 
     train_outs = []
     gen_to_inputs = identity
 
     # Generators
-    generators = []
-    # pos_gen = infinite_samples(np.random.rand, batch_size, points_shape)
-    # generators.append(pos_gen)
-    #
-    # tran_gen = infinite_samples(np.random.rand, batch_size, translate_shape)
-    # generators.append(tran_gen)
+    train_generators = []
+    test_generators = []
 
     voxel_gen = infinite_batches(train_data, batch_size, shuffle=True)
-    generators.append(voxel_gen)
+    train_generators.append(voxel_gen)
 
-    # train_fn, call_fns = compile_fns(funcs, consts, forallvars, axioms, train_outs, options)
-    train_fn, call_fns = None, None
-    scalar_field_adt = AbstractDataType(funcs, consts, forallvars, axioms,
+    # Test
+    test_voxel_gen = infinite_batches(test_data, batch_size, shuffle=True)
+    test_generators.append(test_voxel_gen)
+
+
+    sample_space_gen =  infinite_samples(np.random.rand,
+                                         (batch_size),
+                                         sample_space_shape,
+                                         add_batch=True)
+    train_generators.append(sample_space_gen)
+
+    # Test
+    test_sample_space_gen = infinite_samples(np.random.rand,
+                                             (batch_size),
+                                             sample_space_shape,
+                                             add_batch=True)
+    test_generators.append(test_sample_space_gen)
+
+    scalar_field_adt = AbstractDataType(funcs,
+                                        consts,
+                                        forallvars,
+                                        axioms,
+                                        losses,
                                         name='scalar_field')
-    scalar_field_pbt = ProbDataType(scalar_field_adt, train_fn, call_fns,
-                                    generators, gen_to_inputs, train_outs)
+    scalar_field_pbt = ProbDataType(scalar_field_adt,
+                                    train_generators,
+                                    test_generators,
+                                    gen_to_inputs,
+                                    train_outs)
     return scalar_field_adt, scalar_field_pbt
 
 
@@ -183,12 +203,14 @@ def run(options):
     datadir = os.environ['DATADIR']
     voxels_path = os.path.join(datadir, 'ModelNet40', 'alltrain32.npy')
     voxel_grids = np.load(voxels_path)
-    voxel_grids = voxel_grids
+    train_voxel_grids = voxel_grids[0:128]
+    test_voxel_grids = voxel_grids[128:256]
     field_args = {'initializer': tf.random_uniform_initializer}
     # Default params
     npoints = options['npoints'] if 'npoints' in options else 500
     field_shape = options['field_shape'] if 'field_shape' in options else (100,)
-    adt, pdt = gen_scalar_field_adt(voxel_grids,
+    adt, pdt = gen_scalar_field_adt(train_voxel_grids,
+                                    test_voxel_grids,
                                     options,
                                     s_args=options,
                                     translate_args=options,
