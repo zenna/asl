@@ -6,12 +6,13 @@ from wacacore.util.io import *
 
 
 def scalarField2D(train_data,
-                  batch_size=512):
+                  batch_size=512, 
+                  options):
     # Types and function Interfaces
-    Field = Type((16,16), "Field")
-    Image = Type((28,28), "Image")
-    encode = Interface([Image], [Field], "encode")
-    decode = Interface([Field], [Image], "decode")
+    Field = Type((16,16,1), "Field")
+    Image = Type((28,28,1), "Image")
+    encode = Interface([Image], [Field], "encode", **options)
+    decode = Interface([Field], [Image], "decode", **options)
 
     # Variables for use
     image = ForAllVar(Image, "image")
