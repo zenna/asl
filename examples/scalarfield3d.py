@@ -109,6 +109,7 @@ def unsign(t):
 def gen_scalar_field_adt(train_data,
                          test_data,
                          options,
+                         encode_args={'n_input': 300,  'n_steps': 10},
                          field_shape=(8, 8, 8),
                          voxel_grid_shape=(32, 32, 32),
                          batch_size=64,
@@ -132,10 +133,10 @@ def gen_scalar_field_adt(train_data,
     descriminator = Interface([Field], [Bool], 'descriminator', template=s_args)
     funcs.append(descriminator)
 
-    n_input = 300
-    n_steps = 10
+    encode_interface = create_encode(field_shape, encode_args['n_input'],
+                                     encode_args['n_steps'])
     encode = Interface([VoxelGrid], [Field], 'encode',
-                       tf_interface=create_encode(field_shape, n_input, n_steps))
+                       tf_interface=encode_interface)
     funcs.append(encode)
 
     decode = Interface([Field], [VoxelGrid], 'decode', template=decode_args)
@@ -214,7 +215,6 @@ def gen_scalar_field_adt(train_data,
 def voxel_indices(voxels, limit):
     """
     Convert voxel data_set (n, 32, 32, 32) to (n, 3, m)
-
     """
     n,x,y,z = voxels.shape
     output = np.ones((n, 3, limit))
@@ -247,7 +247,9 @@ def run(options):
     train_voxel_grids = voxel_grids[0:-test_size]
     test_voxel_grids = voxel_grids[test_size:]
 
-    field_args = {'initializer': tf.random_uniform_initializer}
+    # Parameters
+    encode_args = {'n_input': 300,  'n_steps': 10}
+
     # Default params
     field_shape = options['field_shape'] if 'field_shape' in options else (100,)
     adt, pdt = gen_scalar_field_adt(train_voxel_grids,
@@ -255,13 +257,9 @@ def run(options):
                                     options,
                                     voxel_grid_shape=(3, limit),
                                     s_args=options,
-                                    translate_args=options,
-                                    npoints=500,
                                     field_shape=field_shape,
-                                    encode_args=options,
+                                    encode_args=encode_args,
                                     decode_args=options,
-                                    add_args=options,
-                                    field_args=field_args,
                                     batch_size=options['batch_size'])
     sess = train(adt, pdt, options)
 
