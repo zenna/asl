@@ -24,20 +24,24 @@ from common import handle_options
 import tensorflow as tf
 from tensorflow.contrib import rnn
 
-def create_encode(field_shape, n_input, n_steps):
+def create_encode(field_shape, n_steps, batch_size):
     n_hidden = product(field_shape)
 
     def encode_tf(inputs):
         '''
-        inputs will be (?, 3, 1000)
+        inputs will be (batch_size, 1000, 3)
         '''
         assert len(inputs) == 1
         voxels = inputs[0]
 
         ## RNN
-        voxels = tf.transpose(voxels, [1,0,2])
-        voxels = tf.reshape(voxels, [-1, n_input])
-        voxels = tf.split(voxels, n_steps, 0)
+        # voxels = tf.transpose(voxels, [1,0,2])
+        # pdb.set_trace()
+
+        voxels = tf.split(voxels, n_steps, 1) #[(batch_size, 100, 3)...] 10 elements ; TODO try later n_steps = 1000
+        
+        voxels = [tf.reshape(inp, [batch_size, 300]) for inp in voxels] # [batch_size, 300] 
+
         lstm_cell = rnn.BasicLSTMCell(n_hidden, forget_bias=1.0)
         outputs, states = rnn.static_rnn(lstm_cell, voxels, dtype=tf.float32)
         return [outputs[-1]]
@@ -133,8 +137,9 @@ def gen_scalar_field_adt(train_data,
     descriminator = Interface([Field], [Bool], 'descriminator', template=s_args)
     funcs.append(descriminator)
 
-    encode_interface = create_encode(field_shape, encode_args['n_input'],
-                                     encode_args['n_steps'])
+    encode_interface = create_encode(field_shape,
+                                     encode_args['n_steps'],
+                                     batch_size)
     encode = Interface([VoxelGrid], [Field], 'encode',
                        tf_interface=encode_interface)
     funcs.append(encode)
@@ -232,6 +237,9 @@ def voxel_indices(voxels, limit):
         output[v][0][0:npoints] = x_list[0:npoints]
         output[v][1][0:npoints] = y_list[0:npoints]
         output[v][2][0:npoints] = z_list[0:npoints]
+
+    output = np.transpose(output, [0,2,1]) # switch limit and coords
+
     return output
 
 
@@ -255,7 +263,7 @@ def run(options):
     adt, pdt = gen_scalar_field_adt(train_voxel_grids,
                                     test_voxel_grids,
                                     options,
-                                    voxel_grid_shape=(3, limit),
+                                    voxel_grid_shape=(limit, 3),
                                     s_args=options,
                                     field_shape=field_shape,
                                     encode_args=encode_args,
