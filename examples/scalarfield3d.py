@@ -18,26 +18,13 @@ from pdt.types import *
 from pdt.adversarial import adversarial_losses
 from wacacore.util.misc import *
 from wacacore.util.io import mk_dir
-from wacacore.util.generators import infinite_samples, infinite_batches 
+from wacacore.util.generators import infinite_samples, infinite_batches
 import numpy as np
 from common import handle_options
 import tensorflow as tf
 from tensorflow.contrib import rnn
 
-import pdb
-
-def encode_tf(inputs):
-    assert len(inputs) == 1
-    voxels = inputs[0]
-    import pdb; pdb.set_trace()
-
-    ## 3d conv net
-    # op = tf.nn.conv3d(inputs)
-
 def create_encode(field_shape, n_input, n_steps):
-    '''
-
-    '''
     n_hidden = product(field_shape)
 
     def encode_tf(inputs):
@@ -46,10 +33,6 @@ def create_encode(field_shape, n_input, n_steps):
         '''
         assert len(inputs) == 1
         voxels = inputs[0]
-        # import pdb; pdb.set_trace()
-
-        ## 3d conv net
-        # op = tf.nn.conv3d(inputs)
 
         ## RNN
         voxels = tf.transpose(voxels, [1,0,2])
@@ -128,14 +111,9 @@ def gen_scalar_field_adt(train_data,
                          options,
                          field_shape=(8, 8, 8),
                          voxel_grid_shape=(32, 32, 32),
-                         npoints=100,
                          batch_size=64,
                          s_args={},
-                         encode_args={},
-                         decode_args={},
-                         add_args={},
-                         field_args={},
-                         translate_args={}):
+                         decode_args={}):
     # Types
     sample_space_shape = (10,)
 
@@ -156,7 +134,8 @@ def gen_scalar_field_adt(train_data,
 
     n_input = 300
     n_steps = 10
-    encode = Interface([VoxelGrid], [Field], 'encode', tf_interface=create_encode(field_shape, n_input, n_steps))
+    encode = Interface([VoxelGrid], [Field], 'encode',
+                       tf_interface=create_encode(field_shape, n_input, n_steps))
     funcs.append(encode)
 
     decode = Interface([Field], [VoxelGrid], 'decode', template=decode_args)
@@ -238,22 +217,21 @@ def voxel_indices(voxels, limit):
 
     """
     n,x,y,z = voxels.shape
-    output = np.ones((n,3,limit))
+    output = np.ones((n, 3, limit))
     output = output * -1
 
     # obtain occupied voxels
     for v in range(len(voxels)):
         voxel = voxels[v]
-        x_list,y_list,z_list = np.where(voxel)
+        x_list, y_list, z_list = np.where(voxel)
         assert len(x_list)==len(y_list)
         assert len(y_list)==len(z_list)
 
         # fill in output tensor
-        if v < limit:
-            for i in range(len(x_list)):
-                output[v][0] = x_list[i]
-                output[v][1] = y_list[i]
-                output[v][2] = z_list[i]
+        npoints = min(limit, len(x_list))
+        output[v][0][0:npoints] = x_list[0:npoints]
+        output[v][1][0:npoints] = y_list[0:npoints]
+        output[v][2][0:npoints] = z_list[0:npoints]
     return output
 
 
@@ -264,7 +242,6 @@ def run(options):
     voxel_grids = np.load(voxels_path)
     limit = 1000
     voxel_grids = voxel_indices(voxel_grids, limit)
-    # pdb.set_trace()
 
     test_size = 512
     train_voxel_grids = voxel_grids[0:-test_size]
@@ -272,7 +249,6 @@ def run(options):
 
     field_args = {'initializer': tf.random_uniform_initializer}
     # Default params
-    npoints = options['npoints'] if 'npoints' in options else 500
     field_shape = options['field_shape'] if 'field_shape' in options else (100,)
     adt, pdt = gen_scalar_field_adt(train_voxel_grids,
                                     test_voxel_grids,

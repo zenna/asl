@@ -9,9 +9,21 @@ from wacacore.util.generators import infinite_samples, infinite_batches
 import numpy as np
 from common import handle_options
 
-# Interface functions
-def encode(encode_shape)
+## How to do atari games.
+# Generate an image
 
+def generate_atari_image_batch(batch_size, commands):
+    """
+    Args:
+        batch_size:
+        commands: List of n commands
+                  e.g. ['up', 'left', 'right', 'down', 'a', 'nocommand']
+    Return:
+        Tensor of size (batch_size, screen_height, screen_width, n)
+        for i = 1:batch_size:
+            run a game with `commands` and capture images
+    """
+    ...
 
 def gen_atari_adt(train_data,
                   test_data,
