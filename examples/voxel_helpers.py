@@ -1,5 +1,4 @@
 """Helpers for Dealing with Voxels"""
-from mayavi import mlab
 import numpy as np
 import os
 
@@ -7,7 +6,7 @@ import os
 def model_net_40(voxels_path=os.path.join(os.environ['DATADIR'],
                                           'ModelNet40',
                                           'alltrain32.npy')):
-    voxel_grids = np.load(voxels_path)
+    voxel_grids = np.load(voxels_path)/255.0
     return voxel_grids
 
 
@@ -50,7 +49,7 @@ def indices_voxels(indices, grid_x=32, grid_y=32, grid_z=32):
             y = indices[i, j, 1]
             z = indices[i, j, 2]
             d = indices[i, j, 3]
-            if x >= 0:
+            if 0 <= x < grid_x and 0 <= y < grid_y and 0 <= z < grid_z:
                 voxel_grid[i, x, y, z] = d
             else:
                 break
@@ -59,8 +58,10 @@ def indices_voxels(indices, grid_x=32, grid_y=32, grid_z=32):
 
 
 def show_voxel_grid(grid):
+    # from mayavi import mlab
     """Vizualise voxel grid with mlab
     x, y, z = np.ogrid[-10:10:20j, -10:10:20j, -10:10:20j]
     s = np.sin(x*y*z)/(x*y*z)
     """
-    mlab.pipeline.volume(mlab.pipeline.scalar_field(s), vmin=0, vmax=0.8)
+    mlab.pipeline.volume(mlab.pipeline.scalar_field(grid), vmin=0, vmax=0.8)
+    mlab.show()

@@ -1,16 +1,10 @@
 # add exponential decay to weights
-
 # add convergence test
-
 # 3d conv net
-
 # Add visualization
-
-# Change uniform to gaussian
-
 # Add dropout
-
 # Get rid of pdt
+# Change uniform to gaussian
 
 from pdt import *
 from pdt.train_tf import *
@@ -20,6 +14,7 @@ from wacacore.util.misc import *
 from wacacore.util.io import mk_dir
 from wacacore.util.generators import infinite_samples, infinite_batches
 from wacacore.util.tf import dims_bar_batch
+from wacacore.train.callbacks import every_n
 import numpy as np
 from common import handle_options
 import tensorflow as tf
@@ -31,12 +26,12 @@ def create_encode(field_shape, n_steps, batch_size):
 
     def encode_tf(inputs):
         '''
-        inputs will be (batch_size, 1000, 3)
+        inputs will be (batch_size, 1000, 4)
         '''
         assert len(inputs) == 1
         voxels = inputs[0]
         voxels = tf.split(voxels, n_steps, 1) #[(batch_size, 100, 3)...] 10 elements ; TODO try later n_steps = 1000
-        voxels = [tf.reshape(inp, [batch_size, 300]) for inp in voxels] # [batch_size, 300]
+        voxels = [tf.reshape(inp, [batch_size, 400]) for inp in voxels] # [batch_size, 300]
         lstm_cell = rnn.BasicLSTMCell(n_hidden, forget_bias=1.0)
         outputs, states = rnn.static_rnn(lstm_cell, voxels, dtype=tf.float32)
         return [outputs[-1]]
@@ -51,12 +46,15 @@ def add_summary(name, tensor):
 def gen_scalar_field_adt(train_data,
                          test_data,
                          options,
-                         encode_args={'n_input': 300,  'n_steps': 10},
+                         encode_args={'n_steps': 10},
                          field_shape=(8, 8, 8),
                          voxel_grid_shape=(32, 32, 32),
                          batch_size=64,
                          s_args={},
                          decode_args={}):
+
+    extra_fetches = {}
+
     # Types
     sample_space_shape = (10,)
 
@@ -99,19 +97,24 @@ def gen_scalar_field_adt(train_data,
     # Encode Decode
     (encoded_field, ) = encode(voxel_grid.input_var)
     add_summary("encoded_field", encoded_field)
+    extra_fetches["voxel_grid.input_var"] = voxel_grid.input_var
 
     (decoded_vox_grid, ) = decode(encoded_field)
     add_summary("decoded_vox_grid", decoded_vox_grid)
+    extra_fetches["decoded_vox_grid"] = decoded_vox_grid
 
     axiom_enc_dec = Axiom((decoded_vox_grid, ), (voxel_grid.input_var, ), 'enc_dec')
     axioms.append(axiom_enc_dec)
 
     # Other loss terms
     data_sample = encoded_field
-    losses = adversarial_losses(sample_space,
+    losses, adversarial_fetches = adversarial_losses(sample_space,
                                 data_sample,
                                 generator,
                                 discriminator)
+    (generated_voxels, ) = decode(adversarial_fetches['generated_field'])
+    extra_fetches['generated_voxels'] = generated_voxels
+    extra_fetches.update(adversarial_fetches)
 
     train_outs = []
     gen_to_inputs = identity
@@ -154,18 +157,27 @@ def gen_scalar_field_adt(train_data,
                                     test_generators,
                                     gen_to_inputs,
                                     train_outs)
-    return scalar_field_adt, scalar_field_pbt
+    return scalar_field_adt, scalar_field_pbt, extra_fetches
 
-# def save_voxels()
+
+def save_voxels(fetch_data,
+               feed_dict,
+               i: int,
+               **kwargs):
+    """Save Voxels"""
+    # import pdb; pdb.set_trace()
+    return True
+    # import pdb; pdb.set_trace()
+
 
 def run(options):
     global voxel_grids, adt, pdt, sess
     voxel_grids = model_net_40()
-    voxel_grid_shape=voxel_grid_shape[0].shape
+    voxel_grid_shape = voxel_grids.shape[1:]
 
     # Steam of Pointss
     limit = 1000
-    voxel_grid_shape=(limit, 3)
+    voxel_grid_shape = (limit, 4)
     voxel_grids = voxel_indices(voxel_grids, limit)
     indices_voxels(voxel_grids)
 
@@ -173,15 +185,15 @@ def run(options):
     train_voxel_grids = voxel_grids[0:-test_size]
     test_voxel_grids = voxel_grids[test_size:]
 
-    # train_voxel_grids = voxel_grids[0:128]
-    # test_voxel_grids = voxel_grids[0:128]
+    train_voxel_grids = voxel_grids[0:512]
+    test_voxel_grids = voxel_grids[0:512]
 
     # Parameters
-    encode_args = {'n_input': 300,  'n_steps': 10}
+    encode_args = {'n_steps': 10}
 
     # Default params
-    field_shape = options['field_shape'] if 'field_shape' in options else (100,)
-    adt, pdt = gen_scalar_field_adt(train_voxel_grids,
+    field_shape = options['field_shape'] if 'field_shape' in options else (1000,)
+    adt, pdt, extra_fetches = gen_scalar_field_adt(train_voxel_grids,
                                     test_voxel_grids,
                                     options,
                                     voxel_grid_shape=voxel_grid_shape,
@@ -190,7 +202,8 @@ def run(options):
                                     encode_args=encode_args,
                                     decode_args=options,
                                     batch_size=options['batch_size'])
-    sess = train(adt, pdt, options)
+
+    sess = train(adt, pdt, options, extra_fetches=extra_fetches, callbacks = [every_n(save_voxels, 100)])
 
 def main(argv):
     print("ARGV", argv)

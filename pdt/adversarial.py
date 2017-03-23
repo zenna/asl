@@ -16,4 +16,4 @@ def adversarial_losses(sample_space,
         loss_d = tf.reduce_mean(-tf.log(sig_fake_class) - tf.log(1 - sig_real_class))
         loss_g = tf.reduce_mean(-tf.log(sig_real_class))
     return [Loss(loss_g, 'generator_loss', restrict_to=[generator]),
-            Loss(loss_d, 'discriminator_loss', restrict_to=[discriminator])]
+            Loss(loss_d, 'discriminator_loss', restrict_to=[discriminator])], {'generated_field': gen_sample}
