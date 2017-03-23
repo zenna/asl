@@ -44,67 +44,11 @@ def create_encode(field_shape, n_input, n_steps):
 
     return encode_tf
 
+from wacacore.util.tf import dims_bar_batch
 
-def rand_rotation_matrix(deflection=1.0, randnums=None, floatX='float32'):
-    """
-    Creates a random rotation matrix.
-    deflection: the magnitude of the rotation. For 0, no rotation; for 1,
-    competely random
-    rotation. Small deflection => small perturbation.
-    randnums: 3 random numbers in the range [0, 1]. If `None`, they will be
-    auto-generated.
-    """
-    # from realtimerendering.com/resources/GraphicsGems/gemsiii/rand_rotation.c
-
-    if randnums is None:
-        randnums = np.random.uniform(size=(3,))
-
-    theta, phi, z = randnums
-
-    theta = theta * 2.0*deflection*np.pi  # Rotation about the pole (Z).
-    phi = phi * 2.0*np.pi  # For direction of pole deflection.
-    z = z * 2.0*deflection  # For magnitude of pole deflection.
-
-    # Compute a vector V used for distributing points over the sphere
-    # via the reflection I - V Transpose(V).  This formulation of V
-    # will guarantee that if x[1] and x[2] are uniformly distributed,
-    # the reflected points will be uniform on the sphere.  Note that V
-    # has length sqrt(2) to eliminate the 2 in the Householder matrix.
-
-    r = np.sqrt(z)
-    Vx, Vy, Vz = V = (
-        np.sin(phi) * r,
-        np.cos(phi) * r,
-        np.sqrt(2.0 - z)
-        )
-
-    st = np.sin(theta)
-    ct = np.cos(theta)
-
-    R = np.array(((ct, st, 0), (-st, ct, 0), (0, 0, 1)))
-
-    # Construct the rotation matrix  ( V Transpose(V) - I ) R.
-
-    M = (np.outer(V, V) - np.eye(3)).dot(R)
-    return np.array(M, dtype=floatX)
-
-
-def euclidean_norm(t, ri):
-    with tf.name_scope("euclidean_norm"):
-        sqr = tf.square(t)
-        norm = tf.reduce_sum(sqr, reduction_indices=ri)
-    return norm
-
-
-def sdf_sphere(t):
-    length = euclidean_norm(t, 2)
-    return length - 1.2
-
-
-def unsign(t):
-    """Convert a signed distance into 0s at negatives"""
-    return tf.nn.relu(t)
-
+def add_summary(name, tensor):
+    t = tf.reduce_sum(tensor, reduction_indices=dims_bar_batch(tensor))
+    tf.summary.histogram(name, t)
 
 def gen_scalar_field_adt(train_data,
                          test_data,
@@ -124,31 +68,22 @@ def gen_scalar_field_adt(train_data,
     VoxelGrid = Type(voxel_grid_shape, name="voxel_grid")
 
     # Interfaces
-    funcs = []
-
     # A random variable over sample
     generator = Interface([SampleSpace], [Field], 'generator', template=s_args)
-    funcs.append(generator)
-
-    descriminator = Interface([Field], [Bool], 'descriminator', template=s_args)
-    funcs.append(descriminator)
-
-    encode_interface = create_encode(field_shape, encode_args['n_input'],
-                                     encode_args['n_steps'])
-    encode = Interface([VoxelGrid], [Field], 'encode',
-                       tf_interface=encode_interface)
-    funcs.append(encode)
-
+    discriminator = Interface([Field], [Bool], 'discriminator', template=s_args)
+    # encode_interface = create_encode(field_shape, encode_args['n_input'],
+    #                                  encode_args['n_steps'])
+    # encode = Interface([VoxelGrid], [Field], 'encode',
+    #                    tf_interface=encode_interface)
+    #
+    encode = Interface([VoxelGrid], [Field], 'encode', template=s_args)
     decode = Interface([Field], [VoxelGrid], 'decode', template=decode_args)
-    funcs.append(decode)
-
-    # Constants
-    consts = []
 
     # Variables
     forallvars = []
 
     voxel_grid = ForAllVar(VoxelGrid, "voxel_grid")
+    add_summary("voxel_input", voxel_grid.input_var)
     forallvars.append(voxel_grid)
 
     sample_space = ForAllVar(SampleSpace, "sample_space")
@@ -157,9 +92,15 @@ def gen_scalar_field_adt(train_data,
     # Axioms
     axioms = []
 
+
+
     # Encode Decode
     (encoded_field, ) = encode(voxel_grid.input_var)
+    add_summary("encoded_field", encoded_field)
+
     (decoded_vox_grid, ) = decode(encoded_field)
+    add_summary("decoded_vox_grid", decoded_vox_grid)
+
     axiom_enc_dec = Axiom((decoded_vox_grid, ), (voxel_grid.input_var, ), 'enc_dec')
     axioms.append(axiom_enc_dec)
 
@@ -168,7 +109,7 @@ def gen_scalar_field_adt(train_data,
     losses = adversarial_losses(sample_space,
                                 data_sample,
                                 generator,
-                                descriminator)
+                                discriminator)
 
     train_outs = []
     gen_to_inputs = identity
@@ -198,6 +139,8 @@ def gen_scalar_field_adt(train_data,
                                              add_batch=True)
     test_generators.append(test_sample_space_gen)
 
+    funcs = [encode, decode, discriminator, generator]
+    consts = []
     scalar_field_adt = AbstractDataType(funcs=funcs,
                                         consts=consts,
                                         forallvars=forallvars,
@@ -235,17 +178,40 @@ def voxel_indices(voxels, limit):
     return output
 
 
+
+# assert not (template is None and tf_interface is None)
+# if tf_interface is not None:
+# else:
+#     template_f = template['template']
+#     def tf_func(inputs):
+#         output, params = template_f(inputs,
+#                                     inp_shapes=self.inp_shapes,
+#                                     out_shapes=self.out_shapes,
+#                                     reuse=self.reuse,
+#                                     **template)
+#         return output
+#     self.tf_interface = tf_func
+
 def run(options):
     global voxel_grids, adt, pdt, sess
     datadir = os.environ['DATADIR']
+
+    # 32 * 32 * 32
     voxels_path = os.path.join(datadir, 'ModelNet40', 'alltrain32.npy')
     voxel_grids = np.load(voxels_path)
-    limit = 1000
-    voxel_grids = voxel_indices(voxel_grids, limit)
+    voxel_grid_shape=(32, 32, 32)
+
+    # Steam of Pointss
+    # limit = 1000
+    # voxel_grid_shape=(3, limit)
+    # voxel_grids = voxel_indices(voxel_grids, limit)
 
     test_size = 512
     train_voxel_grids = voxel_grids[0:-test_size]
     test_voxel_grids = voxel_grids[test_size:]
+
+    # train_voxel_grids = voxel_grids[0:128]
+    # test_voxel_grids = voxel_grids[0:128]
 
     # Parameters
     encode_args = {'n_input': 300,  'n_steps': 10}
@@ -255,7 +221,7 @@ def run(options):
     adt, pdt = gen_scalar_field_adt(train_voxel_grids,
                                     test_voxel_grids,
                                     options,
-                                    voxel_grid_shape=(3, limit),
+                                    voxel_grid_shape=voxel_grid_shape,
                                     s_args=options,
                                     field_shape=field_shape,
                                     encode_args=encode_args,
