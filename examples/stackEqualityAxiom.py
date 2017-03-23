@@ -29,7 +29,7 @@ def eqstack_adt(train_data,
     push = Interface([Eqstack, Item], [Eqstack], 'push', **push_args)
     # Pop an Item from a eqstack, returning a new eqstack and the item
     pop = Interface([Eqstack], [Eqstack, Item], 'pop', **pop_args)
-    funcs = [push, pop]
+    interfaces = [push, pop]
 
     # train_outs
     train_outs = []
@@ -64,9 +64,9 @@ def eqstack_adt(train_data,
             # Eqstack equivalence
             axiom = Axiom((pop_eqstack,), (eqstacks[j],), 'eqstack-eq%s-%s' %(i, j))
             axioms.append(axiom)
-    train_fn, call_fns = compile_fns(funcs, consts, forallvars, axioms,
+    train_fn, call_fns = compile_fns(interfaces, consts, forallvars, axioms,
                                      train_outs, options)
-    eqstack_adt = AbstractDataType(funcs, consts, forallvars, axioms,
+    eqstack_adt = AbstractDataType(interfaces, consts, forallvars, axioms,
                                  name='eqstack')
     eqstack_pdt = ProbDataType(eqstack_adt, train_fn, call_fns,
                              generators, gen_to_inputs, train_outs)

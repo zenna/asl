@@ -30,11 +30,11 @@ def scalarField2D(options,
     pdb.set_trace()
 
     # Defining ADT
-    funcs = [encode, decode]
+    interfaces = [encode, decode]
     const = []
     forallvars = [image]
     axioms = [image_axiom]
-    field_adt = AbstractDataType(funcs, const, forallvars, axioms, name='field')
+    field_adt = AbstractDataType(interfaces, const, forallvars, axioms, name='field')
 
     # Defining PDT
     train_fn = None

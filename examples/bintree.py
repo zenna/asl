@@ -49,9 +49,9 @@ def gen_binary_tree_adt(train_data,
                   infinite_samples(np.random.rand, batch_size, binary_tree_shape),
                   infinite_minibatches(train_data, batch_size, True)]
 
-    train_fn, call_fns = compile_fns(funcs, consts, forallvars, axioms,
+    train_fn, call_fns = compile_fns(interfaces, consts, forallvars, axioms,
                                      train_outs, options)
-    binary_tree_adt = AbstractDataType(funcs, consts, forallvars, axioms,
+    binary_tree_adt = AbstractDataType(interfaces, consts, forallvars, axioms,
                                        name='binary_tree')
     binary_tree_pdt = ProbDataType(binary_tree_adt, train_fn, call_fns,
                                    generators, gen_to_inputs, train_outs)

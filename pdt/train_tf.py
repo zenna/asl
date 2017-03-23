@@ -82,13 +82,13 @@ def train(adt,
     writers = setup_file_writers(options['savedir'], sess)
     options['writers'] = writers
 
-    callbacks = [save_options,
-                 save_every_n,
-                 save_everything_last,
-                 nan_cancel,
-                 every_n(summary_writes, 10)]
+    # callbacks = [save_options,
+    #              save_every_n,
+    #              save_everything_last,
+    #              nan_cancel,
+    #              every_n(summary_writes, 10)]
 
-    # callbacks = [every_n(summary_writes, 10)]
+    callbacks = [every_n(summary_writes, 10)]
 
     if options['train'] is True:
         train_loop(sess,

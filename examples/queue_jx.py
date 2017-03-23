@@ -32,7 +32,7 @@ def queue_adt(train_data,
 
     # Pop an Item from a queue, returning a new queue and the item
     pop = Interface([Queue], [Queue, Item], 'pop', **pop_args)
-    funcs = [push, pop]
+    interfaces = [push, pop]
 
     # train_outs
     train_outs = []
@@ -72,7 +72,7 @@ def queue_adt(train_data,
 
 
     train_fn, call_fns = None, None
-    queue_adt = AbstractDataType(funcs, consts, forallvars, axioms,
+    queue_adt = AbstractDataType(interfaces, consts, forallvars, axioms,
                                  name='queue')
     queue_pdt = ProbDataType(queue_adt, train_fn, call_fns,
                              generators, gen_to_inputs, train_outs)

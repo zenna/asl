@@ -31,7 +31,7 @@ def eqqueue_adt(train_data,
 
     # Pop an Item from a eqqueue, returning a new eqqueue and the item
     pop = Interface([Eqqueue], [Eqqueue, Item], 'pop', **pop_args)
-    funcs = [push, pop]
+    interfaces = [push, pop]
 
     # train_outs
     train_outs = []
@@ -92,7 +92,7 @@ def eqqueue_adt(train_data,
 
     #FIXME: Remove train_fn and call_fns from datastructure
     train_fn, call_fns = None, None
-    eqqueue_adt = AbstractDataType(funcs, consts, forallvars, axioms,
+    eqqueue_adt = AbstractDataType(interfaces, consts, forallvars, axioms,
                                  name='eqqueue')
     eqqueue_pdt = ProbDataType(eqqueue_adt, train_fn, call_fns,
                              generators, gen_to_inputs, train_outs)

@@ -331,8 +331,8 @@ class Params():
 
 
 class AbstractDataType():
-    def __init__(self, funcs, consts, forallvars, axioms, losses, name=''):
-        self.funcs = funcs
+    def __init__(self, interfaces, consts, forallvars, axioms, losses, name=''):
+        self.interfaces = interfaces
         self.consts = consts
         self.forallvars = forallvars
         self.axioms = axioms
@@ -340,20 +340,20 @@ class AbstractDataType():
         self.name = name
 
     def load_params(self, sfx):
-        for i in range(len(self.funcs)):
-            self.funcs[i].load_params_fname("%s_interface_%s.npz" % (sfx, i))
+        for i in range(len(self.interfaces)):
+            self.interfaces[i].load_params_fname("%s_interface_%s.npz" % (sfx, i))
         for i in range(len(self.consts)):
             self.consts[i].load_params_fname("%s_constant_%s.npz" % (sfx, i))
 
     def save_params(self, sfx, compress=True):
-        for i in range(len(self.funcs)):
-            self.funcs[i].save_params("%s_interface_%s" % (sfx, i), compress)
+        for i in range(len(self.interfaces)):
+            self.interfaces[i].save_params("%s_interface_%s" % (sfx, i), compress)
         for i in range(len(self.consts)):
             self.consts[i].save_params("%s_constant_%s" % (sfx, i), compress)
 
 
 class ProbDataType():
-    """ A probabilistic data type gives a function (space) to each funcs,
+    """ A probabilistic data type gives a function (space) to each interfaces,
         a value to each constant and a random variable to each diti=rbution"""
     def __init__(self, adt, train_generators, test_generators, gen_to_inputs,
                  train_outs):

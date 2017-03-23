@@ -22,18 +22,18 @@ def gen_number_adt(options,
     BinInteger = Type((1,), "bin_integer")  # A python integer
 
     # Interface
-    funcs = []
+    interfaces = []
     succ = Interface([Number], [Number], 'succ', **succ_args)
-    funcs.append(succ)
+    interfaces.append(succ)
     add = Interface([Number, Number], [Number], 'add', **add_args)
-    funcs.append(add)
+    interfaces.append(add)
     # mul = Interface([Number, Number], [Number], 'mul', **mul_args)
     encode = Interface([BinInteger], [Number], 'encode', **encode_args)
-    funcs.append(encode)
+    interfaces.append(encode)
     decode = Interface([Number], [BinInteger], 'decode', **decode_args)
-    funcs.append(decode)
-    # funcs = [succ, encode, decode]
-    # funcs = [succ, add, mul, encode, decode]
+    interfaces.append(decode)
+    # interfaces = [succ, encode, decode]
+    # interfaces = [succ, add, mul, encode, decode]
 
     # Vars
     # a = ForAllVar(Number)
@@ -106,9 +106,9 @@ def gen_number_adt(options,
     train_outs = []
     gen_to_inputs = identity
 
-    train_fn, call_fns = compile_fns(funcs, consts, forallvars, axioms,
+    train_fn, call_fns = compile_fns(interfaces, consts, forallvars, axioms,
                                      train_outs, options)
-    number_adt = AbstractDataType(funcs, consts, forallvars, axioms,
+    number_adt = AbstractDataType(interfaces, consts, forallvars, axioms,
                                   name='natural_number')
     number_pdt = ProbDataType(number_adt, train_fn, call_fns,
                               generators, gen_to_inputs, train_outs)
@@ -141,7 +141,7 @@ def main(argv):
 if __name__ == "__main__":
     main(sys.argv[1:])
     # ipython -- number.py -l 0.0001 -u adam --batch_size=512
-    interface = {f.name:f for f in adt.funcs}
+    interface = {f.name:f for f in adt.interfaces}
     add = interface['add'].to_python_lambda(sess)
     succ = interface['succ'].to_python_lambda(sess)
     decode = interface['decode'].to_python_lambda(sess)

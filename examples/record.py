@@ -21,7 +21,7 @@ def record_adt(train_data, options, record_shape=(1, 28, 28),
     store = Interface([Record, FieldItem, InfoItem], [Record], 'store',
                       **store_args)
     find = Interface([Record, FieldItem], [InfoItem], 'find', **find_args)
-    funcs = [store, find]
+    interfaces = [store, find]
 
     # Consts
     empty_record = Const(Record)
@@ -45,9 +45,9 @@ def record_adt(train_data, options, record_shape=(1, 28, 28),
     # Generators
     generators = [infinite_batches(train_data, batch_size, shuffle=True)
                   for i in range(nitems)]
-    train_fn, call_fns = compile_fns(funcs, consts, forallvars, axioms,
+    train_fn, call_fns = compile_fns(interfaces, consts, forallvars, axioms,
                                      train_outs, options)
-    record_adt = AbstractDataType(funcs, consts, forallvars, axioms, name='record')
+    record_adt = AbstractDataType(interfaces, consts, forallvars, axioms, name='record')
     record_pdt = ProbDataType(record_adt, train_fn, call_fns, generators,
                               gen_to_inputs, train_outs)
     return record_adt, record_pdt

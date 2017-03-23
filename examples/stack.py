@@ -27,7 +27,7 @@ def stack_adt(train_data,
     push = Interface([Stack, Item], [Stack], 'push', **push_args)
     # Pop an Item from a stack, returning a new stack and the item
     pop = Interface([Stack], [Stack, Item], 'pop', **pop_args)
-    funcs = [push, pop]
+    interfaces = [push, pop]
 
     # train_outs
     train_outs = []
@@ -62,11 +62,11 @@ def stack_adt(train_data,
             # Stack equivalence
             # axiom = Axiom((pop_stack,), (stacks[j],), 'stack-eq%s-%s' %(i, j))
             # axioms.append(axiom)
-    # train_fn, call_fns = compile_fns(funcs, consts, forallvars, axioms,
+    # train_fn, call_fns = compile_fns(interfaces, consts, forallvars, axioms,
                                     #  train_outs, options)
     train_fn = None
     call_fns = None
-    stack_adt = AbstractDataType(funcs, consts, forallvars, axioms,
+    stack_adt = AbstractDataType(interfaces, consts, forallvars, axioms,
                                  name='stack')
     stack_pdt = ProbDataType(stack_adt, train_fn, call_fns,
                              generators, gen_to_inputs, train_outs)
