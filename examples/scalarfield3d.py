@@ -24,6 +24,7 @@ import numpy as np
 from common import handle_options
 import tensorflow as tf
 from tensorflow.contrib import rnn
+from voxel_helpers import *
 
 def create_encode(field_shape, n_steps, batch_size):
     n_hidden = product(field_shape)
@@ -155,45 +156,18 @@ def gen_scalar_field_adt(train_data,
                                     train_outs)
     return scalar_field_adt, scalar_field_pbt
 
-def voxel_indices(voxels, limit):
-    """
-    Convert voxel data_set (n, 32, 32, 32) to (n, 3, m)
-    """
-    n,x,y,z = voxels.shape
-    output = np.ones((n, 3, limit))
-    output = output * -1
-
-    # obtain occupied voxels
-    for v in range(len(voxels)):
-        voxel = voxels[v]
-        x_list, y_list, z_list = np.where(voxel)
-        assert len(x_list)==len(y_list)
-        assert len(y_list)==len(z_list)
-
-        # fill in output tensor
-        npoints = min(limit, len(x_list))
-        output[v][0][0:npoints] = x_list[0:npoints]
-        output[v][1][0:npoints] = y_list[0:npoints]
-        output[v][2][0:npoints] = z_list[0:npoints]
-
-    output = np.transpose(output, [0, 2, 1]) # switch limit and coords
-
-    return output
-
+# def save_voxels()
 
 def run(options):
     global voxel_grids, adt, pdt, sess
-    datadir = os.environ['DATADIR']
-
-    # 32 * 32 * 32
-    voxels_path = os.path.join(datadir, 'ModelNet40', 'alltrain32.npy')
-    voxel_grids = np.load(voxels_path)
-    voxel_grid_shape=(32, 32, 32)
+    voxel_grids = model_net_40()
+    voxel_grid_shape=voxel_grid_shape[0].shape
 
     # Steam of Pointss
     limit = 1000
     voxel_grid_shape=(limit, 3)
     voxel_grids = voxel_indices(voxel_grids, limit)
+    indices_voxels(voxel_grids)
 
     test_size = 512
     train_voxel_grids = voxel_grids[0:-test_size]
