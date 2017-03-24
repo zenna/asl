@@ -6,6 +6,21 @@
 # Get rid of pdt
 # Change uniform to gaussian
 
+
+
+# Layer Sizing
+# There's a few ways to do it, one way is to have different widths per
+# block, another is for the to allow change within a block.
+
+# This doesn't even account for convolutional networks
+# Simplest thing is to have block_widths
+
+# You also might want different nonlinearities at at different layers
+# So the best short term solution seems to be to break it up into layers and add
+# a check in interface to make sure its correct
+
+
+
 from pdt import *
 from pdt.train_tf import *
 from pdt.types import *
@@ -17,25 +32,130 @@ from wacacore.util.tf import dims_bar_batch
 from wacacore.train.callbacks import every_n
 import numpy as np
 from common import handle_options
-import tensorflow as tf
+import tensorflow as tfff
 from tensorflow.contrib import rnn
 from voxel_helpers import *
+from tflearn.layers import conv_3d, fully_connected, conv, conv_2d
+from tflearn.layers.normalization import batch_normalization
 
-def create_encode(field_shape, n_steps, batch_size):
+def conv_2d_layer(input, n_filters, stride):
+    return conv_2d(input,
+                   n_filters,
+                   3,
+                   strides=stride,
+                   padding='same',
+                   activation='elu',
+                   bias_init='zeros',
+                   scope=None,
+                   name='Conv3D')
+
+def conv_3d_layer(input, n_filters, stride):
+    return conv_3d(input,
+                       n_filters,
+                       3,
+                       strides=stride,
+                       padding='same',
+                       activation='elu',
+                       bias_init='zeros',
+                       scope=None,
+                       name='Conv3D')
+
+def conv_transpose_layer(input, n_filters, stride, output_shape):
+    return conv.conv_3d_transpose(input,
+                       n_filters,
+                       3,
+                       output_shape = output_shape,
+                       strides=stride,
+                       padding='same',
+                       activation='elu',
+                       bias_init='zeros',
+                       scope=None,
+                       name='Conv3D')
+
+def create_encode(field_shape):
     n_hidden = product(field_shape)
-
-    def encode_tf(inputs):
-        '''
-        inputs will be (batch_size, 1000, 4)
-        '''
+    def encode_conv_3d_net(inputs):
         assert len(inputs) == 1
         voxels = inputs[0]
-        voxels = tf.split(voxels, n_steps, 1) #[(batch_size, 100, 3)...] 10 elements ; TODO try later n_steps = 1000
-        voxels = [tf.reshape(inp, [batch_size, 400]) for inp in voxels] # [batch_size, 300]
-        lstm_cell = rnn.BasicLSTMCell(n_hidden, forget_bias=1.0)
-        outputs, states = rnn.static_rnn(lstm_cell, voxels, dtype=tf.float32)
-        return [outputs[-1]]
-    return encode_tf
+        voxels = tf.expand_dims(voxels, 4)
+        curr_layer = voxels
+        layers = []
+        curr_layer = conv_3d_layer(curr_layer, 4, 1)
+        curr_layer = batch_normalization(curr_layer)
+        layers.append(curr_layer)
+        curr_layer = conv_3d_layer(curr_layer, 16, 2)
+        curr_layer = batch_normalization(curr_layer)
+        layers.append(curr_layer)
+        curr_layer = conv_3d_layer(curr_layer, 16, 2)
+        curr_layer = batch_normalization(curr_layer)
+        layers.append(curr_layer)
+        curr_layer = conv_3d_layer(curr_layer, 8, 1)
+        curr_layer = batch_normalization(curr_layer)
+        layers.append(curr_layer)
+        curr_layer = conv_3d_layer(curr_layer, 4, 2)
+        curr_layer = batch_normalization(curr_layer)
+        layers.append(curr_layer)
+        curr_layer = tf.reshape(curr_layer, (-1, ) + field_shape)
+        curr_layer = batch_normalization(curr_layer)
+        layers.append(curr_layer)
+        # final = fully_connected(curr_layer, field_shape)
+        return [curr_layer]
+
+
+    return encode_conv_3d_net
+
+def create_decode(voxel_shape):
+    def decode_conv_3d_net(inputs):
+        assert len(inputs) == 1
+        field = inputs[0]
+        layers = []
+
+        curr_layer = field
+        curr_layer = tf.reshape(curr_layer, (-1, 4, 4, 4, 4))
+        curr_layer = conv_transpose_layer(curr_layer, 8, 2, [8, 8, 8])
+        curr_layer = batch_normalization(curr_layer)
+        layers.append(curr_layer)
+        curr_layer = conv_transpose_layer(curr_layer, 16, 1, [8, 8, 8])
+        curr_layer = batch_normalization(curr_layer)
+        layers.append(curr_layer)
+        curr_layer = conv_transpose_layer(curr_layer, 16, 2, [16, 16, 16])
+        curr_layer = batch_normalization(curr_layer)
+        layers.append(curr_layer)
+        curr_layer = conv_transpose_layer(curr_layer, 4, 2, [32, 32, 32])
+        curr_layer = batch_normalization(curr_layer)
+        layers.append(curr_layer)
+        curr_layer = conv_transpose_layer(curr_layer, 1, 1, [32, 32, 32])
+        curr_layer = batch_normalization(curr_layer)
+        layers.append(curr_layer)
+        curr_layer = tf.reshape(curr_layer, (-1, 32, 32, 32))
+        layers.append(curr_layer)
+        return [curr_layer]
+
+
+    return decode_conv_3d_net
+
+def discriminator_net(inputs):
+    sample_space = inputs[0]
+    import pdb; pdb.set_trace()
+
+#
+#
+# def create_encode(field_shape, n_steps, batch_size):
+#     n_hidden = product(field_shape)
+#
+#     def encode_tf(inputs):
+#         import pdb; pdb.set_trace()
+#         '''
+#         inputs will be (batch_size, 1000, 4)
+#         '''
+#         assert len(inputs) == 1
+#         voxels = inputs[0]
+#         voxels = tf.split(voxels, n_steps, 1) #[(batch_size, 100, 3)...] 10 elements ; TODO try later n_steps = 1000
+#         voxels = [tf.reshape(inp, [batch_size, 4000 // n_steps]) for inp in voxels] # [batch_size, 300]
+#         lstm_cell = rnn.BasicLSTMCell(n_hidden, forget_bias=1.0)
+#         outputs, states = rnn.static_rnn(lstm_cell, voxels, dtype=tf.float32)
+#         return [outputs[-1]]
+#     return encode_tf
 
 
 def add_summary(name, tensor):
@@ -56,7 +176,7 @@ def gen_scalar_field_adt(train_data,
     extra_fetches = {}
 
     # Types
-    sample_space_shape = (10,)
+    sample_space_shape = (16, 16)
 
     Field = Type(field_shape, name="Field")
     SampleSpace = Type(sample_space_shape, name="SampleSpace")
@@ -69,17 +189,30 @@ def gen_scalar_field_adt(train_data,
     generator = Interface([SampleSpace], [Field], 'generator', template=s_args)
     interfaces.append(generator)
 
-    discriminator = Interface([Field], [Bool], 'discriminator', template=s_args)
+    discriminator = Interface([Field], [Bool], 'discriminator', tf_interface=discriminator_net)
     interfaces.append(discriminator)
 
-    encode_interface = create_encode(field_shape,
-                                     encode_args['n_steps'],
-                                     batch_size)
+    # Encode 1
+    # encode_interface = create_encode(field_shape,
+    #                                  encode_args['n_steps'],
+    #                                  batch_size)
+    # encode = Interface([VoxelGrid], [Field], 'encode',
+    #                    tf_interface=encode_interface)
+
+    # Encode 2
+    encode_interface = create_encode(field_shape)
     encode = Interface([VoxelGrid], [Field], 'encode',
                        tf_interface=encode_interface)
-    interfaces.append(encode)
 
-    decode = Interface([Field], [VoxelGrid], 'decode', template=decode_args)
+    # Encode 3
+    # encode = Interface([VoxelGrid], [Field], 'encode', template=s_args)
+    # interfaces.append(encode)
+    # interfaces.append(encode)
+
+    decode_interface = create_decode(field_shape)
+    decode = Interface([VoxelGrid], [Field], 'decode',
+                       tf_interface=decode_interface)
+    # decode = Interface([Field], [VoxelGrid], 'decode', template=decode_args)
 
     # Variables
     forallvars = []
@@ -106,6 +239,7 @@ def gen_scalar_field_adt(train_data,
     axiom_enc_dec = Axiom((decoded_vox_grid, ), (voxel_grid.input_var, ), 'enc_dec')
     axioms.append(axiom_enc_dec)
 
+    losses = []
     # Other loss terms
     data_sample = encoded_field
     losses, adversarial_fetches = adversarial_losses(sample_space,
@@ -130,11 +264,11 @@ def gen_scalar_field_adt(train_data,
     test_voxel_gen = infinite_batches(test_data, batch_size, shuffle=True)
     test_generators.append(test_voxel_gen)
 
-    sample_space_gen = infinite_samples(np.random.rand,
-                                        (batch_size),
-                                        sample_space_shape,
-                                        add_batch=True)
-    train_generators.append(sample_space_gen)
+    # sample_space_gen = infinite_samples(np.random.rand,
+    #                                     (batch_size),
+    #                                     sample_space_shape,
+    #                                     add_batch=True)
+    # train_generators.append(sample_space_gen)
 
     # Test
     test_sample_space_gen = infinite_samples(np.random.rand,
@@ -143,7 +277,11 @@ def gen_scalar_field_adt(train_data,
                                              add_batch=True)
     test_generators.append(test_sample_space_gen)
 
-    interfaces = [encode, decode, discriminator, generator]
+    interfaces = [encode,
+                  decode,
+                  discriminator,
+                  generator
+                  ]
     consts = []
     scalar_field_adt = AbstractDataType(interfaces=interfaces,
                                         consts=consts,
@@ -176,23 +314,21 @@ def run(options):
     voxel_grid_shape = voxel_grids.shape[1:]
 
     # Steam of Pointss
-    limit = 1000
-    voxel_grid_shape = (limit, 4)
-    voxel_grids = voxel_indices(voxel_grids, limit)
-    indices_voxels(voxel_grids)
+    # limit = 1000
+    # voxel_grid_shape = (limit, 4)
+    # voxel_grids = voxel_indices(voxel_grids, limit)
+    # indices_voxels(voxel_grids)
 
     test_size = 512
     train_voxel_grids = voxel_grids[0:-test_size]
     test_voxel_grids = voxel_grids[test_size:]
 
-    train_voxel_grids = voxel_grids[0:512]
-    test_voxel_grids = voxel_grids[0:512]
 
     # Parameters
-    encode_args = {'n_steps': 10}
+    encode_args = {'n_steps': 100}
 
     # Default params
-    field_shape = options['field_shape'] if 'field_shape' in options else (1000,)
+    field_shape = options['field_shape'] if 'field_shape' in options else (16, 16)
     adt, pdt, extra_fetches = gen_scalar_field_adt(train_voxel_grids,
                                     test_voxel_grids,
                                     options,

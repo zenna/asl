@@ -58,6 +58,7 @@ def indices_voxels(indices, grid_x=32, grid_y=32, grid_z=32):
 
 
 def show_voxel_grid(grid):
+    from mayavi import mlab
     # from mayavi import mlab
     """Vizualise voxel grid with mlab
     x, y, z = np.ogrid[-10:10:20j, -10:10:20j, -10:10:20j]
