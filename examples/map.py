@@ -32,7 +32,7 @@ def gen_map_adt(n_facts,
     dist = Interface([Map, City, City], [Number], 'dist', **dist_args)
 
     # Pop an Item from a map, returning a new map and the item
-    funcs = [add_dist, dist]
+    interfaces = [add_dist, dist]
 
     # train_outs
     train_outs = []
@@ -109,9 +109,9 @@ def gen_map_adt(n_facts,
 
         axioms.append(Axiom((city_dist_i_j,), (city_dist,)))
 
-    train_fn, call_fns = compile_fns(funcs, consts, forallvars, axioms,
+    train_fn, call_fns = compile_fns(interfaces, consts, forallvars, axioms,
                                      train_outs, options)
-    map_adt = AbstractDataType(funcs, consts, forallvars, axioms,
+    map_adt = AbstractDataType(interfaces, consts, forallvars, axioms,
                                name='map')
     map_pdt = ProbDataType(map_adt, train_fn, call_fns,
                            generators, gen_to_inputs, train_outs)

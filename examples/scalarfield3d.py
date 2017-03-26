@@ -1,16 +1,25 @@
 # add exponential decay to weights
-
 # add convergence test
-
 # 3d conv net
-
 # Add visualization
-
+# Add dropout
+# Get rid of pdt
 # Change uniform to gaussian
 
-# Add dropout
 
-# Get rid of pdt
+
+# Layer Sizing
+# There's a few ways to do it, one way is to have different widths per
+# block, another is for the to allow change within a block.
+
+# This doesn't even account for convolutional networks
+# Simplest thing is to have block_widths
+
+# You also might want different nonlinearities at at different layers
+# So the best short term solution seems to be to break it up into layers and add
+# a check in interface to make sure its correct
+
+
 
 from pdt import *
 from pdt.train_tf import *
@@ -19,108 +28,155 @@ from pdt.adversarial import adversarial_losses
 from wacacore.util.misc import *
 from wacacore.util.io import mk_dir
 from wacacore.util.generators import infinite_samples, infinite_batches
+from wacacore.util.tf import dims_bar_batch
+from wacacore.train.callbacks import every_n
 import numpy as np
 from common import handle_options
-import tensorflow as tf
+import tensorflow as tfff
 from tensorflow.contrib import rnn
+from voxel_helpers import *
+from tflearn.layers import conv_3d, fully_connected, conv, conv_2d
+from tflearn.layers.normalization import batch_normalization
 
-def create_encode(field_shape, n_steps, batch_size):
+def conv_2d_layer(input, n_filters, stride):
+    return conv_2d(input,
+                   n_filters,
+                   3,
+                   strides=stride,
+                   padding='same',
+                   activation='elu',
+                   bias_init='zeros',
+                   scope=None,
+                   name='Conv3D')
+
+def conv_3d_layer(input, n_filters, stride):
+    return conv_3d(input,
+                       n_filters,
+                       3,
+                       strides=stride,
+                       padding='same',
+                       activation='elu',
+                       bias_init='zeros',
+                       scope=None,
+                       name='Conv3D')
+
+def conv_transpose_layer(input, n_filters, stride, output_shape):
+    return conv.conv_3d_transpose(input,
+                       n_filters,
+                       3,
+                       output_shape = output_shape,
+                       strides=stride,
+                       padding='same',
+                       activation='elu',
+                       bias_init='zeros',
+                       scope=None,
+                       name='Conv3D')
+
+def create_encode(field_shape):
     n_hidden = product(field_shape)
-
-    def encode_tf(inputs):
-        '''
-        inputs will be (batch_size, 1000, 3)
-        '''
+    def encode_conv_3d_net(inputs):
         assert len(inputs) == 1
         voxels = inputs[0]
-
-        ## RNN
-        # voxels = tf.transpose(voxels, [1,0,2])
-        # pdb.set_trace()
-
-        voxels = tf.split(voxels, n_steps, 1) #[(batch_size, 100, 3)...] 10 elements ; TODO try later n_steps = 1000
-        
-        voxels = [tf.reshape(inp, [batch_size, 300]) for inp in voxels] # [batch_size, 300] 
-
-        lstm_cell = rnn.BasicLSTMCell(n_hidden, forget_bias=1.0)
-        outputs, states = rnn.static_rnn(lstm_cell, voxels, dtype=tf.float32)
-        return [outputs[-1]]
-
-    return encode_tf
-
-
-def rand_rotation_matrix(deflection=1.0, randnums=None, floatX='float32'):
-    """
-    Creates a random rotation matrix.
-    deflection: the magnitude of the rotation. For 0, no rotation; for 1,
-    competely random
-    rotation. Small deflection => small perturbation.
-    randnums: 3 random numbers in the range [0, 1]. If `None`, they will be
-    auto-generated.
-    """
-    # from realtimerendering.com/resources/GraphicsGems/gemsiii/rand_rotation.c
-
-    if randnums is None:
-        randnums = np.random.uniform(size=(3,))
-
-    theta, phi, z = randnums
-
-    theta = theta * 2.0*deflection*np.pi  # Rotation about the pole (Z).
-    phi = phi * 2.0*np.pi  # For direction of pole deflection.
-    z = z * 2.0*deflection  # For magnitude of pole deflection.
-
-    # Compute a vector V used for distributing points over the sphere
-    # via the reflection I - V Transpose(V).  This formulation of V
-    # will guarantee that if x[1] and x[2] are uniformly distributed,
-    # the reflected points will be uniform on the sphere.  Note that V
-    # has length sqrt(2) to eliminate the 2 in the Householder matrix.
-
-    r = np.sqrt(z)
-    Vx, Vy, Vz = V = (
-        np.sin(phi) * r,
-        np.cos(phi) * r,
-        np.sqrt(2.0 - z)
-        )
-
-    st = np.sin(theta)
-    ct = np.cos(theta)
-
-    R = np.array(((ct, st, 0), (-st, ct, 0), (0, 0, 1)))
-
-    # Construct the rotation matrix  ( V Transpose(V) - I ) R.
-
-    M = (np.outer(V, V) - np.eye(3)).dot(R)
-    return np.array(M, dtype=floatX)
+        voxels = tf.expand_dims(voxels, 4)
+        curr_layer = voxels
+        layers = []
+        curr_layer = conv_3d_layer(curr_layer, 4, 1)
+        curr_layer = batch_normalization(curr_layer)
+        layers.append(curr_layer)
+        curr_layer = conv_3d_layer(curr_layer, 16, 2)
+        curr_layer = batch_normalization(curr_layer)
+        layers.append(curr_layer)
+        curr_layer = conv_3d_layer(curr_layer, 16, 2)
+        curr_layer = batch_normalization(curr_layer)
+        layers.append(curr_layer)
+        curr_layer = conv_3d_layer(curr_layer, 8, 1)
+        curr_layer = batch_normalization(curr_layer)
+        layers.append(curr_layer)
+        curr_layer = conv_3d_layer(curr_layer, 4, 2)
+        curr_layer = batch_normalization(curr_layer)
+        layers.append(curr_layer)
+        curr_layer = tf.reshape(curr_layer, (-1, ) + field_shape)
+        curr_layer = batch_normalization(curr_layer)
+        layers.append(curr_layer)
+        # final = fully_connected(curr_layer, field_shape)
+        return [curr_layer]
 
 
-def euclidean_norm(t, ri):
-    with tf.name_scope("euclidean_norm"):
-        sqr = tf.square(t)
-        norm = tf.reduce_sum(sqr, reduction_indices=ri)
-    return norm
+    return encode_conv_3d_net
+
+def create_decode(voxel_shape):
+    def decode_conv_3d_net(inputs):
+        assert len(inputs) == 1
+        field = inputs[0]
+        layers = []
+
+        curr_layer = field
+        curr_layer = tf.reshape(curr_layer, (-1, 4, 4, 4, 4))
+        curr_layer = conv_transpose_layer(curr_layer, 8, 2, [8, 8, 8])
+        curr_layer = batch_normalization(curr_layer)
+        layers.append(curr_layer)
+        curr_layer = conv_transpose_layer(curr_layer, 16, 1, [8, 8, 8])
+        curr_layer = batch_normalization(curr_layer)
+        layers.append(curr_layer)
+        curr_layer = conv_transpose_layer(curr_layer, 16, 2, [16, 16, 16])
+        curr_layer = batch_normalization(curr_layer)
+        layers.append(curr_layer)
+        curr_layer = conv_transpose_layer(curr_layer, 4, 2, [32, 32, 32])
+        curr_layer = batch_normalization(curr_layer)
+        layers.append(curr_layer)
+        curr_layer = conv_transpose_layer(curr_layer, 1, 1, [32, 32, 32])
+        curr_layer = batch_normalization(curr_layer)
+        layers.append(curr_layer)
+        curr_layer = tf.reshape(curr_layer, (-1, 32, 32, 32))
+        layers.append(curr_layer)
+        return [curr_layer]
 
 
-def sdf_sphere(t):
-    length = euclidean_norm(t, 2)
-    return length - 1.2
+    return decode_conv_3d_net
+
+def discriminator_net(inputs):
+    sample_space = inputs[0]
+    import pdb; pdb.set_trace()
+
+#
+#
+# def create_encode(field_shape, n_steps, batch_size):
+#     n_hidden = product(field_shape)
+#
+#     def encode_tf(inputs):
+#         import pdb; pdb.set_trace()
+#         '''
+#         inputs will be (batch_size, 1000, 4)
+#         '''
+#         assert len(inputs) == 1
+#         voxels = inputs[0]
+#         voxels = tf.split(voxels, n_steps, 1) #[(batch_size, 100, 3)...] 10 elements ; TODO try later n_steps = 1000
+#         voxels = [tf.reshape(inp, [batch_size, 4000 // n_steps]) for inp in voxels] # [batch_size, 300]
+#         lstm_cell = rnn.BasicLSTMCell(n_hidden, forget_bias=1.0)
+#         outputs, states = rnn.static_rnn(lstm_cell, voxels, dtype=tf.float32)
+#         return [outputs[-1]]
+#     return encode_tf
 
 
-def unsign(t):
-    """Convert a signed distance into 0s at negatives"""
-    return tf.nn.relu(t)
+def add_summary(name, tensor):
+    t = tf.reduce_sum(tensor, reduction_indices=dims_bar_batch(tensor))
+    tf.summary.histogram(name, t)
 
 
 def gen_scalar_field_adt(train_data,
                          test_data,
                          options,
-                         encode_args={'n_input': 300,  'n_steps': 10},
+                         encode_args={'n_steps': 10},
                          field_shape=(8, 8, 8),
                          voxel_grid_shape=(32, 32, 32),
                          batch_size=64,
                          s_args={},
                          decode_args={}):
+
+    extra_fetches = {}
+
     # Types
-    sample_space_shape = (10,)
+    sample_space_shape = (16, 16)
 
     Field = Type(field_shape, name="Field")
     SampleSpace = Type(sample_space_shape, name="SampleSpace")
@@ -128,32 +184,41 @@ def gen_scalar_field_adt(train_data,
     VoxelGrid = Type(voxel_grid_shape, name="voxel_grid")
 
     # Interfaces
-    funcs = []
-
     # A random variable over sample
+    interfaces = []
     generator = Interface([SampleSpace], [Field], 'generator', template=s_args)
-    funcs.append(generator)
+    interfaces.append(generator)
 
-    descriminator = Interface([Field], [Bool], 'descriminator', template=s_args)
-    funcs.append(descriminator)
+    discriminator = Interface([Field], [Bool], 'discriminator', tf_interface=discriminator_net)
+    interfaces.append(discriminator)
 
-    encode_interface = create_encode(field_shape,
-                                     encode_args['n_steps'],
-                                     batch_size)
+    # Encode 1
+    # encode_interface = create_encode(field_shape,
+    #                                  encode_args['n_steps'],
+    #                                  batch_size)
+    # encode = Interface([VoxelGrid], [Field], 'encode',
+    #                    tf_interface=encode_interface)
+
+    # Encode 2
+    encode_interface = create_encode(field_shape)
     encode = Interface([VoxelGrid], [Field], 'encode',
                        tf_interface=encode_interface)
-    funcs.append(encode)
 
-    decode = Interface([Field], [VoxelGrid], 'decode', template=decode_args)
-    funcs.append(decode)
+    # Encode 3
+    # encode = Interface([VoxelGrid], [Field], 'encode', template=s_args)
+    # interfaces.append(encode)
+    # interfaces.append(encode)
 
-    # Constants
-    consts = []
+    decode_interface = create_decode(field_shape)
+    decode = Interface([VoxelGrid], [Field], 'decode',
+                       tf_interface=decode_interface)
+    # decode = Interface([Field], [VoxelGrid], 'decode', template=decode_args)
 
     # Variables
     forallvars = []
 
     voxel_grid = ForAllVar(VoxelGrid, "voxel_grid")
+    add_summary("voxel_input", voxel_grid.input_var)
     forallvars.append(voxel_grid)
 
     sample_space = ForAllVar(SampleSpace, "sample_space")
@@ -164,16 +229,26 @@ def gen_scalar_field_adt(train_data,
 
     # Encode Decode
     (encoded_field, ) = encode(voxel_grid.input_var)
+    add_summary("encoded_field", encoded_field)
+    extra_fetches["voxel_grid.input_var"] = voxel_grid.input_var
+
     (decoded_vox_grid, ) = decode(encoded_field)
+    add_summary("decoded_vox_grid", decoded_vox_grid)
+    extra_fetches["decoded_vox_grid"] = decoded_vox_grid
+
     axiom_enc_dec = Axiom((decoded_vox_grid, ), (voxel_grid.input_var, ), 'enc_dec')
     axioms.append(axiom_enc_dec)
 
+    losses = []
     # Other loss terms
     data_sample = encoded_field
-    losses = adversarial_losses(sample_space,
+    losses, adversarial_fetches = adversarial_losses(sample_space,
                                 data_sample,
                                 generator,
-                                descriminator)
+                                discriminator)
+    (generated_voxels, ) = decode(adversarial_fetches['generated_field'])
+    extra_fetches['generated_voxels'] = generated_voxels
+    extra_fetches.update(adversarial_fetches)
 
     train_outs = []
     gen_to_inputs = identity
@@ -189,12 +264,11 @@ def gen_scalar_field_adt(train_data,
     test_voxel_gen = infinite_batches(test_data, batch_size, shuffle=True)
     test_generators.append(test_voxel_gen)
 
-
-    sample_space_gen =  infinite_samples(np.random.rand,
-                                         (batch_size),
-                                         sample_space_shape,
-                                         add_batch=True)
-    train_generators.append(sample_space_gen)
+    # sample_space_gen = infinite_samples(np.random.rand,
+    #                                     (batch_size),
+    #                                     sample_space_shape,
+    #                                     add_batch=True)
+    # train_generators.append(sample_space_gen)
 
     # Test
     test_sample_space_gen = infinite_samples(np.random.rand,
@@ -203,7 +277,13 @@ def gen_scalar_field_adt(train_data,
                                              add_batch=True)
     test_generators.append(test_sample_space_gen)
 
-    scalar_field_adt = AbstractDataType(funcs=funcs,
+    interfaces = [encode,
+                  decode,
+                  discriminator,
+                  generator
+                  ]
+    consts = []
+    scalar_field_adt = AbstractDataType(interfaces=interfaces,
                                         consts=consts,
                                         forallvars=forallvars,
                                         axioms=axioms,
@@ -215,61 +295,51 @@ def gen_scalar_field_adt(train_data,
                                     test_generators,
                                     gen_to_inputs,
                                     train_outs)
-    return scalar_field_adt, scalar_field_pbt
+    return scalar_field_adt, scalar_field_pbt, extra_fetches
 
-def voxel_indices(voxels, limit):
-    """
-    Convert voxel data_set (n, 32, 32, 32) to (n, 3, m)
-    """
-    n,x,y,z = voxels.shape
-    output = np.ones((n, 3, limit))
-    output = output * -1
 
-    # obtain occupied voxels
-    for v in range(len(voxels)):
-        voxel = voxels[v]
-        x_list, y_list, z_list = np.where(voxel)
-        assert len(x_list)==len(y_list)
-        assert len(y_list)==len(z_list)
-
-        # fill in output tensor
-        npoints = min(limit, len(x_list))
-        output[v][0][0:npoints] = x_list[0:npoints]
-        output[v][1][0:npoints] = y_list[0:npoints]
-        output[v][2][0:npoints] = z_list[0:npoints]
-
-    output = np.transpose(output, [0,2,1]) # switch limit and coords
-
-    return output
+def save_voxels(fetch_data,
+               feed_dict,
+               i: int,
+               **kwargs):
+    """Save Voxels"""
+    # import pdb; pdb.set_trace()
+    return True
+    # import pdb; pdb.set_trace()
 
 
 def run(options):
     global voxel_grids, adt, pdt, sess
-    datadir = os.environ['DATADIR']
-    voxels_path = os.path.join(datadir, 'ModelNet40', 'alltrain32.npy')
-    voxel_grids = np.load(voxels_path)
-    limit = 1000
-    voxel_grids = voxel_indices(voxel_grids, limit)
+    voxel_grids = model_net_40()
+    voxel_grid_shape = voxel_grids.shape[1:]
+
+    # Steam of Pointss
+    # limit = 1000
+    # voxel_grid_shape = (limit, 4)
+    # voxel_grids = voxel_indices(voxel_grids, limit)
+    # indices_voxels(voxel_grids)
 
     test_size = 512
     train_voxel_grids = voxel_grids[0:-test_size]
     test_voxel_grids = voxel_grids[test_size:]
 
+
     # Parameters
-    encode_args = {'n_input': 300,  'n_steps': 10}
+    encode_args = {'n_steps': 100}
 
     # Default params
-    field_shape = options['field_shape'] if 'field_shape' in options else (100,)
-    adt, pdt = gen_scalar_field_adt(train_voxel_grids,
+    field_shape = options['field_shape'] if 'field_shape' in options else (16, 16)
+    adt, pdt, extra_fetches = gen_scalar_field_adt(train_voxel_grids,
                                     test_voxel_grids,
                                     options,
-                                    voxel_grid_shape=(limit, 3),
+                                    voxel_grid_shape=voxel_grid_shape,
                                     s_args=options,
                                     field_shape=field_shape,
                                     encode_args=encode_args,
                                     decode_args=options,
                                     batch_size=options['batch_size'])
-    sess = train(adt, pdt, options)
+
+    sess = train(adt, pdt, options, extra_fetches=extra_fetches, callbacks = [every_n(save_voxels, 100)])
 
 def main(argv):
     print("ARGV", argv)

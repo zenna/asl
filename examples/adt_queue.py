@@ -31,7 +31,7 @@ def gen_queue_adt(train_data,
     enqueue = Interface([Queue, Item], [Queue], 'enqueue', **enqueue_args)
     # Pop an Item from a queue, returning a new queue and the item
     dequeue = Interface([Queue], [Queue, Item], 'dequeue', **dequeue_args)
-    funcs = [enqueue, dequeue]
+    interfaces = [enqueue, dequeue]
 
     # train_outs
     train_outs = []
@@ -60,9 +60,9 @@ def gen_queue_adt(train_data,
             (dequeue_queue, dequeue_item) = dequeue(dequeue_queue)
             axiom = Axiom((dequeue_item,), (items[j].input_var,))
             axioms.append(axiom)
-    train_fn, call_fns = compile_fns(funcs, consts, forallvars, axioms,
+    train_fn, call_fns = compile_fns(interfaces, consts, forallvars, axioms,
                                      train_outs, options)
-    queue_adt = AbstractDataType(funcs, consts, forallvars, axioms,
+    queue_adt = AbstractDataType(interfaces, consts, forallvars, axioms,
                                  name='queue')
     queue_pdt = ProbDataType(queue_adt, train_fn, call_fns,
                              generators, gen_to_inputs, train_outs)

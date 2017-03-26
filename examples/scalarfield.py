@@ -92,8 +92,8 @@ def scalar_field_adt(options, field_shape=(100,),
     # add = Interface([Field, Points], [Field], 'add', **add_args)
     # rotate = Interface([Field, Rotation], [Field], 'rotate', **rotate_args)
     translate = Interface([Field, Translation], [Field], 'translate', **translate_args)
-    # funcs = [s, rotate]
-    funcs = [s, translate]
+    # interfaces = [s, rotate]
+    interfaces = [s, translate]
 
     # Constants
     sphere_field = Const(Field, "sphere_field", batch_size, **field_args)
@@ -142,8 +142,8 @@ def scalar_field_adt(options, field_shape=(100,),
     generators = [pos_gen, tran_gen]
 
     train_fn, call_fns = None, None
-    #compile_fns(funcs, consts, forallvars, axioms, train_outs, options)
-    scalar_field_adt = AbstractDataType(funcs, consts, forallvars, axioms,
+    #compile_fns(interfaces, consts, forallvars, axioms, train_outs, options)
+    scalar_field_adt = AbstractDataType(interfaces, consts, forallvars, axioms,
                                         name='scalar_field')
     scalar_field_pbt = ProbDataType(scalar_field_adt, train_fn, call_fns,
                                     generators, gen_to_inputs, train_outs)

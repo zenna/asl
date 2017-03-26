@@ -35,7 +35,7 @@ def dict_adt(train_data,
     # Remove Key from Dict
     remove = Interface([Dict, Key], [Dict], 'remove', **remove_args)
 
-    funcs = [insert, search, remove]
+    interfaces = [insert, search, remove]
 
     # train_outs
     train_outs = []
@@ -86,9 +86,9 @@ def dict_adt(train_data,
             # axioms.append(axiom)
 
             
-    train_fn, call_fns = compile_fns(funcs, consts, forallvars, axioms,
+    train_fn, call_fns = compile_fns(interfaces, consts, forallvars, axioms,
                                      train_outs, options)
-    dict_adt = AbstractDataType(funcs, consts, forallvars, axioms,
+    dict_adt = AbstractDataType(interfaces, consts, forallvars, axioms,
                                  name='dict')
     dict_pdt = ProbDataType(dict_adt, train_fn, call_fns,
                              generators, gen_to_inputs, train_outs)

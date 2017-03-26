@@ -70,11 +70,11 @@ def gen_atari_adt(train_data,
     SampleSpace = Type(sample_space_shape, name="SampleSpace")
 
     # Interfaces
-    funcs = []
+    interfaces = []
 
     # A random variable over sample
     render = Interface([State], [Image], 'render', **render_args)
-    funcs.append(render)
+    interfaces.append(render)
 
     up = Interface([State], [State], 'up', **button_args)
     down = Interface([State], [State], 'down', **button_args)

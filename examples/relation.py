@@ -22,7 +22,7 @@ def relation_adt(train_data, options, relation_shape=(1, 28, 28), push_args={},
     subrelation = Interface([Relation, Relation], [Boolean], 'pop', **pop_args)
 
 
-    funcs = [push, pop]
+    interfaces = [push, pop]
 
     # train_outs
     train_outs = []
@@ -52,9 +52,9 @@ def relation_adt(train_data, options, relation_shape=(1, 28, 28), push_args={},
     # Generators
     generators = [infinite_batches(train_data, batch_size, shuffle=True)
                   for i in range(nitems)]
-    train_fn, call_fns = compile_fns(funcs, consts, forallvars, axioms,
+    train_fn, call_fns = compile_fns(interfaces, consts, forallvars, axioms,
                                      train_outs, options)
-    relation_adt = AbstractDataType(funcs, consts, forallvars, axioms,
+    relation_adt = AbstractDataType(interfaces, consts, forallvars, axioms,
                                  name='relation')
     relation_pdt = ProbDataType(relation_adt, train_fn, call_fns, generators,
                              gen_to_inputs, train_outs)

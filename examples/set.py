@@ -39,7 +39,7 @@ def gen_set_adt(train_data,
     # difference = Interface([Set], [Set, Item], 'pop', **pop_args)
     # subset = Interface([Set, Set], [Boolean], 'pop', **pop_args)
 
-    funcs = [store, is_in, is_empty, size]
+    interfaces = [store, is_in, is_empty, size]
 
     # train_outs
     train_outs = []
@@ -87,9 +87,9 @@ def gen_set_adt(train_data,
     # Generators
     generators = [infinite_batches(train_data, batch_size, shuffle=True)
                   for i in range(nitems)]
-    train_fn, call_fns = compile_fns(funcs, consts, forallvars, axioms,
+    train_fn, call_fns = compile_fns(interfaces, consts, forallvars, axioms,
                                      train_outs, options)
-    set_adt = AbstractDataType(funcs, consts, forallvars, axioms,
+    set_adt = AbstractDataType(interfaces, consts, forallvars, axioms,
                                  name='set')
     set_pdt = ProbDataType(set_adt, train_fn, call_fns,
                              generators, gen_to_inputs, train_outs)

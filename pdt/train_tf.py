@@ -57,9 +57,12 @@ def the_gen(generators, forallvars):
 
 def train(adt,
           pdt,
-          options):
+          options,
+          extra_fetches = None,
+          callbacks=[]):
     """Train the abstract data type"""
     fetch, loss_updates = get_fetches(adt, options)
+    fetch['extra_fetches'] = extra_fetches
     train_generators = [the_gen(pdt.train_generators, adt.forallvars)]
     test_generators = [the_gen(pdt.test_generators, adt.forallvars)]
     sess = tf.Session()
@@ -82,13 +85,13 @@ def train(adt,
     writers = setup_file_writers(options['savedir'], sess)
     options['writers'] = writers
 
-    # callbacks = [save_options,
-    #              save_every_n,
-    #              save_everything_last,
-    #              nan_cancel,
-    #              every_n(summary_writes, 10)]
+    callbacks = [save_options,
+                 save_every_n,
+                 save_everything_last,
+                 nan_cancel,
+                 every_n(summary_writes, 10)] + callbacks
 
-    callbacks = [every_n(summary_writes, 10)]
+    # callbacks = [every_n(summary_writes, 10)]
 
     if options['train'] is True:
         train_loop(sess,

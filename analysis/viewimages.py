@@ -3,7 +3,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
-interface = {f.name:f for f in adt.funcs}
+interface = {f.name:f for f in adt.interfaces}
 push = interface['push'].to_python_lambda(sess)
 pop = interface['pop'].to_python_lambda(sess)
 zero = adt.consts[0].input_var.eval(sess) # empty data structure
