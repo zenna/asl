@@ -10,6 +10,10 @@ def model_net_40(voxels_path=os.path.join(os.environ['DATADIR'],
     return voxel_grids
 
 
+def model_net_fake(data_size=1024):
+    return np.random.rand(data_size, 32, 32, 32)
+
+
 def voxel_indices(voxels, limit, missing_magic_num=-1):
     """
     Convert voxel data_set (n, 32, 32, 32) to (n, 3, m)

@@ -15,12 +15,12 @@
 # This doesn't even account for convolutional networks
 # Simplest thing is to have block_widths
 
-# You also might want different nonlinearities at at different layers
 # So the best short term solution seems to be to break it up into layers and add
 # a check in interface to make sure its correct
 
 
 
+# You also might want different nonlinearities at at different layers
 from pdt import *
 from pdt.train_tf import *
 from pdt.types import *

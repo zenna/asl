@@ -79,17 +79,16 @@ def train(adt,
         options['savedir'] = prep_save(options['dirname'], options['datadir'])
 
     # Summaries
-    summaries_dir = os.path.join(options['savedir'], "summaries")
-    summaries = variable_summaries(fetch['losses'])
-    fetch['summaries'] = summaries
-    writers = setup_file_writers(options['savedir'], sess)
-    options['writers'] = writers
-
-    callbacks = [save_options,
-                 save_every_n,
-                 save_everything_last,
-                 nan_cancel,
-                 every_n(summary_writes, 10)] + callbacks
+    callbacks = [nan_cancel]
+    if 'save' in options:
+        summaries_dir = os.path.join(options['savedir'], "summaries")
+        summaries = variable_summaries(fetch['losses'])
+        fetch['summaries'] = summaries
+        writers = setup_file_writers(options['savedir'], sess)
+        options['writers'] = writers
+        callbacks = [save_options,
+                     save_every_n,
+                     save_everything_last] + callbacks
 
     # callbacks = [every_n(summary_writes, 10)]
 
