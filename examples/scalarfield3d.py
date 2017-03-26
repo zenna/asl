@@ -37,6 +37,7 @@ from tensorflow.contrib import rnn
 from voxel_helpers import *
 from tflearn.layers import conv_3d, fully_connected, conv, conv_2d
 from tflearn.layers.normalization import batch_normalization
+import tflearn
 
 def conv_2d_layer(input, n_filters, stride):
     return conv_2d(input,
@@ -134,11 +135,37 @@ def create_decode(voxel_shape):
 
     return decode_conv_3d_net
 
-def discriminator_net(inputs):
+def generator_net(inputs):
     sample_space = inputs[0]
-    import pdb; pdb.set_trace()
+    curr_layer = sample_space
 
-#
+    layers = []
+    curr_layer = tf.reshape(curr_layer, (-1, 16, 16, 1))
+    curr_layer = conv_2d_layer(curr_layer, 16, 1)
+    curr_layer = batch_normalization(curr_layer)
+    curr_layer = conv_2d_layer(curr_layer, 16, 1)
+    curr_layer = batch_normalization(curr_layer)
+    curr_layer = conv_2d_layer(curr_layer, 16, 1)
+    curr_layer = batch_normalization(curr_layer)
+    curr_layer = conv_2d_layer(curr_layer, 1, 1)
+    curr_layer = batch_normalization(curr_layer)
+    curr_layer = tf.reshape(curr_layer, (-1, 16, 16))
+    return [curr_layer]
+
+
+def discriminator_net(inputs):
+    field = inputs[0]
+    curr_layer = field
+
+    layers = []
+    curr_layer = tf.reshape(curr_layer, (-1, 16, 16, 1))
+    curr_layer = conv_2d_layer(curr_layer, 16, 1)
+    curr_layer = batch_normalization(curr_layer)
+    curr_layer = fully_connected(curr_layer, 1)
+    curr_layer = batch_normalization(curr_layer)
+    curr_layer = tflearn.activations.sigmoid(curr_layer)
+    return [curr_layer]
+
 #
 # def create_encode(field_shape, n_steps, batch_size):
 #     n_hidden = product(field_shape)
@@ -161,6 +188,8 @@ def discriminator_net(inputs):
 def add_summary(name, tensor):
     t = tf.reduce_sum(tensor, reduction_indices=dims_bar_batch(tensor))
     tf.summary.histogram(name, t)
+    with tf.name_scope("variance"):
+        tf.summary.scalar("%s_variances" % name, tf.nn.moments(t, axes=[0])[1])
 
 
 def gen_scalar_field_adt(train_data,
@@ -186,7 +215,7 @@ def gen_scalar_field_adt(train_data,
     # Interfaces
     # A random variable over sample
     interfaces = []
-    generator = Interface([SampleSpace], [Field], 'generator', template=s_args)
+    generator = Interface([SampleSpace], [Field], 'generator', tf_interface=generator_net)
     interfaces.append(generator)
 
     discriminator = Interface([Field], [Bool], 'discriminator', tf_interface=discriminator_net)
@@ -246,9 +275,15 @@ def gen_scalar_field_adt(train_data,
                                 data_sample,
                                 generator,
                                 discriminator)
+
+    # Make the encoder help the generator!!
+    losses[0].restrict_to.append(encode)
     (generated_voxels, ) = decode(adversarial_fetches['generated_field'])
     extra_fetches['generated_voxels'] = generated_voxels
     extra_fetches.update(adversarial_fetches)
+
+    add_summary("generated_field", adversarial_fetches['generated_field'])
+    add_summary("generated_voxels", generated_voxels)
 
     train_outs = []
     gen_to_inputs = identity
@@ -264,14 +299,14 @@ def gen_scalar_field_adt(train_data,
     test_voxel_gen = infinite_batches(test_data, batch_size, shuffle=True)
     test_generators.append(test_voxel_gen)
 
-    # sample_space_gen = infinite_samples(np.random.rand,
-    #                                     (batch_size),
-    #                                     sample_space_shape,
-    #                                     add_batch=True)
-    # train_generators.append(sample_space_gen)
+    sample_space_gen = infinite_samples(np.random.randn,
+                                        (batch_size),
+                                        sample_space_shape,
+                                        add_batch=True)
+    train_generators.append(sample_space_gen)
 
     # Test
-    test_sample_space_gen = infinite_samples(np.random.rand,
+    test_sample_space_gen = infinite_samples(np.random.randn,
                                              (batch_size),
                                              sample_space_shape,
                                              add_batch=True)
