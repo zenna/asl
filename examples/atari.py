@@ -8,22 +8,47 @@ from wacacore.util.io import mk_dir
 from wacacore.util.generators import infinite_samples, infinite_batches
 import numpy as np
 from common import handle_options
+import gym
+import random 
 
 ## How to do atari games.
 # Generate an image
 
-def generate_atari_image_batch(batch_size, commands):
+def generate_atari_image_batch(batch_size, game):
     """
     Args:
         batch_size:
-        commands: List of n commands
-                  e.g. ['up', 'left', 'right', 'down', 'a', 'nocommand']
+        game: name of game, like 'Breakout-v0'
     Return:
-        Tensor of size (batch_size, screen_height, screen_width, n)
+        Tensor of size (batch_size, screen_height, screen_width, channels, n)
         for i = 1:batch_size:
             run a game with `commands` and capture images
     """
-    ...
+    env = gym.make(game)
+    actions = env.env.get_action_meanings() # list of actions
+      # action index corresponds to numerical actions in env.step
+
+    # Output tensor dimensions
+    num_actions = env.action_space.n
+    screen_height = env.env.ale.getScreenDims()[1]
+    screen_width = env.env.ale.getScreenDims()[0]
+    output = np.zeros((batch_size, num_actions+1, screen_height, screen_width, 3))
+
+    # Get image data
+    for i in range(batch_size):
+      env.seed(random.randint(0,10e9)) #TODO: Might want to get data from later stages of game
+      env.reset()
+      screen = env.env.ale.getScreenRGB()[:, :, :3] # Initial screen
+      output[i][0] = screen
+
+      # Save screen after each action
+      #TODO: Select random action
+      for j in range(num_actions):
+        env.step(j)
+        screen = env.env.ale.getScreenRGB()[:, :, :3]
+        output[i][j+1] = screen
+        
+    return output
 
 def gen_atari_adt(train_data,
                   test_data,
