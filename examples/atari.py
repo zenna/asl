@@ -14,6 +14,7 @@ from tflearn.layers import conv_3d, fully_connected, conv, conv_2d
 from tflearn.layers.normalization import batch_normalization
 import tflearn
 
+#
 
 def conv_2d_layer(input, n_filters, stride):
     return conv_2d(input,
@@ -190,6 +191,13 @@ def gen_atari_adt(batch_size,
                       (curr_state_img, ),
                       "img_{}_is_same".format(i))
         axioms.append(axiom)
+        acto = ["BEGIN"] + action_seq
+        with tf.name_scope("Guesses"):
+            tf.summary.image("img_guess_{}_{}".format(i, acto[i]), curr_state_img_guess)
+        with tf.name_scope("Real"):
+            tf.summary.image("real_{}_{}".format(i, acto[i]), curr_state_img)
+        with tf.name_scope("State"):
+            tf.summary.image("state_{}_{}".format(i, acto[i]), curr_state)
 
         # There are only n actions, but n+1 images, so skip action on last step
         if i < num_actions:
