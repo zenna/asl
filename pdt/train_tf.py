@@ -48,17 +48,9 @@ def get_fetches(adt, options):
     return fetch, loss_updates
 
 
-def the_gen(generators, forallvars):
+def attach_gen(generators, forallvars):
     while True:
         inputs = [next(gen) for gen in generators]
-        feed_dict = {forallvars[i].input_var: inputs[i] for i in range(len(inputs))}
-        yield feed_dict
-
-
-def make_ok(generator, forallvars, gen_to_inputs):
-    while True:
-        x = next(generator)
-        inputs = gen_to_inputs(x)
         feed_dict = {forallvars[i].input_var: inputs[i] for i in range(len(inputs))}
         yield feed_dict
 
@@ -71,13 +63,6 @@ def train(adt,
     fetch, loss_updates = get_fetches(adt, options)
     fetch['extra_fetches'] = extra_fetches
     # Deal with generators
-    # if pdt.gen_to_inputs is None:
-    train_generators = [make_ok(pdt.train_generators[0], adt.forallvars, pdt.gen_to_inputs)]
-    test_generators = [make_ok(pdt.test_generators[0], adt.forallvars, pdt.gen_to_inputs)]
-    # else:
-        # train_generators = [the_gen(pdt.train_generators, adt.forallvars)]
-        # test_generators = [the_gen(pdt.test_generators, adt.forallvars)]
-
     sess = tf.Session()
 
     # Saving and Loading
@@ -108,8 +93,8 @@ def train(adt,
         train_loop(sess,
                    loss_updates,
                    fetch,
-                   train_generators=train_generators,
-                   test_generators=test_generators,
+                   train_generators=pdt.train_generators,
+                   test_generators=pdt.test_generators,
                    loss_ratios=None,
                    callbacks=callbacks,
                    **options)

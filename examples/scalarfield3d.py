@@ -1,26 +1,3 @@
-# add exponential decay to weights
-# add convergence test
-# 3d conv net
-# Add visualization
-# Add dropout
-# Get rid of pdt
-# Change uniform to gaussian
-
-
-
-# Layer Sizing
-# There's a few ways to do it, one way is to have different widths per
-# block, another is for the to allow change within a block.
-
-# This doesn't even account for convolutional networks
-# Simplest thing is to have block_widths
-
-# So the best short term solution seems to be to break it up into layers and add
-# a check in interface to make sure its correct
-
-
-
-# You also might want different nonlinearities at at different layers
 from pdt import *
 from pdt.train_tf import *
 from pdt.types import *
@@ -318,6 +295,10 @@ def gen_scalar_field_adt(train_data,
                   generator
                   ]
     consts = []
+
+    train_generators = [attach_gen(train_generators, forallvars)]
+    test_generators = [attach_gen(test_generators, forallvars)]
+
     scalar_field_adt = AbstractDataType(interfaces=interfaces,
                                         consts=consts,
                                         forallvars=forallvars,

@@ -203,8 +203,22 @@ def gen_atari_adt(batch_size,
         if i < num_actions:
             (curr_state, ) = name_to_action[action_seq[i]](curr_state)
 
-    train_generators = [gen_atari_data(action_seq, batch_size=batch_size)]
-    test_generators = [gen_atari_data(action_seq, batch_size=batch_size)]
+    train_generator = gen_atari_data(action_seq, batch_size=batch_size)
+    test_generator = gen_atari_data(action_seq, batch_size=batch_size)
+
+    def make_ok(generator, forallvars, gen_to_inputs):
+        while True:
+            x = next(generator)
+            inputs = gen_to_inputs(x)
+            feed_dict = {forallvars[i].input_var: inputs[i] for i in range(len(inputs))}
+            yield feed_dict
+
+    train_generators = [make_ok(train_generator,
+                                img_data,
+                                split_images_by_action)]
+    test_generators = [make_ok(test_generator,
+                                img_data,
+                                split_images_by_action)]
 
     forallvars = img_data
     atari_adt = AbstractDataType(interfaces=interfaces,
@@ -215,7 +229,7 @@ def gen_atari_adt(batch_size,
                                  name='atari')
 
     extra_fetches = {}
-    gen_to_inputs = split_images_by_action
+    gen_to_inputs = None
     train_outs = []
     atari_pbt = ProbDataType(atari_adt,
                              train_generators,
