@@ -55,6 +55,13 @@ def the_gen(generators, forallvars):
         yield feed_dict
 
 
+def make_ok(generator, forallvars, gen_to_inputs):
+    while True:
+        x = next(generator)
+        inputs = gen_to_inputs(x)
+        feed_dict = {forallvars[i].input_var: inputs[i] for i in range(len(inputs))}
+        yield feed_dict
+
 def train(adt,
           pdt,
           options,
@@ -63,8 +70,14 @@ def train(adt,
     """Train the abstract data type"""
     fetch, loss_updates = get_fetches(adt, options)
     fetch['extra_fetches'] = extra_fetches
-    train_generators = [the_gen(pdt.train_generators, adt.forallvars)]
-    test_generators = [the_gen(pdt.test_generators, adt.forallvars)]
+    # Deal with generators
+    # if pdt.gen_to_inputs is None:
+    train_generators = [make_ok(pdt.train_generators[0], adt.forallvars, pdt.gen_to_inputs)]
+    test_generators = [make_ok(pdt.test_generators[0], adt.forallvars, pdt.gen_to_inputs)]
+    # else:
+        # train_generators = [the_gen(pdt.train_generators, adt.forallvars)]
+        # test_generators = [the_gen(pdt.test_generators, adt.forallvars)]
+
     sess = tf.Session()
 
     # Saving and Loading
