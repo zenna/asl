@@ -98,16 +98,15 @@ def button(inputs):
 
 
 def score_net(inputs):
-    field = inputs[0]
-    curr_layer = field
-
+    state = inputs[0]
+    curr_layer = state
     layers = []
-    pdb.set_trace()
-    curr_layer = conv_2d_layer(curr_layer, 16, 1)
+    curr_layer = conv_2d_layer(curr_layer, 8, 1)
     curr_layer = batch_normalization(curr_layer)
-    curr_layer = fully_connected(curr_layer, 1)
+    curr_layer = conv_2d_layer(curr_layer, 2, 4)
     curr_layer = batch_normalization(curr_layer)
-    curr_layer = tflearn.activations.sigmoid(curr_layer)
+    curr_layer = fully_connected(curr_layer, 1, activation='elu')
+    curr_layer = batch_normalization(curr_layer)
     return [curr_layer]
 
 
@@ -115,7 +114,7 @@ def score_net(inputs):
 # 1. Have another thread fill out a buffer for the batch
 
 def gen_atari_data(env, actions, batch_size):
-   
+
     action_meanings = env.env.get_action_meanings() # list of actions
     action_indices = [action_meanings.index(action) for action in actions]
     assert all((i >= 0 for i in action_indices))
@@ -129,7 +128,7 @@ def generate_atari_image_batch(env, actions, batch_size): #TODO: remove env from
         env: game environment
         actions: list of numerical actions
         batch_size: batches of data
-        
+
     Return:
         Tensor of size (batch_size, screen_height, screen_width, channels, n)
         for i = 1:batch_size:
@@ -143,6 +142,7 @@ def generate_atari_image_batch(env, actions, batch_size): #TODO: remove env from
     output = np.zeros((batch_size, num_actions+1, screen_height, screen_width, 3))
 
     # Get image data
+    rewards = np.zeros((batch_size, num_actions))
     for i in range(batch_size):
       # state = random.choice(states)
       # env.env.ale.restoreState(state) # Select a random state to revisit
@@ -156,12 +156,13 @@ def generate_atari_image_batch(env, actions, batch_size): #TODO: remove env from
         observation, reward, done, info = env.step(action)
         screen = env.env.ale.getScreenRGB()[:, :, :3]
         output[i][j+1] = screen
+        rewards[i, j] = reward
 
-    return output
+    return output, rewards
 
 def gen_atari_adt(env,
                   batch_size): # used to have action seq as input
-    ignored_actions = ['DOWNRIGHT','DOWNLEFT', 'UPRIGHT', 'UPLEFT',  
+    ignored_actions = ['DOWNRIGHT','DOWNLEFT', 'UPRIGHT', 'UPLEFT',
         'UPRIGHTFIRE','UPLEFTFIRE', 'DOWNRIGHTFIRE','DOWNLEFTFIRE']
     action_seq = [action for action in env.env.get_action_meanings() if action not in ignored_actions]
     print("\nACTION SEQ. : ", action_seq)
@@ -186,10 +187,10 @@ def gen_atari_adt(env,
     inv_render = Interface([Image], [State], 'inv_render', tf_interface=inv_render_tf)
     score = Interface([State], [Score], "score", tf_interface=score_net)
 
-    
+
     # One interface for every action
     interfaces = [Interface([State], [State], action, tf_interface=button) for action in action_seq]
-    name_to_action = {action_seq[i].lower(): interfaces[i] for i in range(len(interfaces))} 
+    name_to_action = {action_seq[i].lower(): interfaces[i] for i in range(len(interfaces))}
 
     interfaces.append(render)
     interfaces.append(inv_render)
@@ -198,7 +199,7 @@ def gen_atari_adt(env,
     name_to_action['render'] = render
     name_to_action['inv_render'] = inv_render
     name_to_action['score'] = score
-    
+
 
     # left = Interface([State], [State], 'LEFT', tf_interface=button)
     # right = Interface([State], [State], 'RIGHT', tf_interface=button)
@@ -211,30 +212,24 @@ def gen_atari_adt(env,
     num_actions = len(action_seq)
 
     # We'll create one variable for each image and score corresponding to an action
-    img_data = [ForAllVar(Image, "image_{}".format(i)) for i in range(num_actions+1)]
-    score_data = [ForAllVar(Score, "score_{}".format(i)) for i in range(num_actions+1)]
-    
-    def split_images_by_action(gen_data):
-        return [gen_data[:, i, :, :, :] for i in range(gen_data.shape[1])]
+    img_vars = [ForAllVar(Image, "image_{}".format(i)) for i in range(num_actions+1)]
+    score_data = [ForAllVar(Score, "score_{}".format(i)) for i in range(num_actions)]
 
-    curr_image = img_data[0].input_var
+    curr_image = img_vars[0].input_var
     (curr_state,) = inv_render(curr_image)
     intermediate_states = []
     intermediate_images = []
-    intermediate_scores = []
 
     axioms = []
 
     # Execute the
     for i in range(num_actions+1):
         intermediate_states.append(curr_state)
-        intermediate_scores.append(curr_score)
 
         (curr_state_img_guess, ) = render(curr_state)
         intermediate_images.append(curr_state_img_guess)
 
-        curr_state_img = img_data[i].input_var
-        curr_score = score_data[i].input_var
+        curr_state_img = img_vars[i].input_var
         # (curr_state_guess, ) = inv_render(curr_img)
 
         axiom = Axiom((curr_state_img_guess, ),
@@ -242,7 +237,6 @@ def gen_atari_adt(env,
                       "img_{}_is_same".format(i))
         axioms.append(axiom)
 
-       
 
         acto = ["BEGIN"] + action_seq
         with tf.name_scope("Guesses"):
@@ -256,30 +250,51 @@ def gen_atari_adt(env,
         # There are only n actions, but n+1 images, so skip action on last step
         if i < num_actions:
             (curr_state, ) = name_to_action[action_seq[i].lower()](curr_state)
+            curr_score = score_data[i].input_var
             (curr_score_guess, ) = score(curr_state)
             axiom_score = Axiom((curr_score_guess, ),
                                 (curr_score, ),
                                 "score_{}_is_same".format(i))
-            axioms.append(axiom)
+            axioms.append(axiom_score)
 
+    # Generators
+    # ==========
+    # Test
     train_generator = gen_atari_data(env, action_seq, batch_size=batch_size)
     test_generator = gen_atari_data(env, action_seq, batch_size=batch_size)
 
-    def make_ok(generator, forallvars, gen_to_inputs):
+    def split_images_by_action(gen_data):
+        return [gen_data[:, i, :, :, :] for i in range(gen_data.shape[1])]
+
+    def make_gen(generator):
         while True:
-            x = next(generator)
-            inputs = gen_to_inputs(x)
-            feed_dict = {forallvars[i].input_var: inputs[i] for i in range(len(inputs))}
+            sample_img_data, rewards = next(generator)
+            img_slices = split_images_by_action(sample_img_data)
+            img_feed_dict = {img_vars[i].input_var: img_slices[i] for i in range(num_actions+1)}
+            rewards_feed_dict = {score_data[i].input_var: rewards[:, i:i+1] for i in range(num_actions)}
+            feed_dict = {}
+            feed_dict.update(img_feed_dict)
+            feed_dict.update(rewards_feed_dict)
             yield feed_dict
 
-    train_generators = [make_ok(train_generator,
-                                img_data,
-                                split_images_by_action)]
-    test_generators = [make_ok(test_generator,
-                                img_data,
-                                split_images_by_action)]
+    train_generators = [make_gen(train_generator)]
+    test_generators = [make_gen(test_generator)]
 
-    forallvars = img_data
+    # def make_ok(generator, forallvars, gen_to_inputs):
+    #     while True:
+    #         x = next(generator)
+    #         inputs = gen_to_inputs(x)
+    #         feed_dict = {forallvars[i].input_var: inputs[i] for i in range(len(inputs))}
+    #         yield feed_dict
+    #
+    # train_generators = [make_ok(train_generator,
+    #                             img_vars,
+    #                             split_images_by_action)]
+    # test_generators = [make_ok(test_generator,
+    #                             img_vars,
+    #                             split_images_by_action)]
+
+    forallvars = img_vars
     atari_adt = AbstractDataType(interfaces=interfaces,
                                  consts=[],
                                  forallvars=forallvars,
