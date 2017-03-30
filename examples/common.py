@@ -23,6 +23,12 @@ def default_options():
     options['datadir'] = (str, os.path.join(os.environ['DATADIR'], "pdt"))
     return options
 
+def game_options(adt):
+    options = {}
+    if adt == 'atari':
+        options['game'] = (str, 'Breakout-v0')
+    return options
+
 def handle_options(adt, argv):
     parser = PassThroughOptionParser()
     parser.add_option('-t', '--template', dest='template', nargs=1, type='string')
@@ -35,7 +41,9 @@ def handle_options(adt, argv):
     template_options = template_module[options['template']].kwargs()
     options.update(template_options)
     options.update(default_options())
+    options.update(game_options(adt)) # for atari 
     options['adt'] = (str, adt)
+
     options = handle_args(argv, options)
     options['template'] = template_module[options['template']].template
     options['nl'] = nl_module[options['nl']]

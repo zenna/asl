@@ -14,7 +14,7 @@ import gym
 import random
 import tflearn
 import pickle
-# import pdb
+import pdb
 
 def conv_2d_layer(input, n_filters, stride):
     return conv_2d(input,
@@ -114,7 +114,7 @@ def score_net(inputs):
 # 1. Have another thread fill out a buffer for the batch
 
 def gen_atari_data(env, actions, batch_size):
-
+    
     action_meanings = env.env.get_action_meanings() # list of actions
     action_indices = [action_meanings.index(action) for action in actions]
     assert all((i >= 0 for i in action_indices))
@@ -288,7 +288,8 @@ def gen_atari_adt(env,
     return atari_adt, atari_pbt, extra_fetches
 
 def run(options):
-    env = gym.make('Breakout-v0')
+    game = options['game']
+    env = gym.make(game)
     env.reset()
     adt, pdt, extra_fetches = gen_atari_adt(env, batch_size=options['batch_size'])
     sess = train(adt,
@@ -303,7 +304,7 @@ def main(argv):
     options = handle_options('atari', argv)
     options['dirname'] = gen_sfx_key(('adt',), options)
     adt, sess = run(options)
-    play(adt.interfaces, adt.consts, sess)
+    play(options['game'], adt.interfaces, adt.consts, sess)
 
 
 def atari_options():
@@ -311,11 +312,11 @@ def atari_options():
     return options
 
 
-def play(interfaces, constants, sess):
+def play(game, interfaces, constants, sess):
     import matplotlib.pyplot as plt
     plt.ion()
 
-    env = gym.make('Breakout-v0')
+    env = gym.make(game)
     env.reset()
 
     interface = {f.name:f for f in interfaces}
