@@ -171,6 +171,22 @@ def discriminator_net(inputs):
     curr_layer = tflearn.activations.sigmoid(curr_layer)
     return [curr_layer]
 
+
+def rotate_net(inputs):
+    import pdb; pdb.set_trace()
+    field = inputs[0]
+    curr_layer = field
+
+    layers = []
+    curr_layer = tf.reshape(curr_layer, (-1, 16, 16, 1))
+    curr_layer = conv_2d_layer(curr_layer, 16, 1)
+    curr_layer = batch_normalization(curr_layer)
+    curr_layer = fully_connected(curr_layer, 1)
+    curr_layer = batch_normalization(curr_layer)
+    curr_layer = tflearn.activations.sigmoid(curr_layer)
+    return [curr_layer]
+
+
 #
 # def create_encode(field_shape, n_steps, batch_size):
 #     n_hidden = product(field_shape)

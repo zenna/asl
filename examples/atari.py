@@ -187,7 +187,6 @@ def gen_atari_adt(env,
     inv_render = Interface([Image], [State], 'inv_render', tf_interface=inv_render_tf)
     score = Interface([State], [Score], "score", tf_interface=score_net)
 
-
     # One interface for every action
     interfaces = [Interface([State], [State], action, tf_interface=button) for action in action_seq]
     name_to_action = {action_seq[i].lower(): interfaces[i] for i in range(len(interfaces))}
@@ -199,7 +198,6 @@ def gen_atari_adt(env,
     name_to_action['render'] = render
     name_to_action['inv_render'] = inv_render
     name_to_action['score'] = score
-
     # The only observable data is image data
     num_actions = len(action_seq)
 
@@ -312,27 +310,37 @@ def atari_options():
     options = {'field_shape': (eval, (50,))}
     return options
 
-import matplotlib.pyplot as plt
-plt.ion
 
 def play(interfaces, constants, sess):
+    import matplotlib.pyplot as plt
+    plt.ion()
+
+    env = gym.make('Breakout-v0')
+    env.reset()
+
     interface = {f.name:f for f in interfaces}
     py_interfaces = {f.name:f.to_python_lambda(sess) for f in interfaces}
     action_seq = ['LEFT', 'RIGHT', 'FIRE', 'NOOP']
-    data_gen = gen_atari_data(['LEFT', 'RIGHT', 'FIRE', 'NOOP'], 1)
+    data_gen = gen_atari_data(env, ['LEFT', 'RIGHT', 'FIRE', 'NOOP'], 1)
     init_data = next(data_gen)
     init_screen = init_data[0:1, 0]
-    init_state = py_interfaces['inv_render'](init_screen)
+    (init_state, ) = py_interfaces['inv_render'](init_screen)
     state = init_state
 
     plt.figure()
+    img_shape = (210, 160, 3)
+    im = plt.imshow(np.reshape(init_screen, img_shape))
 
     # Render the gam
     while True:
+        print("Frame!")
+        # Choose a random action
         action = np.random.choice(action_seq)
-        state = py_interfaces[action](state)
-        image = py_interfaces['render'](state)
-        plt.imshow(image)
+        (state, ) = py_interfaces[action](state)
+        (image, ) = py_interfaces['render_tf'](state)
+        im.set_data(np.reshape(image, img_shape))
+        plt.pause(0.05)
+
 
 
 
