@@ -14,6 +14,7 @@ import gym
 import random
 import tflearn
 import pickle
+# import pdb
 
 def conv_2d_layer(input, n_filters, stride):
     return conv_2d(input,
@@ -96,6 +97,20 @@ def button(inputs):
     return [curr_layer]
 
 
+def score_net(inputs):
+    field = inputs[0]
+    curr_layer = field
+
+    layers = []
+    # pdb.set_trace()
+    curr_layer = conv_2d_layer(curr_layer, 16, 1)
+    curr_layer = batch_normalization(curr_layer)
+    curr_layer = fully_connected(curr_layer, 1)
+    curr_layer = batch_normalization(curr_layer)
+    curr_layer = tflearn.activations.sigmoid(curr_layer)
+    return [curr_layer]
+
+
 # 1. Randomize the startpoint of the batch
 # 1. Have another thread fill out a buffer for the batch
 
@@ -138,7 +153,7 @@ def generate_atari_image_batch(env, actions, batch_size): #TODO: remove env from
 
       # Save screen after each action
       for j, action in enumerate(actions):
-        env.step(action)
+        observation, reward, done, info = env.step(action)
         screen = env.env.ale.getScreenRGB()[:, :, :3]
         output[i][j+1] = screen
 
@@ -159,6 +174,11 @@ def gen_atari_adt(env,
     image_shape = (210, 160, 3)
     Image = Type(image_shape, name="Image")
 
+    # A score is the game score
+    # pdb.set_trace()
+    # score_shape = (1,)
+    # Score = Type(score_shape, name="Score")
+
     # Interfaces
     interfaces = []
 
@@ -166,8 +186,19 @@ def gen_atari_adt(env,
     inv_render = Interface([Image], [State], 'inv_render', tf_interface=inv_render_tf)
     
     # One interface for every action
+    # score = Interface([State], [Score], "score", tf_interface=score_net)
     interfaces = [Interface([State], [State], action, tf_interface=button) for action in action_seq]
     name_to_action = {action_seq[i].lower(): interfaces[i] for i in range(len(interfaces))} 
+
+    interfaces.append(render)
+    interfaces.append(inv_render)
+    # interfaces.append(score)
+
+    name_to_action['render'] = render
+    name_to_action['inv_render'] = inv_render
+    # name_to_action['score'] = score
+    
+
     # left = Interface([State], [State], 'LEFT', tf_interface=button)
     # right = Interface([State], [State], 'RIGHT', tf_interface=button)
     # fire = Interface([State], [State], 'FIRE', tf_interface=button)
