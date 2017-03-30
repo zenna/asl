@@ -100,7 +100,7 @@ def button(inputs):
 # 1. Have another thread fill out a buffer for the batch
 
 def gen_atari_data(env, actions, batch_size):
-   
+
     action_meanings = env.env.get_action_meanings() # list of actions
     action_indices = [action_meanings.index(action) for action in actions]
     assert all((i >= 0 for i in action_indices))
@@ -114,7 +114,7 @@ def generate_atari_image_batch(env, actions, batch_size): #TODO: remove env from
         env: game environment
         actions: list of numerical actions
         batch_size: batches of data
-        
+
     Return:
         Tensor of size (batch_size, screen_height, screen_width, channels, n)
         for i = 1:batch_size:
@@ -146,7 +146,7 @@ def generate_atari_image_batch(env, actions, batch_size): #TODO: remove env from
 
 def gen_atari_adt(env,
                   batch_size): # used to have action seq as input
-    ignored_actions = ['DOWNRIGHT','DOWNLEFT', 'UPRIGHT', 'UPLEFT',  
+    ignored_actions = ['DOWNRIGHT','DOWNLEFT', 'UPRIGHT', 'UPLEFT',
         'UPRIGHTFIRE','UPLEFTFIRE', 'DOWNRIGHTFIRE','DOWNLEFTFIRE']
     action_seq = [action for action in env.env.get_action_meanings() if action not in ignored_actions]
     print("\nACTION SEQ. : ", action_seq)
@@ -164,10 +164,10 @@ def gen_atari_adt(env,
 
     render = Interface([State], [Image], 'render_tf', tf_interface=render_tf)
     inv_render = Interface([Image], [State], 'inv_render', tf_interface=inv_render_tf)
-    
+
     # One interface for every action
     interfaces = [Interface([State], [State], action, tf_interface=button) for action in action_seq]
-    name_to_action = {action_seq[i].lower(): interfaces[i] for i in range(len(interfaces))} 
+    name_to_action = {action_seq[i].lower(): interfaces[i] for i in range(len(interfaces))}
     # left = Interface([State], [State], 'LEFT', tf_interface=button)
     # right = Interface([State], [State], 'RIGHT', tf_interface=button)
     # fire = Interface([State], [State], 'FIRE', tf_interface=button)
@@ -275,23 +275,30 @@ import matplotlib.pyplot as plt
 plt.ion
 
 def play(interfaces, constants, sess):
+    env = gym.make('Breakout-v0')
+    env.reset()
+
     interface = {f.name:f for f in interfaces}
     py_interfaces = {f.name:f.to_python_lambda(sess) for f in interfaces}
     action_seq = ['LEFT', 'RIGHT', 'FIRE', 'NOOP']
-    data_gen = gen_atari_data(['LEFT', 'RIGHT', 'FIRE', 'NOOP'], 1)
+    data_gen = gen_atari_data(env, ['LEFT', 'RIGHT', 'FIRE', 'NOOP'], 1)
     init_data = next(data_gen)
     init_screen = init_data[0:1, 0]
     init_state = py_interfaces['inv_render'](init_screen)
     state = init_state
 
     plt.figure()
+    img_shape = (210, 160, 3)
+    im = plt.imshow(np.reshape(init_screen, img_shape))
 
     # Render the gam
     while True:
+        # Choose a random action
         action = np.random.choice(action_seq)
-        state = py_interfaces[action](state)
-        image = py_interfaces['render'](state)
-        plt.imshow(image)
+        (state, ) = py_interfaces[action](state)
+        (image, ) = py_interfaces['render'](state)
+        im.set_data(np.reshape(img_shape))
+
 
 
 
