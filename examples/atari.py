@@ -271,12 +271,10 @@ def gen_atari_adt(env,
                                  name='atari')
 
     extra_fetches = {}
-    gen_to_inputs = None
     train_outs = []
     atari_pbt = ProbDataType(atari_adt,
                              train_generators,
                              test_generators,
-                             gen_to_inputs,
                              train_outs)
 
     return atari_adt, atari_pbt, extra_fetches
@@ -290,17 +288,43 @@ def run(options):
                  options,
                  extra_fetches=extra_fetches,
                  callbacks=[])
+    return adt, sess
 
 def main(argv):
     print("ARGV", argv)
     options = handle_options('atari', argv)
     options['dirname'] = gen_sfx_key(('adt',), options)
-    run(options)
+    adt, sess = run(options)
+    play(adt.interfaces, adt.consts, sess)
 
 
 def atari_options():
     options = {'field_shape': (eval, (50,))}
     return options
+
+import matplotlib.pyplot as plt
+plt.ion
+
+def play(interfaces, constants, sess):
+    interface = {f.name:f for f in interfaces}
+    py_interfaces = {f.name:f.to_python_lambda(sess) for f in interfaces}
+    action_seq = ['LEFT', 'RIGHT', 'FIRE', 'NOOP']
+    data_gen = gen_atari_data(['LEFT', 'RIGHT', 'FIRE', 'NOOP'], 1)
+    init_data = next(data_gen)
+    init_screen = init_data[0:1, 0]
+    init_state = py_interfaces['inv_render'](init_screen)
+    state = init_state
+
+    plt.figure()
+
+    # Render the gam
+    while True:
+        action = np.random.choice(action_seq)
+        state = py_interfaces[action](state)
+        image = py_interfaces['render'](state)
+        plt.imshow(image)
+
+
 
 if __name__ == "__main__":
     main(sys.argv[1:])

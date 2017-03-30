@@ -87,7 +87,7 @@ def train(adt,
         callbacks = [save_options,
                      save_every_n,
                      save_everything_last,
-                     every_n(summary_writes, 100)] + callbacks
+                     every_n(summary_writes, 25)] + callbacks
 
     if options['train'] is True:
         train_loop(sess,

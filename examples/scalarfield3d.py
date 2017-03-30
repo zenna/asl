@@ -15,6 +15,13 @@ from voxel_helpers import *
 from tflearn.layers import conv_3d, fully_connected, conv, conv_2d
 from tflearn.layers.normalization import batch_normalization
 import tflearn
+from scipy import ndimage
+
+# I'm not sure how to rotate the voxels
+# if i did a translation
+# so rotation seems to be a little complicated
+# what if we did a scaling
+# i dont know how to do any of thee o
 
 def conv_2d_layer(input, n_filters, stride):
     return conv_2d(input,
@@ -27,8 +34,8 @@ def conv_2d_layer(input, n_filters, stride):
                    scope=None,
                    name='Conv3D')
 
-def conv_3d_layer(input, n_filters, stride):
-    return conv_3d(input,
+def conv_3d_layer(t, n_filters, stride):
+    return conv_3d(t,
                        n_filters,
                        3,
                        strides=stride,
@@ -130,6 +137,25 @@ def generator_net(inputs):
     return [curr_layer]
 
 
+def rotation_net(inputs):
+    sample_space = inputs[0]
+    curr_layer = sample_space
+
+    layers = []
+    curr_layer = tf.reshape(curr_layer, (-1, 16, 16, 1))
+    curr_layer = conv_2d_layer(curr_layer, 16, 1)
+    curr_layer = batch_normalization(curr_layer)
+    curr_layer = conv_2d_layer(curr_layer, 16, 1)
+    curr_layer = batch_normalization(curr_layer)
+    curr_layer = conv_2d_layer(curr_layer, 16, 1)
+    curr_layer = batch_normalization(curr_layer)
+    curr_layer = conv_2d_layer(curr_layer, 1, 1)
+    curr_layer = batch_normalization(curr_layer)
+    curr_layer = tf.reshape(curr_layer, (-1, 16, 16))
+    return [curr_layer]
+
+
+
 def discriminator_net(inputs):
     field = inputs[0]
     curr_layer = field
@@ -182,55 +208,87 @@ def gen_scalar_field_adt(train_data,
     extra_fetches = {}
 
     # Types
+    # =====
+
+    # Shape parameters
     sample_space_shape = (16, 16)
+    rot_matrix_shape = (1, )
 
     Field = Type(field_shape, name="Field")
-    SampleSpace = Type(sample_space_shape, name="SampleSpace")
-    Bool = Type((1,), name="Bool")
-    VoxelGrid = Type(voxel_grid_shape, name="voxel_grid")
+    Rotation = Type(rot_matrix_shape, name="Rotation")
+    VoxelGrid = Type(voxel_grid_shape, name="VoxelGrid")
+    # SampleSpace = Type(sample_space_shape, name="SampleSpace")
+    # Bool = Type((1,), name="Bool")
 
     # Interfaces
+    # ==========
+
     # A random variable over sample
-    interfaces = []
-    generator = Interface([SampleSpace], [Field], 'generator', tf_interface=generator_net)
-    interfaces.append(generator)
-
-    discriminator = Interface([Field], [Bool], 'discriminator', tf_interface=discriminator_net)
-    interfaces.append(discriminator)
-
-    # Encode 1
-    # encode_interface = create_encode(field_shape,
-    #                                  encode_args['n_steps'],
-    #                                  batch_size)
-    # encode = Interface([VoxelGrid], [Field], 'encode',
-    #                    tf_interface=encode_interface)
+    # generator = Interface([SampleSpace], [Field], 'generator', tf_interface=generator_net)
+    # discriminator = Interface([Field], [Bool], 'discriminator', tf_interface=discriminator_net)
+    rotate = Interface([Field, Rotation], [Field], 'rotate', tf_interface=generator_net)
 
     # Encode 2
     encode_interface = create_encode(field_shape)
-    encode = Interface([VoxelGrid], [Field], 'encode',
-                       tf_interface=encode_interface)
-
-    # Encode 3
-    # encode = Interface([VoxelGrid], [Field], 'encode', template=s_args)
-    # interfaces.append(encode)
-    # interfaces.append(encode)
+    encode = Interface([VoxelGrid], [Field], 'encode', tf_interface=encode_interface)
 
     decode_interface = create_decode(field_shape)
     decode = Interface([VoxelGrid], [Field], 'decode',
                        tf_interface=decode_interface)
-    # decode = Interface([Field], [VoxelGrid], 'decode', template=decode_args)
+
+    interfaces = [encode,
+                  decode,
+                  rotate]
 
     # Variables
-    forallvars = []
-
+    # =========
     voxel_grid = ForAllVar(VoxelGrid, "voxel_grid")
+    rot_voxel_grid = ForAllVar(VoxelGrid, "rot_voxel_grid")
+    rot_matrix = ForAllVar(Rotation, "rotation")
+    # sample_space = ForAllVar(SampleSpace, "sample_space")
     add_summary("voxel_input", voxel_grid.input_var)
-    forallvars.append(voxel_grid)
 
-    sample_space = ForAllVar(SampleSpace, "sample_space")
-    forallvars.append(sample_space)
+    forallvars = [voxel_grid,
+                  rot_matrix,
+                  # sample_space,
+                  ]
+
+    # Train Generators
+    # ================
+    train_voxel_gen = infinite_batches(train_data, batch_size, shuffle=True)
+    # sample_space_gen = infinite_samples(np.random.randn,
+    #                                     (batch_size),
+    #                                     sample_space_shape,
+    #                                     add_batch=True)
+    train_rot_gen = infinite_samples(lambda *shp: np.random.rand(*shp)*360,
+                                     batch_size,
+                                     rot_matrix_shape,
+                                     add_batch=True)
+
+    def test_train_gen(voxel_gen, rot_gen):
+        rot_vgrid = np.zeros((batch_size, 32, 32, 32))
+        while True:
+            sample_vgrids = next(voxel_gen)
+            sample_rot_matrix = next(rot_gen)
+
+            for i, vgrid in enumerate(sample_vgrids):
+                rot_vgrid[i] = ndimage.interpolation.rotate(sample_vgrids[i], sample_rot_matrix[i], reshape=False)
+
+            vals = {voxel_grid.input_var: sample_vgrids,
+                    rot_matrix.input_var: sample_rot_matrix,
+                    rot_voxel_grid.input_var: rot_vgrid}
+
+            yield vals
+
+    train_generators = [test_train_gen(train_voxel_gen, train_rot_gen)]
+
+    # Test Generators
+    # ================
+    test_generators = train_generators
+
 
     # Axioms
+    # ======
     axioms = []
 
     # Encode Decode
@@ -242,63 +300,48 @@ def gen_scalar_field_adt(train_data,
     add_summary("decoded_vox_grid", decoded_vox_grid)
     extra_fetches["decoded_vox_grid"] = decoded_vox_grid
 
-    axiom_enc_dec = Axiom((decoded_vox_grid, ), (voxel_grid.input_var, ), 'enc_dec')
+    axiom_enc_dec = Axiom((decoded_vox_grid, ),
+                          (voxel_grid.input_var, ),
+                          'enc_dec')
     axioms.append(axiom_enc_dec)
 
+    # rotation axioms
+    (rotated,) = rotate(encoded_field, rot_matrix.input_var)
+    (dec_rotated_vgrid, ) = decode(rotated)
+    axiom_rotate = Axiom((dec_rotated_vgrid, ), (rot_voxel_grid.input_var, ), 'rotate')
+    axioms.append(axiom_rotate)
+
+    tf.summary.image("encoded_field", tf.reshape(encoded_field, (-1, 16, 16, 1)))
+    tf.summary.image("rotate_field", tf.reshape(rotated, (-1, 16, 16, 1)))
+
+    # Losses
+    # ======
+    #
+    # # Other loss terms
+    # data_sample = encoded_field
+    # losses, adversarial_fetches = adversarial_losses(sample_space,
+    #                             data_sample,
+    #                             generator,
+    #                             discriminator)
+    #
+    # # Make the encoder help the generator!!
+    # losses[0].restrict_to.append(encode)
+    # (generated_voxels, ) = decode(adversarial_fetches['generated_field'])
+    # extra_fetches['generated_voxels'] = generated_voxels
+    # extra_fetches.update(adversarial_fetches)
+    #
+    # add_summary("generated_field", adversarial_fetches['generated_field'])
+    # add_summary("generated_voxels", generated_voxels)
     losses = []
-    # Other loss terms
-    data_sample = encoded_field
-    losses, adversarial_fetches = adversarial_losses(sample_space,
-                                data_sample,
-                                generator,
-                                discriminator)
 
-    # Make the encoder help the generator!!
-    losses[0].restrict_to.append(encode)
-    (generated_voxels, ) = decode(adversarial_fetches['generated_field'])
-    extra_fetches['generated_voxels'] = generated_voxels
-    extra_fetches.update(adversarial_fetches)
 
-    add_summary("generated_field", adversarial_fetches['generated_field'])
-    add_summary("generated_voxels", generated_voxels)
 
-    train_outs = []
-    gen_to_inputs = identity
-
-    # Generators
-    train_generators = []
-    test_generators = []
-
-    voxel_gen = infinite_batches(train_data, batch_size, shuffle=True)
-    train_generators.append(voxel_gen)
-
-    # Test
-    test_voxel_gen = infinite_batches(test_data, batch_size, shuffle=True)
-    test_generators.append(test_voxel_gen)
-
-    sample_space_gen = infinite_samples(np.random.randn,
-                                        (batch_size),
-                                        sample_space_shape,
-                                        add_batch=True)
-    train_generators.append(sample_space_gen)
-
-    # Test
-    test_sample_space_gen = infinite_samples(np.random.randn,
-                                             (batch_size),
-                                             sample_space_shape,
-                                             add_batch=True)
-    test_generators.append(test_sample_space_gen)
-
-    interfaces = [encode,
-                  decode,
-                  discriminator,
-                  generator
-                  ]
+    # Constants
+    # =========
     consts = []
 
-    train_generators = [attach_gen(train_generators, forallvars)]
-    test_generators = [attach_gen(test_generators, forallvars)]
-
+    # Data Types
+    # ==========
     scalar_field_adt = AbstractDataType(interfaces=interfaces,
                                         consts=consts,
                                         forallvars=forallvars,
@@ -306,11 +349,10 @@ def gen_scalar_field_adt(train_data,
                                         losses=losses,
                                         name='scalar_field')
 
-    scalar_field_pbt = ProbDataType(scalar_field_adt,
-                                    train_generators,
-                                    test_generators,
-                                    gen_to_inputs,
-                                    train_outs)
+    scalar_field_pbt = ProbDataType(adt=scalar_field_adt,
+                                    train_generators=train_generators,
+                                    test_generators=test_generators,
+                                    train_outs=[])
     return scalar_field_adt, scalar_field_pbt, extra_fetches
 
 
