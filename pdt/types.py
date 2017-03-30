@@ -96,11 +96,14 @@ class Interface():
 
     def to_python_lambda(self, sess):
         """Generate a callable python function for this interface function"""
+        input_tensors = [type.tensor(add_batch=True, name=self.input_name(type, i))
+                       for i, type in enumerate(self.lhs)]
+        output_tensors = self.__call__(*input_tensors)
 
         def func(*args, sess=sess):
-            assert len(args) == len(self.inputs), "Expected %s inputs, got %s" % (len(self.inputs), len(args))
-            feed_dict = dict(zip(self.inputs, args))
-            outputs = sess.run(self.outputs, feed_dict=feed_dict)
+            assert len(args) == len(input_tensors), "Expected %s inputs, got %s" % (len(inputs_tensors), len(args))
+            feed_dict = dict(zip(input_tensors, args))
+            outputs = sess.run(output_tensors, feed_dict=feed_dict)
             return outputs
 
         func.__doc__ = """"%s : [] -> []""" % self.name # TODO FINISH
@@ -355,10 +358,8 @@ class AbstractDataType():
 class ProbDataType():
     """ A probabilistic data type gives a function (space) to each interfaces,
         a value to each constant and a random variable to each diti=rbution"""
-    def __init__(self, adt, train_generators, test_generators, gen_to_inputs,
-                 train_outs):
+    def __init__(self, adt, train_generators, test_generators, train_outs):
         self.adt = adt
         self.train_generators = train_generators
         self.test_generators = test_generators
-        self.gen_to_inputs = gen_to_inputs
         self.train_outs = train_outs
