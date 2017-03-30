@@ -114,7 +114,7 @@ def score_net(inputs):
 # 1. Have another thread fill out a buffer for the batch
 
 def gen_atari_data(env, actions, batch_size):
-    
+
     action_meanings = env.env.get_action_meanings() # list of actions
     action_indices = [action_meanings.index(action) for action in actions]
     assert all((i >= 0 for i in action_indices))
@@ -140,7 +140,9 @@ def generate_atari_image_batch(env, actions, batch_size): #TODO: remove env from
     screen_height = env.env.ale.getScreenDims()[1]
     screen_width = env.env.ale.getScreenDims()[0]
     output = np.zeros((batch_size, num_actions+1, screen_height, screen_width, 3))
-
+    
+    action_meanings = env.env.get_action_meanings()
+    
     # Get image data
     rewards = np.zeros((batch_size, num_actions))
     for i in range(batch_size):
@@ -153,10 +155,15 @@ def generate_atari_image_batch(env, actions, batch_size): #TODO: remove env from
 
       # Save screen after each action
       for j, action in enumerate(actions):
+        # print('action: ', action_meanings[action])
         observation, reward, done, info = env.step(action)
+        # print('done? ', done)
         screen = env.env.ale.getScreenRGB()[:, :, :3]
         output[i][j+1] = screen
         rewards[i, j] = reward
+
+        if done==True:
+            env.reset()
 
     return output, rewards
 
@@ -304,7 +311,7 @@ def main(argv):
     options = handle_options('atari', argv)
     options['dirname'] = gen_sfx_key(('adt',), options)
     adt, sess = run(options)
-    play(options['game'], adt.interfaces, adt.consts, sess)
+    #play(options['game'], adt.interfaces, adt.consts, sess)
 
 
 def atari_options():
@@ -323,7 +330,7 @@ def play(game, interfaces, constants, sess):
     py_interfaces = {f.name:f.to_python_lambda(sess) for f in interfaces}
     action_seq = ['LEFT', 'RIGHT', 'FIRE', 'NOOP']
     data_gen = gen_atari_data(env, ['LEFT', 'RIGHT', 'FIRE', 'NOOP'], 1)
-    init_data = next(data_gen)
+    init_data, reward = next(data_gen)
     init_screen = init_data[0:1, 0]
     (init_state, ) = py_interfaces['inv_render'](init_screen)
     state = init_state
@@ -342,8 +349,42 @@ def play(game, interfaces, constants, sess):
         im.set_data(np.reshape(image, img_shape))
         plt.pause(0.05)
 
+def view_generator(game, batch_size):
+    import matplotlib.pyplot as plt
+    plt.ion()
 
+    def show_batch(image_batch):
+      for b in range(len(image_batch)):
+        action_images = image_batch[b]
+        for act in range(len(action_images)):
+            img = action_images[act]
+            im.set_data(img)
+            plt.pause(0.05)
+                
+    env = gym.make(game)
+    env.reset()
 
+    ignored_actions = ['DOWNRIGHT','DOWNLEFT', 'UPRIGHT', 'UPLEFT',
+        'UPRIGHTFIRE','UPLEFTFIRE', 'DOWNRIGHTFIRE','DOWNLEFTFIRE']
+    action_seq = [action for action in env.env.get_action_meanings() if action not in ignored_actions]
+    
+    gen = gen_atari_data(env, action_seq, batch_size)
+
+    init_data, rewards = next(gen)
+    print('data size: ', init_data.shape)
+    init_screen = init_data[0][0]
+    plt.figure()
+    im = plt.imshow(init_screen)
+    
+    show_batch(init_data)
+
+    n = 0
+    while True:
+      print('next', n)
+      n+=1
+      image_data, rewards = next(gen)
+      show_batch(image_data)
+    return 
 
 if __name__ == "__main__":
     main(sys.argv[1:])
