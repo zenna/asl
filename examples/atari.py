@@ -102,7 +102,7 @@ def score_net(inputs):
     curr_layer = field
 
     layers = []
-    # pdb.set_trace()
+    pdb.set_trace()
     curr_layer = conv_2d_layer(curr_layer, 16, 1)
     curr_layer = batch_normalization(curr_layer)
     curr_layer = fully_connected(curr_layer, 1)
@@ -176,27 +176,28 @@ def gen_atari_adt(env,
 
     # A score is the game score
     # pdb.set_trace()
-    # score_shape = (1,)
-    # Score = Type(score_shape, name="Score")
+    score_shape = (1,)
+    Score = Type(score_shape, name="Score")
 
     # Interfaces
     interfaces = []
 
     render = Interface([State], [Image], 'render_tf', tf_interface=render_tf)
     inv_render = Interface([Image], [State], 'inv_render', tf_interface=inv_render_tf)
+    score = Interface([State], [Score], "score", tf_interface=score_net)
+
     
     # One interface for every action
-    # score = Interface([State], [Score], "score", tf_interface=score_net)
     interfaces = [Interface([State], [State], action, tf_interface=button) for action in action_seq]
     name_to_action = {action_seq[i].lower(): interfaces[i] for i in range(len(interfaces))} 
 
     interfaces.append(render)
     interfaces.append(inv_render)
-    # interfaces.append(score)
+    interfaces.append(score)
 
     name_to_action['render'] = render
     name_to_action['inv_render'] = inv_render
-    # name_to_action['score'] = score
+    name_to_action['score'] = score
     
 
     # left = Interface([State], [State], 'LEFT', tf_interface=button)
@@ -209,8 +210,10 @@ def gen_atari_adt(env,
     # The only observable data is image data
     num_actions = len(action_seq)
 
-    # We'll create one variable for each image corresponding to an action
+    # We'll create one variable for each image and score corresponding to an action
     img_data = [ForAllVar(Image, "image_{}".format(i)) for i in range(num_actions+1)]
+    score_data = [ForAllVar(Score, "score_{}".format(i)) for i in range(num_actions+1)]
+    
     def split_images_by_action(gen_data):
         return [gen_data[:, i, :, :, :] for i in range(gen_data.shape[1])]
 
@@ -218,21 +221,29 @@ def gen_atari_adt(env,
     (curr_state,) = inv_render(curr_image)
     intermediate_states = []
     intermediate_images = []
+    intermediate_scores = []
 
     axioms = []
 
     # Execute the
     for i in range(num_actions+1):
         intermediate_states.append(curr_state)
+        intermediate_scores.append(curr_score)
+
         (curr_state_img_guess, ) = render(curr_state)
         intermediate_images.append(curr_state_img_guess)
 
         curr_state_img = img_data[i].input_var
+        curr_score = score_data[i].input_var
         # (curr_state_guess, ) = inv_render(curr_img)
+
         axiom = Axiom((curr_state_img_guess, ),
                       (curr_state_img, ),
                       "img_{}_is_same".format(i))
         axioms.append(axiom)
+
+       
+
         acto = ["BEGIN"] + action_seq
         with tf.name_scope("Guesses"):
             tf.summary.image("img_guess_{}_{}".format(i, acto[i]), curr_state_img_guess)
@@ -241,9 +252,15 @@ def gen_atari_adt(env,
         with tf.name_scope("State"):
             tf.summary.image("state_{}_{}".format(i, acto[i]), curr_state)
 
+
         # There are only n actions, but n+1 images, so skip action on last step
         if i < num_actions:
             (curr_state, ) = name_to_action[action_seq[i].lower()](curr_state)
+            (curr_score_guess, ) = score(curr_state)
+            axiom_score = Axiom((curr_score_guess, ),
+                                (curr_score, ),
+                                "score_{}_is_same".format(i))
+            axioms.append(axiom)
 
     train_generator = gen_atari_data(env, action_seq, batch_size=batch_size)
     test_generator = gen_atari_data(env, action_seq, batch_size=batch_size)
