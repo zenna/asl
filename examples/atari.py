@@ -200,14 +200,6 @@ def gen_atari_adt(env,
     name_to_action['inv_render'] = inv_render
     name_to_action['score'] = score
 
-
-    # left = Interface([State], [State], 'LEFT', tf_interface=button)
-    # right = Interface([State], [State], 'RIGHT', tf_interface=button)
-    # fire = Interface([State], [State], 'FIRE', tf_interface=button)
-    # no_op = Interface([State], [State], 'NOOP', tf_interface=button)
-    # interfaces = [left, right, fire, no_op, render, inv_render]
-    # name_to_action = {i.name: i for i in interfaces}
-
     # The only observable data is image data
     num_actions = len(action_seq)
 
@@ -279,20 +271,6 @@ def gen_atari_adt(env,
 
     train_generators = [make_gen(train_generator)]
     test_generators = [make_gen(test_generator)]
-
-    # def make_ok(generator, forallvars, gen_to_inputs):
-    #     while True:
-    #         x = next(generator)
-    #         inputs = gen_to_inputs(x)
-    #         feed_dict = {forallvars[i].input_var: inputs[i] for i in range(len(inputs))}
-    #         yield feed_dict
-    #
-    # train_generators = [make_ok(train_generator,
-    #                             img_vars,
-    #                             split_images_by_action)]
-    # test_generators = [make_ok(test_generator,
-    #                             img_vars,
-    #                             split_images_by_action)]
 
     forallvars = img_vars
     atari_adt = AbstractDataType(interfaces=interfaces,

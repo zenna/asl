@@ -138,11 +138,13 @@ def generator_net(inputs):
 
 
 def rotation_net(inputs):
-    sample_space = inputs[0]
-    curr_layer = sample_space
-
+    field = inputs[0]
+    field = tf.reshape(field, (-1, 16, 16, 1))
+    rotation = inputs[1]
+    rotation = tf.reshape(rotation, (-1, 1, 1, 1))
+    rotate_tiled = tf.ones_like(field) * rotation
+    curr_layer = tf.concat([field, rotate_tiled], 3)
     layers = []
-    curr_layer = tf.reshape(curr_layer, (-1, 16, 16, 1))
     curr_layer = conv_2d_layer(curr_layer, 16, 1)
     curr_layer = batch_normalization(curr_layer)
     curr_layer = conv_2d_layer(curr_layer, 16, 1)
@@ -226,7 +228,7 @@ def gen_scalar_field_adt(train_data,
     # A random variable over sample
     # generator = Interface([SampleSpace], [Field], 'generator', tf_interface=generator_net)
     # discriminator = Interface([Field], [Bool], 'discriminator', tf_interface=discriminator_net)
-    rotate = Interface([Field, Rotation], [Field], 'rotate', tf_interface=generator_net)
+    rotate = Interface([Field, Rotation], [Field], 'rotate', tf_interface=rotation_net)
 
     # Encode 2
     encode_interface = create_encode(field_shape)

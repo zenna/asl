@@ -26,7 +26,7 @@ class Type():
         self.dtype = dtype
         self.name = name
 
-    def tensor(self, name, add_batch=False):
+    def tensor(self, name, add_batch=False, batch_size=None):
         tensor_name = typed_arg_name(self.name, name)
         # Create a tensor for this shape
         ndims = len(self.shape)
@@ -34,13 +34,10 @@ class Type():
             ndims += 1
         broadcastable = (False,)*ndims
         tensor = placeholder(dtype=self.dtype,
-                             shape=self.get_shape(add_batch=True),
+                             shape=self.get_shape(add_batch=True,
+                                                  batch_size=batch_size),
                              ndim=ndims, name=name)
         return tensor
-
-    def tensor_tf(self, name='', add_batch=False):
-        tensor_name = typed_arg_name(self.name, name)
-        return tf.placeholder(tf.float32, shape=self.shape, name=tensor_name)
 
     def get_shape(self, add_batch=False, batch_size=None):
         if add_batch:
