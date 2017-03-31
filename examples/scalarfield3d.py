@@ -147,10 +147,6 @@ def rotation_net(inputs):
     layers = []
     curr_layer = conv_2d_layer(curr_layer, 16, 1)
     curr_layer = batch_normalization(curr_layer)
-    curr_layer = conv_2d_layer(curr_layer, 16, 1)
-    curr_layer = batch_normalization(curr_layer)
-    curr_layer = conv_2d_layer(curr_layer, 16, 1)
-    curr_layer = batch_normalization(curr_layer)
     curr_layer = conv_2d_layer(curr_layer, 1, 1)
     curr_layer = batch_normalization(curr_layer)
     curr_layer = tf.reshape(curr_layer, (-1, 16, 16))
@@ -170,40 +166,6 @@ def discriminator_net(inputs):
     curr_layer = batch_normalization(curr_layer)
     curr_layer = tflearn.activations.sigmoid(curr_layer)
     return [curr_layer]
-
-
-def rotate_net(inputs):
-    import pdb; pdb.set_trace()
-    field = inputs[0]
-    curr_layer = field
-
-    layers = []
-    curr_layer = tf.reshape(curr_layer, (-1, 16, 16, 1))
-    curr_layer = conv_2d_layer(curr_layer, 16, 1)
-    curr_layer = batch_normalization(curr_layer)
-    curr_layer = fully_connected(curr_layer, 1)
-    curr_layer = batch_normalization(curr_layer)
-    curr_layer = tflearn.activations.sigmoid(curr_layer)
-    return [curr_layer]
-
-
-#
-# def create_encode(field_shape, n_steps, batch_size):
-#     n_hidden = product(field_shape)
-#
-#     def encode_tf(inputs):
-#         import pdb; pdb.set_trace()
-#         '''
-#         inputs will be (batch_size, 1000, 4)
-#         '''
-#         assert len(inputs) == 1
-#         voxels = inputs[0]
-#         voxels = tf.split(voxels, n_steps, 1) #[(batch_size, 100, 3)...] 10 elements ; TODO try later n_steps = 1000
-#         voxels = [tf.reshape(inp, [batch_size, 4000 // n_steps]) for inp in voxels] # [batch_size, 300]
-#         lstm_cell = rnn.BasicLSTMCell(n_hidden, forget_bias=1.0)
-#         outputs, states = rnn.static_rnn(lstm_cell, voxels, dtype=tf.float32)
-#         return [outputs[-1]]
-#     return encode_tf
 
 
 def add_summary(name, tensor):
@@ -256,7 +218,8 @@ def gen_scalar_field_adt(train_data,
 
     interfaces = [encode,
                   decode,
-                  rotate]
+                  rotate
+                  ]
 
     # Variables
     # =========
@@ -294,7 +257,8 @@ def gen_scalar_field_adt(train_data,
 
             vals = {voxel_grid.input_var: sample_vgrids,
                     rot_matrix.input_var: sample_rot_matrix,
-                    rot_voxel_grid.input_var: rot_vgrid}
+                    rot_voxel_grid.input_var: rot_vgrid
+                    }
 
             yield vals
 
@@ -322,6 +286,7 @@ def gen_scalar_field_adt(train_data,
                           (voxel_grid.input_var, ),
                           'enc_dec')
     axioms.append(axiom_enc_dec)
+    tf.summary.image("encoded_field", tf.reshape(encoded_field, (-1, 16, 16, 1)))
 
     # rotation axioms
     (rotated,) = rotate(encoded_field, rot_matrix.input_var)
@@ -329,7 +294,6 @@ def gen_scalar_field_adt(train_data,
     axiom_rotate = Axiom((dec_rotated_vgrid, ), (rot_voxel_grid.input_var, ), 'rotate')
     axioms.append(axiom_rotate)
 
-    tf.summary.image("encoded_field", tf.reshape(encoded_field, (-1, 16, 16, 1)))
     tf.summary.image("rotate_field", tf.reshape(rotated, (-1, 16, 16, 1)))
 
     # Losses

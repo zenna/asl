@@ -1,5 +1,4 @@
 from mnist import *
-# from ig.util import *
 from pdt.train_tf import *
 from wacacore.util.misc import *
 from wacacore.util.io import mk_dir
