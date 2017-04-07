@@ -292,7 +292,7 @@ def train(num_iterations=100):
   for i in range(num_iterations):
     ...
 
-if __name__ == "__main__":
+# if __name__ == "__main__":
     # Generate the symbolic data type
-    types, functions, constants, axioms = getn(stack_adt(), "types", "functions", "constants", "axioms")
-    # c_types, c_functions, c_constants = stack_cdt(types, functions, constants)
+types, functions, constants, axioms = getn(stack_adt(), "types", "functions", "constants", "axioms")
+# c_types, c_functions, c_constants = stack_cdt(types, functions, constants)
