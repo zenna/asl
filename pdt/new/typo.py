@@ -1,11 +1,11 @@
 """Types"""
-import pytorch
+from typing import Sequence, Callable
 from wacacore.util.misc import getn
 import numpy as np
-from typing import Sequence
+from collections import namedtuple
 
-## Spec
-## ====
+# Spec
+# ====
 
 # - Be able to do this symbolic transformation
 # - Be able to easily change the discrete parts of the data-distribution
@@ -15,8 +15,10 @@ from typing import Sequence
 # - more like julia style, have types and functions kinda separate
 # - higher order?
 
-## Types
-## =====
+# Types
+# =====
+
+
 class Type():
   """A Data Type, i.e. a name distinguishd class of things."""
 
@@ -56,7 +58,7 @@ class FunctionType():
                lhs_types: Sequence[Type],
                rhs_types: Sequence[Type]):
       if len(lhs_types) < 1 or len(rhs_types) < 1:
-        throw(DomainError)
+        raise ValueError("Function input and output types must > 1")
       self.lhs_types = TupleType(lhs_types)
       self.rhs_types = TupleType(rhs_types)
 
@@ -67,16 +69,12 @@ class FunctionType():
     return str(self)
 
 
-## Whats the difference betwee these kinds of a values
-# - A constant represents some fixed but possible unknown value
-# - A variable, universally quantified represents
-# - a function is kind of like a constant, but it has funcitonal properties
-# as it it can be applied
-
-## Variables
-## =========
+# Variables
+# =========
 class Variable():
-    pass
+  """A Variable varies over things"""
+  pass
+
 
 class Function(Variable):
   """A Function transforms one or more lhs_types to one or more rhs_types"""
@@ -88,6 +86,7 @@ class Function(Variable):
     self.name = name
 
   def type(self):
+    """Type of a function variable"""
     return self._type
 
   def __call__(self, *lhs_vars: Sequence[Variable]):
@@ -100,12 +99,9 @@ class Function(Variable):
                                               lhs_types,
                                               len(lhs_var_types),
                                               lhs_var_types)
-      assert False, error_msg
+      raise TypeError(error_msg)
       # TODO: represent output numbers
       # TODO: represent or be able to infer its type
-    # 1. Just return a tuple, we want some shared common structure
-    # 2. TupleVar, but what is the tuplevar is not result of function application
-    # 3.
     return FunctionApp(self, lhs_vars)
 
   def __str__(self):
@@ -122,12 +118,12 @@ class Constant(Variable):
                type: Type,
                name: str):
     if not str.isupper(name):
-      # TODO, replace with exception, not assertion
-      assert False, "Constant names by convention upper case"
+      raise ValueError("Constant names by convention upper case")
     self._type = type
     self.name = name
 
   def type(self):
+    """Return type of constant"""
     return self._type
 
   def __str__(self):
@@ -135,6 +131,7 @@ class Constant(Variable):
 
   def __repr__(self):
     return str(self)
+
 
 class ForAllVar(Variable):
   "A (symbolic) universally quantified variable"
@@ -152,6 +149,7 @@ class ForAllVar(Variable):
 
   def __repr__(self):
     return str(self)
+
 
 class IndexApp(Variable):
   """Indexing of a tuple"""
@@ -207,8 +205,9 @@ def types_vars_consistent(types: Sequence[Type],
     return all((type_var_consistent(types[i], vars[i]) \
                for i in range(len(types))))
 
-## Constraints
-## ===========
+
+# Constraints
+# ===========
 class EqAxiom():
   """An equational axiom `lhs == rhs`"""
   def __init__(self,
@@ -219,108 +218,3 @@ class EqAxiom():
     self.lhs = lhs
     self.rhs = rhs
     self.name = name
-
-## Concrete Structures
-## ===================
-
-# Should a method be associated with a function var or a function type
-class Method():
-  """A concrete implementation of a function"""
-
-  def __init__(self, type:FunctionType, call:Callable):
-    self._type = type
-    self.call = call
-
-  def __call__(self, *args):
-    # TODO: TYPECHECK
-    return self.call(*args)
-
-class DataType:
-  """Concrete Data Type"""
-
-  def __init__(atype: Type, shape=(28, 28, 1), dtype=floatX()):
-    self.atype = atype
-    ...
-
-## Example
-## =======
-def stack_adt():
-    """Create an abstract stack data type"""
-    Stack = Type("Stack")
-    Item = Type("Item")
-    s = ForAllVar(Stack, "s")
-    i = ForAllVar(Item, "i")
-    push = Function((Stack, Item), (Stack, ), "push")
-    pop = Function((Stack, ), (Stack, Item), "pop")
-    EMPTY_STACK = Constant(Stack, "EMPTY_STACK")
-    pop_appl = pop(push(s, i)[0])
-    s2, i2 = pop_appl[0], pop_appl[1]
-    axiom1 = EqAxiom(s2, s, "stack_equivalence")
-    axiom2 = EqAxiom(i2, i, "item_equivalence")
-    return {'types': [Stack, Item],
-            'functions': [push, pop],
-            'constants': [EMPTY_STACK],
-            'axioms': [axiom1, axiom2]}
-
-
-def pop_once(EMPTY_STACK, push, pop, items, max_pushes=5):
-    """Example interaction distribution. Pushes n times, Pops once."""
-    num_pushes = np.random.randint(max_pushes)
-    stack = EMPTY_STACK
-    for i in range(num_pushes):
-        (stack,) = push(stack, items[i])
-
-    num_pops = np.random.randint(num_pushes)
-    for i in range(num_pops):
-        (stack, item) = pop(stack)
-    observables = [stack]
-    return observables
-
-## Concrete Data Type
-## ==================
-def stack_cdt(types, functions: Sequence[Function]):
-  """Create a concrete stack data type"""
-  Stack, Item = types
-  Stack = DataType(Stack, shape=(14, 14, 1), dtype=floatX())
-  Item = DataType(Item, shape=(28, 28, 1), dtype=floatX())
-
-  # Functions
-  torch_push = Method(push, pytorch_func=...)
-  torch_pop =  Method(pop, pytorch_func=...)
-
-  # Constants
-  # TODO: initialize empty stack
-  ConcreteEmpty = ConcreteConstant(EMPTY_STACK)
-
-
-def python_stack_cdt(push, pop):
-  """Create a concrete stack using python list"""
-  Stack = DataType(Stack, list)
-  Item = DataType(Stack, int)
-
-  def python_pop(stack):
-    stack = stack.copy()
-    return (stack.pop(),)
-
-  def python_push(stack, item):
-    stack = stack.copy()
-    stack.append(item)
-    return (stack,)
-
-  PYTHON_EMPTY_STACK = []
-  python_push = Method(push, call=python_push)
-  python_pop = Method(pop, call=python_push)
-  return [python_push, python_pop]
-
-## Training
-## ========
-def train(num_iterations=100):
-  for i in range(num_iterations):
-    ...
-
-# if __name__ == "__main__":
-    # Generate the symbolic data type
-types, functions, constants, axioms = getn(stack_adt(), "types", "functions", "constants", "axioms")
-
-pop_once(EMPTY_STACK, push, pop, items, max_pushes=5):
-# c_types, c_functions, c_constants = stack_cdt(types, functions, constants)
