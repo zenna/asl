@@ -215,9 +215,32 @@ class EqAxiom():
                lhs: Variable,
                rhs: Variable,
                name: str):
+    assert type_type_consistent(lhs.type(), rhs.type()), "Type Fail"
     self.lhs = lhs
     self.rhs = rhs
     self.name = name
+
+## Concrete Structures
+## ===================
+
+# Should a method be associated with a function var or a function type
+class Method():
+  """A concrete implementation of a function"""
+
+  def __init__(self, type:FunctionType, call:Callable):
+    self._type = type
+    self.call = call
+
+  def __call__(self, *args):
+    # TODO: TYPECHECK
+    return self.call(*args)
+
+class DataType:
+  """Concrete Data Type"""
+
+  def __init__(atype: Type, shape=(28, 28, 1), dtype=floatX()):
+    self.atype = atype
+    ...
 
 ## Example
 ## =======
@@ -240,7 +263,7 @@ def stack_adt():
             'axioms': [axiom1, axiom2]}
 
 
-def pop_once(EMPTY_STACK, items, max_pushes=5):
+def pop_once(EMPTY_STACK, push, pop, items, max_pushes=5):
     """Example interaction distribution. Pushes n times, Pops once."""
     num_pushes = np.random.randint(max_pushes)
     stack = EMPTY_STACK
@@ -250,20 +273,20 @@ def pop_once(EMPTY_STACK, items, max_pushes=5):
     num_pops = np.random.randint(num_pushes)
     for i in range(num_pops):
         (stack, item) = pop(stack)
-    return ...
+    observables = [stack]
+    return observables
 
 ## Concrete Data Type
 ## ==================
 def stack_cdt(types, functions: Sequence[Function]):
   """Create a concrete stack data type"""
   Stack, Item = types
-  ConcreteStack = ConcreteType(Stack, shape=(14, 14, 1), dtype=floatX())
-  ConcreteItem = ConcreteType(Item, shape=(28, 28, 1), dtype=floatX())
+  Stack = DataType(Stack, shape=(14, 14, 1), dtype=floatX())
+  Item = DataType(Item, shape=(28, 28, 1), dtype=floatX())
 
   # Functions
-  push, pop = functions
-  concrete_push = ConcreteFunction(push, pytorch_func=...)
-  concrete_pop = ConcreteFunction(pop, pytorch_func=...)
+  torch_push = Method(push, pytorch_func=...)
+  torch_pop =  Method(pop, pytorch_func=...)
 
   # Constants
   # TODO: initialize empty stack
@@ -271,7 +294,10 @@ def stack_cdt(types, functions: Sequence[Function]):
 
 
 def python_stack_cdt(push, pop):
-  """Create a concrete data-structure using python list"""
+  """Create a concrete stack using python list"""
+  Stack = DataType(Stack, list)
+  Item = DataType(Stack, int)
+
   def python_pop(stack):
     stack = stack.copy()
     return (stack.pop(),)
@@ -282,9 +308,9 @@ def python_stack_cdt(push, pop):
     return (stack,)
 
   PYTHON_EMPTY_STACK = []
-  python_push = ConcreteFunction(push, call=python_push)
-  python_pop = ConcreteFunction(pop, call=python_push)
-  return [puython_push, python_pop]
+  python_push = Method(push, call=python_push)
+  python_pop = Method(pop, call=python_push)
+  return [python_push, python_pop]
 
 ## Training
 ## ========
@@ -295,4 +321,6 @@ def train(num_iterations=100):
 # if __name__ == "__main__":
     # Generate the symbolic data type
 types, functions, constants, axioms = getn(stack_adt(), "types", "functions", "constants", "axioms")
+
+pop_once(EMPTY_STACK, push, pop, items, max_pushes=5):
 # c_types, c_functions, c_constants = stack_cdt(types, functions, constants)
