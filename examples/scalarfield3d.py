@@ -1,27 +1,27 @@
+"""Train a 3D scalar field"""
+import sys
 from pdt import *
 from pdt.train_tf import *
 from pdt.types import *
 from pdt.adversarial import adversarial_losses
-from wacacore.util.misc import *
-from wacacore.util.io import mk_dir
+from tensortemplates.util.io import add_additional_options
+
 from wacacore.util.generators import infinite_samples, infinite_batches
+from wacacore.util.misc import product
 from wacacore.util.tf import dims_bar_batch
+from wacacore.util.io import mk_dir, handle_args, gen_sfx_key
 from wacacore.train.callbacks import every_n
+
 import numpy as np
-from common import handle_options
-import tensorflow as tfff
+from common import default_benchmark_options
+import tensorflow as tf
 from tensorflow.contrib import rnn
-from voxel_helpers import *
+from voxel_helpers import model_net_40
 from tflearn.layers import conv_3d, fully_connected, conv, conv_2d
 from tflearn.layers.normalization import batch_normalization
 import tflearn
 from scipy import ndimage
 
-# I'm not sure how to rotate the voxels
-# if i did a translation
-# so rotation seems to be a little complicated
-# what if we did a scaling
-# i dont know how to do any of thee o
 
 def conv_2d_layer(input, n_filters, stride):
     return conv_2d(input,
@@ -379,18 +379,41 @@ def run(options):
                                     decode_args=options,
                                     batch_size=options['batch_size'])
 
-    sess = train(adt, pdt, options, extra_fetches=extra_fetches, callbacks = [every_n(save_voxels, 100)])
+    sess = train(adt, pdt, options, extra_fetches=extra_fetches,
+                 callbacks=[every_n(save_voxels, 100)])
+
+
+def default_field_options():
+    """Default options for scalar field"""
+    return {'field_shape': (eval, "(16, 16)"),
+            'name': (str, 'Scalar_Field')}
+
+
+def combine_options():
+    """Get options by combining default and command line"""
+    cust_options = {}
+    argv = sys.argv[1:]
+
+    # add default options like num_iterations
+    cust_options.update(default_benchmark_options())
+
+    # add render specific options like width/height
+    cust_options.update(default_field_options())
+
+    # Update with options passed in through command line
+    cust_options.update(add_additional_options(argv))
+
+    options = handle_args(argv, cust_options)
+    return options
+
 
 def main(argv):
     print("ARGV", argv)
-    options = handle_options('scalar_field', argv)
-    options['dirname'] = gen_sfx_key(('adt',), options)
+    options = combine_options()
+    sfx = gen_sfx_key(('name',), options)
+    options['sfx'] = sfx
     run(options)
 
-
-def scalar_field_options():
-    options = {'field_shape': (eval, (50,))}
-    return options
 
 if __name__ == "__main__":
     main(sys.argv[1:])

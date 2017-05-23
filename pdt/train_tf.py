@@ -1,13 +1,9 @@
 """Training for tensorflow"""
-from pdt.types import Loss
-from wacacore.util.io import *
-from wacacore.train.common import *
-from wacacore.util.misc import inn, getn
-from wacacore.train.callbacks import *
-import time
-import os
-import numpy as np
 import tensorflow as tf
+from pdt.types import Loss
+# from wacacore.util.io import *
+from wacacore.train.common import train_load_save, updates
+# from wacacore.train.callbacks import *
 
 
 def get_axiom_losses(axioms):
@@ -32,9 +28,6 @@ def get_fetches(adt, options):
     fetch = {}
     fetch['losses'] = losses_dict
     fetch['loss'] = sum_loss
-    if 'debug' in options and options['debug'] is True:
-        fetch['numerics'] = tf.add_check_numerics_ops()
-
     loss_updates = []
     for l in losses:
         params = []
@@ -54,48 +47,20 @@ def attach_gen(generators, forallvars):
         feed_dict = {forallvars[i].input_var: inputs[i] for i in range(len(inputs))}
         yield feed_dict
 
+
 def train(adt,
           pdt,
           options,
-          extra_fetches = None,
-          callbacks=[]):
+          extra_fetches=None,
+          callbacks=None):
     """Train the abstract data type"""
     fetch, loss_updates = get_fetches(adt, options)
     fetch['extra_fetches'] = extra_fetches
-    # Deal with generators
     sess = tf.Session()
-
-    # Saving and Loading
-    saver = tf.train.Saver()
-    options['saver'] = saver
-    if do_load(options):
-        prep_load(sess, saver, options['params_file'])
-    else:
-        init = tf.global_variables_initializer()
-        sess.run(init)
-    if do_save(options):
-        options['savedir'] = prep_save(options['dirname'], options['datadir'])
-
-    # Summaries
-    callbacks = [nan_cancel]
-    if 'save' in options:
-        summaries_dir = os.path.join(options['savedir'], "summaries")
-        summaries = variable_summaries(fetch['losses'])
-        fetch['summaries'] = summaries
-        writers = setup_file_writers(options['savedir'], sess)
-        options['writers'] = writers
-        callbacks = [save_options,
-                     save_every_n,
-                     save_everything_last,
-                     every_n(summary_writes, 25)] + callbacks
-
-    if options['train'] is True:
-        train_loop(sess,
-                   loss_updates,
-                   fetch,
-                   train_generators=pdt.train_generators,
-                   test_generators=pdt.test_generators,
-                   loss_ratios=None,
-                   callbacks=callbacks,
-                   **options)
-    return sess
+    return train_load_save(sess,
+                           loss_updates,
+                           fetch,
+                           pdt.train_generators,
+                           pdt.test_generators,
+                           callbacks,
+                           options)
