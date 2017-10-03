@@ -1,10 +1,12 @@
 from mnist import *
 from pdt.train_tf import *
 from wacacore.util.misc import *
-from wacacore.util.io import mk_dir
+from wacacore.util.io import mk_dir, handle_args, gen_sfx_key
 from wacacore.util.generators import infinite_samples, infinite_batches
 from pdt.types import *
-from common import handle_options
+from common import default_benchmark_options
+from tensortemplates.util.io import add_additional_options
+
 
 def stack_adt(train_data,
               options,
@@ -71,8 +73,10 @@ def stack_adt(train_data,
                              generators, gen_to_inputs, train_outs)
     return stack_adt, stack_pdt
 
+
 def mse(a, b):
     return np.mean(np.square(a - b))
+
 
 # Check for loss from one example of pushing and popping
 def stack_unstack(nitems, push, pop, empty, items):
@@ -89,8 +93,10 @@ def stack_unstack(nitems, push, pop, empty, items):
             losses.append(loss)
     return np.sum(losses), losses
 
+
 def mnistshow(x):
     plt.imshow(x.reshape(28, 28))
+
 
 def internal_plot(images, push, pop, empty):
     stack = empty
@@ -100,10 +106,35 @@ def internal_plot(images, push, pop, empty):
         (stack,) = push(stack, images[i])
     mnistshow(stack)
 
+
+def default_stack_options():
+    """Default options for scalar field"""
+    return {'field_shape': (eval, "(16, 16)"),
+            'name': (str, 'Stack'),
+            'nitems': (int, 3)}
+
+
+def combine_options():
+    """Get options by combining default and command line"""
+    cust_options = {}
+    argv = sys.argv[1:]
+
+    # add default options like num_iterations
+    cust_options.update(default_benchmark_options())
+
+    # add render specific options like width/height
+    cust_options.update(default_stack_options())
+
+    # Update with options passed in through command line
+    cust_options.update(add_additional_options(argv))
+
+    options = handle_args(argv, cust_options)
+    return options
+
+
 def main(argv):
     global adt, pdt, sess, X_train, sfx
-    options = handle_options('stack', argv)
-
+    options = combine_options()
     mnist_data = load_dataset()
     X_train = mnist_data[0].reshape(-1, 28, 28, 1)
     empty_stack_args = {'initializer': tf.random_uniform_initializer}
@@ -115,9 +146,9 @@ def main(argv):
                          empty_stack_args=empty_stack_args,
                          batch_size=options['batch_size'])
 
-
     options['dirname'] = gen_sfx_key(('adt', 'nitems'), options)
     sess = train(adt, pdt, options)
+
 
 if __name__ == "__main__":
     main(sys.argv[1:])
