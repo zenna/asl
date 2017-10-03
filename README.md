@@ -1,6 +1,9 @@
-# Probabilistic Data Types
+# Algebraic Structure Learning
 
-pdt is a framework for synthesizing approximate data structures from specification.
+
+[![Build Status](https://travis-ci.org/zenna/Arrows.jl.svg?branch=master)](https://travis-ci.org/zenna/Arrows.jl)
+
+asl is a framework for synthesizing approximate data structures
 
 ### Usage
 
