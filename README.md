@@ -1,7 +1,7 @@
 # Algebraic Structure Learning
 
 
-[![Build Status](https://travis-ci.org/zenna/Arrows.jl.svg?branch=master)](https://travis-ci.org/zenna/Arrows.jl)
+[![Build Status](https://travis-ci.org/zenna/asl.svg?branch=master)](https://travis-ci.org/zenna/asl)
 
 asl is a framework for synthesizing approximate data structures
 
