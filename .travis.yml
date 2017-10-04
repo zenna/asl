@@ -43,6 +43,6 @@ install:
   - pip install tflearn
   - python setup.py install
 script:
-  - PYTHONPATH=$PWD:$PYTHONPATH pytest --pep8;
+  - PYTHONPATH=$PWD:$PYTHONPATH pytest --cov=asl;
 after_success:
   - coveralls
