@@ -1,12 +1,12 @@
 from setuptools import setup
 
 setup(
-    name='asl',
+    name='pdt',
     version='0.0.1',
     description='A library for learning algebraic structures',
     author='Zenna Tavares',
     author_email="zenna@mit.edu",
-    packages=['asl'],
+    packages=['pdt'],
     install_requires=['tensorflow>=1.3.0rc0',
                       'numpy>=1.7'],
     url='https://github.com/zenna/asl',
