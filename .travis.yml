@@ -10,6 +10,12 @@ matrix:
           env: TEST_MODE=MYPY
 notifications:
     email: false
+before_install:
+  # To avoid matplotlib error about X11:
+  # 'no display name and no $DISPLAY environment variable'
+  # source: http://docs.travis-ci.com/user/gui-and-headless-browsers/#Starting-a-Web-Server
+  - "export DISPLAY=:99.0"
+  - "sh -e /etc/init.d/xvfb start"
 install:
   # source: http://conda.pydata.org/docs/travis.html
   # We do this conditionally because it saves us some downloading if the

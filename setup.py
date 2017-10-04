@@ -1,16 +1,15 @@
 from setuptools import setup
 
 setup(
-    name='pdt',
+    name='asl',
     version='0.0.1',
-    description='A library for learning probabilistic data types',
+    description='A library for learning algebraic structures',
     author='Zenna Tavares',
     author_email="zenna@mit.edu",
-    packages=['pdt'],
-    install_requires=['tensorflow>=0.11.0rc0',
-                      'numpy>=1.7',
-                      'overloading>=0.5.0'],
-    url='https://github.com/wacabanga/reverseflow',
+    packages=['asl'],
+    install_requires=['tensorflow>=1.3.0rc0',
+                      'numpy>=1.7'],
+    url='https://github.com/zenna/asl',
     license='Apache License 2.0',
     classifiers=['License :: OSI Approved :: Apache Software License',
                  'Programming Language :: Python :: 2.7',
