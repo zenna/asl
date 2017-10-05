@@ -16,15 +16,18 @@ class PushNet(nn.Module):
         super(PushNet, self).__init__()
         in_channels = stack_channels + img_channels
         out_channels = stack_channels
+        nf = 16
         self.name = name
-        self.conv1 = nn.Conv2d(in_channels, 1, 1)
-        self.conv2 = nn.Conv2d(1, stack_channels, 1)
+        self.conv1 = nn.Conv2d(in_channels, nf, 3, padding=1)
+        self.convmid = nn.Conv2d(nf, nf, 3, padding=1)
+        self.conv2 = nn.Conv2d(nf, stack_channels, 3, padding=1)
 
     def forward(self, *x):
         if len(x) > 1:
             x = torch.cat(x, dim=1)
-        x = F.relu(self.conv1(x))
-        x = F.relu(self.conv2(x))
+        # import pdb; pdb.set_trace()
+        x = F.elu(self.conv1(x))
+        x = F.elu(self.conv2(x))
         return (x,)
 
 
@@ -35,27 +38,28 @@ class PopNet(nn.Module):
         self.img_channels = img_channels
         out_channels = stack_channels + img_channels
         self.name = name
-        self.conv1 = nn.Conv2d(stack_channels, 1, 1)
-        self.conv2 = nn.Conv2d(1, out_channels, 1)
+        nf = 16
+        self.conv1 = nn.Conv2d(stack_channels, nf, 3, padding=1)
+        self.convmid = nn.Conv2d(nf, nf, 3, padding=1)
+        self.conv2 = nn.Conv2d(nf, out_channels, 3, padding=1)
 
     def forward(self, *x):
         channel_dim = 1
         x, = x
-        x = F.relu(self.conv1(x))
-        x = F.relu(self.conv2(x))
+        x = F.elu(self.conv1(x))
+        x = F.elu(self.conv2(x))
         (img, stack) = x.split(self.img_channels, channel_dim)
         return (stack, img)
 
 
-def net_stack():
+def net_stack(img_channels):
     """Construct a stack abstract data type"""
-    push = PushNet("push")
-    pop = PopNet("pop")
-    empty = Variable(torch.rand(4, 1, 32, 32), requires_grad=True)
+    push = PushNet("push", img_channels=img_channels)
+    pop = PopNet("pop", img_channels=img_channels)
+    empty = Variable(torch.rand(1, 1, 28, 28), requires_grad=True)
     constants = {'empty': empty}
     interface = {'push': push, 'pop': pop}
     # FIXME!
-    # empty = empty.expand(4, 1, 32, 32)
     return {'constants': constants, 'interface': interface}
 
 
@@ -77,15 +81,18 @@ def py_stack():
             'interface': {'push': list_push, 'pop': list_pop}}
 
 
-def stack_trace(model, items):
+def stack_trace(model, items, expand_empty, batch_size):
     """Example stack trace"""
     items = [Variable(data[0]) for data in list(itertools.islice(items, 3))]
     print(len(items))
     push = model['interface']['push']
     pop = model['interface']['pop']
     empty = model['constants']['empty']
+    if expand_empty:
+        empty = empty.expand(batch_size, 1, 28, 28)
     observes = []
     stack = empty
+    # print("mean", items[0].mean())
     (stack,) = push(stack, items[0])
     (stack,) = push(stack, items[1])
     (stack,) = push(stack, items[2])
@@ -105,10 +112,11 @@ def model_params(model):
     return iparams + cparams
 
 
-def train(trainloader, reference, model):
+def train(trainloader, reference, model, batch_size):
     criterion = nn.CrossEntropyLoss()
     criterion = nn.MSELoss()
-    optimizer = optim.SGD(model_params(model), lr=0.001, momentum=0.9)
+    import pdb; pdb.set_trace()
+    optimizer = optim.Adam(model_params(model), lr=0.001)
 
     for epoch in range(2):  # loop over the dataset multiple times
         running_loss = 0.0
@@ -117,8 +125,8 @@ def train(trainloader, reference, model):
         while True:
             try:
                 # get the inputs
-                observes = stack_trace(model, dataiter)
-                refobserves = stack_trace(reference, refiter)
+                observes = stack_trace(model, dataiter, True, batch_size)
+                refobserves = stack_trace(reference, refiter, False, batch_size)
 
                 total_loss = 0.0
                 for i in range(len(observes)):
@@ -147,15 +155,16 @@ def train(trainloader, reference, model):
 
 
 def main(argv):
+    batch_size = 32
     transform = transforms.Compose(
     [transforms.ToTensor(),
      transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
-    trainset = torchvision.datasets.CIFAR10(root='./data', train=True,
-                                        download=True, transform=transform)
-    trainloader = torch.utils.data.DataLoader(trainset, batch_size=4,
-                                          shuffle=True, num_workers=2)
-
-    train(trainloader, py_stack(), net_stack())
+    trainset = torchvision.datasets.MNIST(root='./data', train=True,
+                                          download=True, transform=transform)
+    trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
+                                          shuffle=False, num_workers=1)
+    img_channels = 1
+    train(trainloader, py_stack(), net_stack(img_channels), batch_size)
 
 
 if __name__ == "__main__":
