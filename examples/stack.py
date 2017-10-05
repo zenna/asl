@@ -79,7 +79,8 @@ def py_stack():
 
 def stack_trace(model, items):
     """Example stack trace"""
-    items = [data[0] for data in list(itertools.islice(items, 3))]
+    items = [Variable(data[0]) for data in list(itertools.islice(items, 3))]
+    print(len(items))
     push = model['interface']['push']
     pop = model['interface']['pop']
     empty = model['constants']['empty']
@@ -111,30 +112,36 @@ def train(trainloader, reference, model):
 
     for epoch in range(2):  # loop over the dataset multiple times
         running_loss = 0.0
-        for i, data in enumerate(trainloader, 0):
-            # get the inputs
-            observes = stack_trace(model, trainloader)
-            refobserves = stack_trace(reference, trainloader)
+        dataiter = iter(trainloader)
+        refiter = iter(trainloader)
+        while True:
+            try:
+                # get the inputs
+                observes = stack_trace(model, dataiter)
+                refobserves = stack_trace(reference, refiter)
 
-            total_loss = 0.0
-            for i in range(len(observes)):
-                loss = criterion(observes[i], refobserves[i])
-                total_loss += loss
-            # zero the parameter gradients
-            optimizer.zero_grad()
+                total_loss = 0.0
+                for i in range(len(observes)):
+                    loss = criterion(observes[i], refobserves[i])
+                    total_loss += loss
+                # zero the parameter gradients
+                optimizer.zero_grad()
 
-            # forward + backward + optimize
-            outputs = net(inputs)
-            loss = total_loss
-            loss.backward()
-            optimizer.step()
+                # forward + backward + optimize
+                loss = total_loss
+                loss.backward()
+                optimizer.step()
+                print(total_loss)
 
-            # print statistics
-            running_loss += loss.data[0]
-            if i % 2000 == 1999:    # print every 2000 mini-batches
-                print('[%d, %5d] loss: %.3f' %
-                      (epoch + 1, i + 1, running_loss / 2000))
-                running_loss = 0.0
+                # print statistics
+                running_loss += loss.data[0]
+                if i % 2000 == 1999:    # print every 2000 mini-batches
+                    print('[%d, %5d] loss: %.3f' %
+                          (epoch + 1, i + 1, running_loss / 2000))
+                    running_loss = 0.0
+            except StopIteration:
+                print("End of epoch")
+                continue
 
     print('Finished Training')
 
@@ -147,6 +154,7 @@ def main(argv):
                                         download=True, transform=transform)
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=4,
                                           shuffle=True, num_workers=2)
+
     train(trainloader, py_stack(), net_stack())
 
 
