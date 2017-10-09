@@ -13,7 +13,6 @@ from train import train
 from nets import VarConvNet
 
 
-
 class Enqueue(Function):
   "Push Function for Stack"
 
@@ -37,28 +36,25 @@ class Dequeue(Function):
 
   def type(self):
     "Function Type"
-    return FunctionType([self.queue_type], [self.item_type])
+    return FunctionType([self.queue_type], [self.queue_type, self.item_type])
 
 
 class EnqueueNet(Enqueue, nn.Module):
   def __init__(self, queue_type, item_type, queue_channels=1, img_channels=1):
     super(EnqueueNet, self).__init__(queue_type, item_type)
-    in_shapes = [type.shape for type in self.type().in_types]
-    out_shapes = [type.shape for type in self.type().out_types]
-    import pdb; pdb.set_trace()
-    self.module = VarConvNet()
+    self.module = VarConvNet(self.in_sizes(), self.out_sizes())
 
   def forward(self, x, y):
-    return self.module(x, y)
+    return self.module.forward(x, y)
 
 
 class DequeueNet(Dequeue, nn.Module):
   def __init__(self, queue_type, item_type, queue_channels=1, img_channels=1):
     super(DequeueNet, self).__init__(queue_type, item_type)
-    self.module = Net()
+    self.module = VarConvNet(self.in_sizes(), self.out_sizes())
 
-  def forward(self, x, y):
-    return self.module(x, y)
+  def forward(self, x):
+    return self.module(x)
 
 
 def list_enqueue(queue, element):
@@ -106,10 +102,10 @@ def trainloader(batch_size):
 
 
 def main():
-  matrix_queue = Type("Stack", (28, 28), dtype="float32")
-  mnist_type = Type("mnist_type", (28, 28), dtype="float32")
-  enqueue_img = PushNet(matrix_queue, mnist_type)
-  dequeue_img = PopNet(matrix_queue, mnist_type)
+  matrix_queue = Type("Stack", (1, 28, 28), dtype="float32")
+  mnist_type = Type("mnist_type", (1, 28, 28), dtype="float32")
+  enqueue_img = EnqueueNet(matrix_queue, mnist_type)
+  dequeue_img = DequeueNet(matrix_queue, mnist_type)
   enqueue_img.cuda()
   dequeue_img.cuda()
   empty_queue = Constant(matrix_queue, Variable(torch.rand(1, 1, 28, 28).cuda(), requires_grad=True))

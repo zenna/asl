@@ -26,6 +26,13 @@ class Function():
   def __init__(self):
     super(Function, self).__init__()
 
+  def in_sizes(self):
+    return [type.size for type in self.type().in_types]
+
+  def out_sizes(self):
+    return [type.size for type in self.type().out_types]
+
+
 class Constant:
   "Typed Constant"
 
