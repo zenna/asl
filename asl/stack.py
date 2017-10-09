@@ -1,8 +1,6 @@
 "Stack Data Structure trained from a reference implementation"
 import itertools
 from type import Type, Function, FunctionType, Constant
-import torchvision
-import torchvision.transforms as transforms
 
 import torch
 from torch.autograd import Variable
@@ -10,6 +8,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from train import train
+
+from util import draw, trainloader
 
 class Push(Function):
   "Push Function for Stack"
@@ -109,14 +109,9 @@ def stack_trace(items, push, pop, empty):
     return observes
 
 
-def trainloader(batch_size):
-  transform = transforms.Compose(
-  [transforms.ToTensor(),
-   transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
-  trainset = torchvision.datasets.MNIST(root='./data', train=True,
-                                        download=True, transform=transform)
-  return torch.utils.data.DataLoader(trainset, batch_size=batch_size,
-                                        shuffle=False, num_workers=1)
+def plot_empty(i, data):
+  if i % 50 == 0:
+    draw(data["empty"].value)
 
 
 def main():
@@ -131,7 +126,8 @@ def main():
   neural_ref = {"push": push_img, "pop": pop_img, "empty": empty_stack}
 
   batch_size = 32
-  train(stack_trace, trainloader(batch_size), stack_ref, neural_ref, batch_size)
+  train(stack_trace, trainloader(batch_size), stack_ref, neural_ref, batch_size,
+        callbacks=[plot_empty])
 
 
 if __name__ == "__main__":

@@ -2,8 +2,6 @@
 import itertools
 from collections import deque
 from type import Type, Function, FunctionType, Constant
-import torchvision
-import torchvision.transforms as transforms
 
 import torch
 from torch.autograd import Variable
@@ -12,8 +10,7 @@ import torch.nn as nn
 from train import train
 from nets import VarConvNet
 
-import matplotlib.pyplot as plt
-plt.ion()
+from util import draw, trainloader
 
 
 class Enqueue(Function):
@@ -43,7 +40,7 @@ class Dequeue(Function):
 
 
 class EnqueueNet(Enqueue, nn.Module):
-  def __init__(self, queue_type, item_type, queue_channels=1, img_channels=1):
+  def __init__(self, queue_type, item_type):
     super(EnqueueNet, self).__init__(queue_type, item_type)
     self.module = VarConvNet(self.in_sizes(), self.out_sizes())
 
@@ -52,7 +49,7 @@ class EnqueueNet(Enqueue, nn.Module):
 
 
 class DequeueNet(Dequeue, nn.Module):
-  def __init__(self, queue_type, item_type, queue_channels=1, img_channels=1):
+  def __init__(self, queue_type, item_type):
     super(DequeueNet, self).__init__(queue_type, item_type)
     self.module = VarConvNet(self.in_sizes(), self.out_sizes())
 
@@ -77,43 +74,43 @@ def empty():
 
 
 def queue_trace(items, enqueue, dequeue, empty):
-    """Example queue trace"""
-    items = [Variable(data[0].cuda()) for data in list(itertools.islice(items, 3))]
-    # if expand_empty:
-    empty = empty()
-    observes = []
-    queue = empty
-    # print("mean", items[0].mean())
-    (queue,) = enqueue(queue, items[0])
-    (queue,) = enqueue(queue, items[1])
-    # (queue,) = enqueue(queue, items[2])
-    (dequeue_queue, dequeue_item) = dequeue(queue)
-    observes.append(dequeue_item)
-    (dequeue_queue, dequeue_item) = dequeue(dequeue_queue)
-    observes.append(dequeue_item)
-    return observes
-
-
-def trainloader(batch_size):
-  transform = transforms.Compose(
-  [transforms.ToTensor(),
-   transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
-  trainset = torchvision.datasets.MNIST(root='./data', train=True,
-                                        download=True, transform=transform)
-  return torch.utils.data.DataLoader(trainset, batch_size=batch_size,
-                                        shuffle=False, num_workers=1)
-
-
-def draw(t):
-  "Draw a tensor"
-  tnp = t.data.cpu().numpy().squeeze()
-  plt.imshow(tnp)
-  plt.pause(0.01)
+  """Example queue trace"""
+  items = [Variable(data[0].cuda()) for data in list(itertools.islice(items, 3))]
+  # if expand_empty:
+  empty = empty()
+  observes = []
+  queue = empty
+  # print("mean", items[0].mean())
+  (queue,) = enqueue(queue, items[0])
+  (queue,) = enqueue(queue, items[1])
+  # (queue,) = enqueue(queue, items[2])
+  (dequeue_queue, dequeue_item) = dequeue(queue)
+  observes.append(dequeue_item)
+  (dequeue_queue, dequeue_item) = dequeue(dequeue_queue)
+  observes.append(dequeue_item)
+  return observes
 
 
 def plot_empty(i, data):
   if i % 50 == 0:
     draw(data["empty"].value)
+
+def queue_trace(items, enqueue, dequeue, empty):
+  """Example queue trace"""
+  items = [Variable(data[0].cuda()) for data in list(itertools.islice(items, 3))]
+  # if expand_empty:
+  empty = empty()
+  observes = []
+  queue = empty
+  # print("mean", items[0].mean())
+  (queue,) = enqueue(queue, items[0])
+  (queue,) = enqueue(queue, items[1])
+  # (queue,) = enqueue(queue, items[2])
+  (dequeue_queue, dequeue_item) = dequeue(queue)
+  observes.append(dequeue_item)
+  (dequeue_queue, dequeue_item) = dequeue(dequeue_queue)
+  observes.append(dequeue_item)
+  return observes
 
 
 def main():
