@@ -56,8 +56,6 @@ def train(trace, trainloader, reference, model, batch_size,
         running_loss += loss.data[0]
         i += 1
       except (StopIteration, IndexError):
-        import pdb; pdb.set_trace()
-        print("End of epoch")
         break
 
   print('Finished Training')

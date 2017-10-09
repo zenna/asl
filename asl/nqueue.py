@@ -12,6 +12,9 @@ import torch.nn as nn
 from train import train
 from nets import VarConvNet
 
+import matplotlib.pyplot as plt
+plt.ion()
+
 
 class Enqueue(Function):
   "Push Function for Queue"
@@ -101,11 +104,17 @@ def trainloader(batch_size):
                                         shuffle=False, num_workers=1)
 
 
-import matplotlib.pyplot as plt
+def draw(t):
+  "Draw a tensor"
+  tnp = t.data.cpu().numpy().squeeze()
+  plt.imshow(tnp)
+  plt.pause(0.01)
+
+
 def plot_empty(i, data):
   if i % 50 == 0:
-    plt.imshow(data["empty"].numpy())
-    plt.show()
+    draw(data["empty"].value)
+
 
 def main():
   matrix_queue = Type("Queue", (1, 28, 28), dtype="float32")
@@ -120,7 +129,7 @@ def main():
 
   batch_size = 32
   train(queue_trace, trainloader(batch_size), queue_ref, neural_ref, batch_size,
-        [plot_empty])
+        callbacks=[plot_empty])
 
 
 if __name__ == "__main__":
