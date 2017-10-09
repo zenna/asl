@@ -27,7 +27,8 @@ def model_params(model):
   return iparams
 
 
-def train(trace, trainloader, reference, model, batch_size, nepochs=3):
+def train(trace, trainloader, reference, model, batch_size,
+          nepochs=3, callbacks=[]):
   "Train model using reference wrt to trace"
   criterion = nn.MSELoss()
   optimizer = optim.Adam(model_params(model), lr=0.01)
@@ -50,6 +51,8 @@ def train(trace, trainloader, reference, model, batch_size, nepochs=3):
         optimizer.step()
 
         print_stats(i, epoch, running_loss, loss) # print statistics
+        for cb in callbacks:
+          cb(i, model)
         running_loss += loss.data[0]
         i += 1
       except (StopIteration, IndexError):

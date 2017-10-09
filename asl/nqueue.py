@@ -1,4 +1,4 @@
-"Stack Data Structure trained from a reference implementation"
+"Queue Data Structure trained from a reference implementation"
 import itertools
 from collections import deque
 from type import Type, Function, FunctionType, Constant
@@ -14,7 +14,7 @@ from nets import VarConvNet
 
 
 class Enqueue(Function):
-  "Push Function for Stack"
+  "Push Function for Queue"
 
   def __init__(self, queue_type, item_type):
     super(Enqueue, self).__init__()
@@ -27,7 +27,7 @@ class Enqueue(Function):
 
 
 class Dequeue(Function):
-  "Pop Function for Stack"
+  "Pop Function for Queue"
 
   def __init__(self, queue_type, item_type):
     super(Dequeue, self).__init__()
@@ -101,8 +101,14 @@ def trainloader(batch_size):
                                         shuffle=False, num_workers=1)
 
 
+import matplotlib.pyplot as plt
+def plot_empty(i, data):
+  if i % 50 == 0:
+    plt.imshow(data["empty"].numpy())
+    plt.show()
+
 def main():
-  matrix_queue = Type("Stack", (1, 28, 28), dtype="float32")
+  matrix_queue = Type("Queue", (1, 28, 28), dtype="float32")
   mnist_type = Type("mnist_type", (1, 28, 28), dtype="float32")
   enqueue_img = EnqueueNet(matrix_queue, mnist_type)
   dequeue_img = DequeueNet(matrix_queue, mnist_type)
@@ -113,7 +119,8 @@ def main():
   neural_ref = {"enqueue": enqueue_img, "dequeue": dequeue_img, "empty": empty_queue}
 
   batch_size = 32
-  train(queue_trace, trainloader(batch_size), queue_ref, neural_ref, batch_size)
+  train(queue_trace, trainloader(batch_size), queue_ref, neural_ref, batch_size,
+        [plot_empty])
 
 
 if __name__ == "__main__":
