@@ -11,6 +11,7 @@ from train import train
 
 from util import draw, trainloader
 
+
 class Push(Function):
   "Push Function for Stack"
 

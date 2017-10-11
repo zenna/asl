@@ -1,5 +1,7 @@
 import torch.nn as nn
 import torch.optim as optim
+from collections import namedtuple
+from tensorboardX import SummaryWriter
 
 def observe_loss(criterion, obs, refobs):
   "MSE between observations from reference and training stack"
@@ -18,7 +20,6 @@ def print_stats(i, epoch, running_loss, total_loss):
           (epoch + 1, i + 1, running_loss / 2000))
     running_loss = 0.0
 
-
 def model_params(model):
   iparams = []
   for (name, net) in model.items():
@@ -28,16 +29,17 @@ def model_params(model):
 
 
 def train(trace, trainloader, reference, model, batch_size,
-          nepochs=3, callbacks=[]):
+          nepochs=10, callbacks=[]):
   "Train model using reference wrt to trace"
   criterion = nn.MSELoss()
-  optimizer = optim.Adam(model_params(model), lr=0.01)
+  optimizer = optim.Adam(model_params(model), lr=0.0001)
+  writer = SummaryWriter()
 
+  i = 0
   for epoch in range(nepochs):
     running_loss = 0.0
     dataiter = iter(trainloader)
     refiter = iter(trainloader)
-    i = 0
     while True:
       try:
         # get the inputs
@@ -50,12 +52,13 @@ def train(trace, trainloader, reference, model, batch_size,
         loss.backward()
         optimizer.step()
 
-        print_stats(i, epoch, running_loss, loss) # print statistics
-        for cb in callbacks:
-          cb(i, model)
+        print_stats(i, epoch, running_loss, loss)
+        for callback in callbacks:
+          callback(i=i, model=model, reference=reference, writer=writer,
+                   loss=loss)
         running_loss += loss.data[0]
         i += 1
       except (StopIteration, IndexError):
         break
-
+  writer.close()
   print('Finished Training')
