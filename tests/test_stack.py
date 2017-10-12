@@ -1,10 +1,10 @@
 from asl.type import Type, Function
 from asl.callbacks import tb_loss, every_n
 from asl.util import draw, trainloader, as_img, iterget
-from asl.train import trainloss, log, log_append
+from asl.log import log_append
+from asl.train import train
 from asl.structs.nstack import neural_stack, ref_stack
 
-import torch
 from torch.autograd import Variable
 from torch import optim, nn
 
@@ -39,6 +39,7 @@ def plot_empty(i, log, writer, **kwargs):
   "Show the empty set in tensorboardX"
   img = log['empty'][0][0]
   writer.add_image('EmptySet', img, i)
+
 
 def observe_loss(criterion, obs, refobs, state=None):
   "MSE between observations from reference and training stack"
@@ -80,7 +81,7 @@ def test_stack():
     refobserves = stack_trace(ref_items, **refstack)
     return observe_loss(criterion, observes, refobserves)
 
-  trainloss(loss_gen, optimizer,)
+  train(loss_gen, optimizer,)
 
 if __name__ == "__main__":
   test_stack()
