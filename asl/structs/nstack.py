@@ -1,7 +1,7 @@
 "Stack Data Structure trained from a reference implementation"
 from asl.type import Function
 from asl.modules import VarConvNet, ConstantNet, ModuleDict
-from asl.util import cuda
+from asl.util.misc import cuda
 
 from torch import nn
 
@@ -12,6 +12,7 @@ class Push(Function):
   def __init__(self, stack_type, item_type):
     super(Push, self).__init__([stack_type, item_type], [stack_type])
 
+
 class Pop(Function):
   "Pop Function for Stack"
 
@@ -20,16 +21,19 @@ class Pop(Function):
 
 
 class PushNet(Push, nn.Module):
-  def __init__(self, stack_type, item_type, stack_channels=1, img_channels=1):
+  def __init__(self, stack_type, item_type):
     super(PushNet, self).__init__(stack_type, item_type)
     self.module = VarConvNet(self.in_sizes(), self.out_sizes())
+    self.add_module("Push", self.module)
+    # FIXME: This shouldn't be fixed here
+    # FIXME is this module being registered?
 
   def forward(self, x, y):
     return self.module.forward(x, y)
 
 
 class PopNet(Pop, nn.Module):
-  def __init__(self, stack_type, item_type, stack_channels=1, img_channels=1):
+  def __init__(self, stack_type, item_type):
     super(PopNet, self).__init__(stack_type, item_type)
     self.module = VarConvNet(self.in_sizes(), self.out_sizes())
 

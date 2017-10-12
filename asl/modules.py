@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
-from asl.util import is_tensor_var
+from asl.util.misc import is_tensor_var
 from asl.type import Constant
 
 

@@ -1,6 +1,8 @@
+import sys
 from asl.type import Type, Function
 from asl.callbacks import tb_loss, every_n
-from asl.util import draw, trainloader, as_img, iterget
+from asl.util.misc import draw, trainloader, as_img, iterget
+from asl.util.io import handle_args
 from asl.log import log_append
 from asl.train import train
 from asl.structs.nstack import neural_stack, ref_stack
@@ -51,8 +53,9 @@ def observe_loss(criterion, obs, refobs, state=None):
 
 
 def test_stack():
-  batch_size = 128
-  tl = trainloader(batch_size)
+  options = handle_args()
+  print("Using CUDA", options.cuda)
+  tl = trainloader(options.batch_size)
   items_iter = iter(tl)
   ref_items_iter = iter(tl)
   matrix_stack = Type("Stack", (1, 28, 28), dtype="float32")
@@ -61,7 +64,7 @@ def test_stack():
   refstack = ref_stack(mnist_type, matrix_stack)
 
   criterion = nn.MSELoss()
-  optimizer = optim.Adam(nstack.parameters(), lr=0.0001)
+  optimizer = optim.Adam(nstack.parameters(), lr=options.lr)
 
   def loss_gen():
     nonlocal items_iter, ref_items_iter

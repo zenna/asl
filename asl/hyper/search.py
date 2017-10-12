@@ -1,3 +1,4 @@
+"Funcs to search over hyperparameters"
 import subprocess
 import os
 from wacacore.train.hyper import rand_product
@@ -29,6 +30,7 @@ def run_sbatch(options, file_path, bash_run_path=None):
   print(run_str)
   subprocess.call(run_str)
 
+
 def rand_sbatch_hyper_search(options, file_path, var_options_keys, nsamples,
                              prefix, nrepeats):
   """Randomized hyper parameter search locally without slurm"""
@@ -38,14 +40,22 @@ def rand_sbatch_hyper_search(options, file_path, var_options_keys, nsamples,
 # Local #
 
 
-def run_local_batch(options, file_path, bash_run_path=None):
+def run_local_batch(file_path, options, blocking=True):
   """Execute process with options"""
   run_str = ["python", file_path] + make_batch_string(options)
   print("Subprocess call:", run_str)
-  subprocess.Popen(run_str)
+  if blocking:
+    subprocess.call(run_str)
+  else:
+    subprocess.Popen(run_str)
 
-def rand_local_hyper_search(options, file_path, var_options_keys, nsamples,
-                            prefix, nrepeats):
+def rand_local_hyper_search(file_path,
+                            options,
+                            var_options_keys,
+                            nsamples,
+                            prefix,
+                            nrepeats,
+                            blocking=True):
   """Randomized hyper parameter search on local machine"""
-  rand_product(lambda options: run_local_batch(options, file_path),
+  rand_product(lambda options: run_local_batch(file_path, options),
                options, var_options_keys, nsamples, prefix, nrepeats)
