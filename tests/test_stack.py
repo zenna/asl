@@ -52,8 +52,8 @@ def observe_loss(criterion, obs, refobs, state=None):
 def test_stack():
   batch_size = 128
   tl = trainloader(batch_size)
-  dataiter = iter(tl)
-  refiter = iter(tl)
+  items_iter = iter(tl)
+  ref_items_iter = iter(tl)
   matrix_stack = Type("Stack", (1, 28, 28), dtype="float32")
   mnist_type = Type("mnist_type", (1, 28, 28), dtype="float32")
   nstack = neural_stack(mnist_type, matrix_stack)
@@ -63,9 +63,11 @@ def test_stack():
   optimizer = optim.Adam(nstack.parameters(), lr=0.0001)
 
   def loss_gen():
+    nonlocal items_iter, ref_items_iter
+
     try:
-      items = iterget(dataiter, 3)
-      ref_items = iterget(refiter, 3)
+      items = iterget(items_iter, 3)
+      ref_items = iterget(ref_items_iter, 3)
     except StopIteration:
       print("End of Epoch")
       items_iter = iter(tl)

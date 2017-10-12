@@ -51,12 +51,11 @@ def list_pop(stack):
 def neural_stack(element_type, stack_type):
   push_img = PushNet(stack_type, element_type)
   pop_img = PopNet(stack_type, element_type)
-  push_img.cuda()
-  pop_img.cuda()
   empty_stack = ConstantNet(stack_type)
   neural_ref = ModuleDict({"push": push_img,
                            "pop": pop_img,
                            "empty": empty_stack})
+  neural_ref.cuda()
   return neural_ref
 
 
