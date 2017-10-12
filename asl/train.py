@@ -14,7 +14,7 @@ def max_iters(i, maxiters, **kwargs):
 def train(loss_gen,
           optimizer,
           callbacks=None,
-          cont=partial(max_iters, maxiters=10),
+          cont=partial(max_iters, maxiters=100),
           resetlog=True):
   """
   Optimization

@@ -1,7 +1,7 @@
 import sys
 from asl.type import Type, Function
 from asl.callbacks import tb_loss, every_n
-from asl.util.misc import draw, trainloader, as_img, iterget
+from asl.util.misc import draw, trainloader, as_img, iterget, train_data
 from asl.util.io import handle_args
 from asl.log import log_append
 from asl.train import train
@@ -61,7 +61,7 @@ def test_stack():
   matrix_stack = Type("Stack", (1, 28, 28), dtype="float32")
   mnist_type = Type("mnist_type", (1, 28, 28), dtype="float32")
   nstack = neural_stack(mnist_type, matrix_stack)
-  refstack = ref_stack(mnist_type, matrix_stack)
+  refstack = ref_stack()
 
   criterion = nn.MSELoss()
   optimizer = optim.Adam(nstack.parameters(), lr=options.lr)
@@ -70,14 +70,14 @@ def test_stack():
     nonlocal items_iter, ref_items_iter
 
     try:
-      items = iterget(items_iter, 3)
-      ref_items = iterget(ref_items_iter, 3)
+      items = iterget(items_iter, 3, transform=train_data)
+      ref_items = iterget(ref_items_iter, 3, transform=train_data)
     except StopIteration:
       print("End of Epoch")
       items_iter = iter(tl)
       ref_items_iter = iter(tl)
-      items = iterget(items_iter, 3)
-      ref_items = iterget(ref_items_iter, 3)
+      items = iterget(items_iter, 3, transform=train_data)
+      ref_items = iterget(ref_items_iter, 3, transform=train_data)
 
     observes = stack_trace(items, **nstack)
     refobserves = stack_trace(ref_items, **refstack)

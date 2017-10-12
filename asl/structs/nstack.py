@@ -1,6 +1,8 @@
 "Stack Data Structure trained from a reference implementation"
 from asl.type import Function
-from asl.modules import VarConvNet, ConstantNet, ModuleDict
+from asl.modules.modules import ConstantNet, ModuleDict
+from asl.modules.templates import VarConvNet
+
 from asl.util.misc import cuda
 
 from torch import nn
@@ -21,21 +23,27 @@ class Pop(Function):
 
 
 class PushNet(Push, nn.Module):
-  def __init__(self, stack_type, item_type):
+  def __init__(self, stack_type, item_type, template=VarConvNet, module=None):
     super(PushNet, self).__init__(stack_type, item_type)
-    self.module = VarConvNet(self.in_sizes(), self.out_sizes())
+    if module is None:
+      self.module = template(self.in_sizes(), self.out_sizes())
+    else:
+      self.module = module
     self.add_module("Push", self.module)
-    # FIXME: This shouldn't be fixed here
-    # FIXME is this module being registered?
 
   def forward(self, x, y):
     return self.module.forward(x, y)
 
 
 class PopNet(Pop, nn.Module):
-  def __init__(self, stack_type, item_type):
+  def __init__(self, stack_type, item_type, template=VarConvNet, module=None):
     super(PopNet, self).__init__(stack_type, item_type)
-    self.module = VarConvNet(self.in_sizes(), self.out_sizes())
+    if module is None:
+      self.module = template(self.in_sizes(), self.out_sizes())
+    else:
+      self.module = module
+    self.add_module("Push", self.module)
+
 
   def forward(self, x):
     return self.module.forward(x)
@@ -64,5 +72,5 @@ def neural_stack(element_type, stack_type):
   return neural_ref
 
 
-def ref_stack(element_type, stack_type):
+def ref_stack():
   return {"push": list_push, "pop": list_pop, "empty": []}

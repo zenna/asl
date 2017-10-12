@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 
 from asl.type import Function
-from asl.modules import expand_consts
+from asl.modules.modules import expand_consts
 
 
 def soft_ch(choices, which):

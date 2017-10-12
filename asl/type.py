@@ -6,8 +6,8 @@ class Type:
     self.dtype = dtype
     self.observable = observable
 
-  def size(self):
-    return self.size
+  def size():
+    return _size
 
 
 class FunctionType:

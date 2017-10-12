@@ -3,7 +3,7 @@ from copy import copy
 from asl.structs.nstack import neural_stack, ref_stack
 from asl.type import Type
 from asl.sketch import Sketch, soft_ch
-from asl.util.misc import trainloader, cuda, iterget
+from asl.util.misc import trainloader, cuda, iterget, train_data
 from asl.log import log_append
 from asl.train import train
 from asl.callbacks import every_n
@@ -53,7 +53,7 @@ def test_reverse_sketch():
   matrix_stack = Type("Stack", (1, 28, 28), dtype="float32")
   mnist_type = Type("mnist_type", (1, 28, 28), dtype="float32")
   nstack = neural_stack(mnist_type, matrix_stack)
-  refstack = ref_stack(mnist_type, matrix_stack)
+  refstack = ref_stack()
   rev_sketch = ReverseSketch(Type, nstack, refstack)
 
   rev_items_iter = iter(tl)
@@ -75,14 +75,14 @@ def test_reverse_sketch():
     nonlocal items_iter, rev_items_iter
     # Refresh hte iterators if they run out
     try:
-      items = iterget(items_iter, 3)
-      rev_items = iterget(rev_items_iter, 3)
+      items = iterget(items_iter, 3, transform=train_data)
+      rev_items = iterget(rev_items_iter, 3, transform=train_data)
     except StopIteration:
       print("End of Epoch")
       items_iter = iter(tl)
       rev_items_iter = iter(tl)
-      items = iterget(items_iter, 3)
-      rev_items = iterget(rev_items_iter, 3)
+      items = iterget(items_iter, 3, transform=train_data)
+      rev_items = iterget(rev_items_iter, 3, transform=train_data)
 
     out_items = rev_sketch(items)
     rev_items.reverse()

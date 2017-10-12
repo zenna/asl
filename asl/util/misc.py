@@ -54,8 +54,16 @@ def trainloader(batch_size):
                                      shuffle=False, num_workers=1,
                                      drop_last=True)
 
-def iterget(dataiter, n):
-  return [Variable(cuda(next(dataiter)[0])) for i in range(n)]
+
+def train_data(data):
+  return data[0]
+
+
+def identity(x):
+  return x
+
+def iterget(dataiter, n, transform=identity):
+  return [Variable(cuda(transform(next(dataiter)))) for i in range(n)]
 
 def is_tensor_var(tensor):
   "Is tensor either a tensor or variable?"
