@@ -10,11 +10,7 @@ from asl.util import iterget, cuda
 
 from asl.type import Type
 from asl.structs.nstack import neural_stack, ref_stack
-# Tricky?
-# - How to do hard choice?
-# - If we do something like my experiment, we split based on the batch
-# - Vecttor of inputs or steram or what?
-# - Training Net
+
 
 def soft_ch(choices, which):
   "Soft choice of elements of choices"
@@ -74,7 +70,6 @@ class ReverseSketch(Sketch):
     stack_chs = [empty]
     out_items = []
     item_chs = copy(items)
-    import pdb; pdb.set_trace()
     for _ in range(3):
       (stack,) = push(soft_ch(stack_chs, self.choice1f),
                       soft_ch(item_chs, self.choice1f))
@@ -83,6 +78,7 @@ class ReverseSketch(Sketch):
     for _ in range(3):
       (stack, item) = pop(soft_ch(stack_chs, self.choice1f))
       stack_chs.append(stack)
+      out_items.append(item)
 
     return out_items
 
@@ -100,7 +96,12 @@ def test_reverse_sketch():
   nstack = neural_stack(mnist_type, matrix_stack)
   refstack = ref_stack(mnist_type, matrix_stack)
   rev_sketch = ReverseSketch(Type, nstack, refstack)
-  rev_sketch(items)
+  out_items = rev_sketch(items)
+  import pdb; pdb.set_trace()
+  
+
+
+
 
 if __name__ == "__main__":
   test_reverse_sketch()
