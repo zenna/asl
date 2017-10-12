@@ -10,17 +10,12 @@ class Push(Function):
 
   def __init__(self, stack_type, item_type):
     super(Push, self).__init__([stack_type, item_type], [stack_type])
-    self.stack_type = stack_type
-    self.item_type = item_type
-
 
 class Pop(Function):
   "Pop Function for Stack"
 
   def __init__(self, stack_type, item_type):
     super(Pop, self).__init__([stack_type], [stack_type, item_type])
-    self.stack_type = stack_type
-    self.item_type = item_type
 
 
 class PushNet(Push, nn.Module):
