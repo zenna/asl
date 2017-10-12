@@ -49,6 +49,8 @@ class Sketch(Function, nn.Module):
   def __init__(self, in_types, out_types, sketch):
     super(Sketch).__init__(in_types, out_types)
     self.mods = []
+    self.refobserves = []
+    self.neurobserves = []
 
   def ref_losses(self):
     "Return map from an interface to a loss saying whether its correct"
@@ -59,8 +61,8 @@ class Sketch(Function, nn.Module):
   def losses(self):
     "Union of reflosses and choice_losses"
 
-  def forward(self, xs):
-    return self.sketch(xs, **self.model)
+  def forward(self, *xs):
+    return self.sketch(*xs, **self.model)
 
 
 class ReverseSketch(Sketch):

@@ -1,10 +1,11 @@
 
 class Type:
   """A type is a Type"""
-  def __init__(self, name, size, dtype):
+  def __init__(self, name, size, dtype, observable=True):
     self.name = name
     self.size = size
     self.dtype = dtype
+    self.observable = observable
 
   def size(self):
     return self.size
