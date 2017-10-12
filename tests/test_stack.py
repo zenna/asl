@@ -76,12 +76,11 @@ def test_stack():
       items = iterget(items_iter, 3)
       ref_items = iterget(ref_items_iter, 3)
 
-
     observes = stack_trace(items, **nstack)
     refobserves = stack_trace(ref_items, **refstack)
     return observe_loss(criterion, observes, refobserves)
 
-  train(loss_gen, optimizer,)
+  train(loss_gen, optimizer)
 
 if __name__ == "__main__":
   test_stack()

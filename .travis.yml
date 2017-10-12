@@ -3,10 +3,12 @@ dist: trusty
 language: python
 matrix:
     include:
+      - python: 3.5
         - python: 2.7
-        - python: 3.5
 notifications:
     email: false
+env:
+  - USE_GPU="false"
 before_install:
   # To avoid matplotlib error about X11:
   # 'no display name and no $DISPLAY environment variable'
@@ -36,13 +38,15 @@ install:
   - pip install python-coveralls pytest-cov
   - pip install numpydoc
   - pip install sympy
-  - pip install git+git://github.com/python/mypy.git
   - pip install git+git://github.com/PyCQA/astroid
   - pip install git+git://github.com/PyCQA/pylint
-  - pip install tensorflow==1.3.0
-  - pip install tflearn
+  - conda install pytorch torchvision -c soumith
   - python setup.py install
 script:
-  - PYTHONPATH=$PWD:$PYTHONPATH pytest --cov=asl --pep8;
+  # - PYTHONPATH=$PWD:$PYTHONPATH py.test --cov=asl --pep8;
+  - PYTHONPATH=$PWD:$PYTHONPATH py.test --cov=asl;
 after_success:
   - coveralls
+matrix:
+  allow_failures:
+    - python: 2.7

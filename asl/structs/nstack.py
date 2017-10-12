@@ -1,6 +1,7 @@
 "Stack Data Structure trained from a reference implementation"
 from asl.type import Function
 from asl.modules import VarConvNet, ConstantNet, ModuleDict
+from asl.util import cuda
 
 from torch import nn
 
@@ -55,7 +56,7 @@ def neural_stack(element_type, stack_type):
   neural_ref = ModuleDict({"push": push_img,
                            "pop": pop_img,
                            "empty": empty_stack})
-  neural_ref.cuda()
+  cuda(neural_ref)
   return neural_ref
 
 

@@ -1,6 +1,7 @@
 "Stack Data Structure trained from a reference implementation"
 from asl.type import Function
 from asl.modules import VarConvNet, ConstantNet, ModuleDict
+from asl.util import cuda
 
 from torch import nn
 from collections import deque
@@ -55,7 +56,7 @@ def neural_queue(element_type, queue_type):
   neural_ref = ModuleDict({"enqueue": enqueue_img,
                            "dequeue": dequeue_img,
                            "empty": empty_queue})
-  neural_ref.cuda()
+  cuda(neural_ref)
   return neural_ref
 
 

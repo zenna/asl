@@ -57,7 +57,7 @@ def test_reverse_sketch():
   rev_sketch = ReverseSketch(Type, nstack, refstack)
 
   rev_items_iter = iter(tl)
-  rev_sketch.cuda()
+  cuda(rev_sketch)
   optimizer = optim.Adam(rev_sketch.parameters(), lr=0.0001)
 
   def plot_items(i, log, writer, **kwargs):

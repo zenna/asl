@@ -3,10 +3,10 @@ def tb_loss(i, writer, loss, **kwargs):
   writer.add_scalar('data/scalar1', loss.data[0], i)
 
 
-def print_stats(i, epoch, running_loss, **kwargs):
+def print_stats(i, running_loss, **kwargs):
   "Print optimization statistics"
-  print('[%d, %5d] loss: %.3f' %
-          (epoch + 1, i + 1, running_loss / 2000))
+  print('[%5d] loss: %.3f' %
+          (i + 1, running_loss / 2000))
 
 
 def every_n(callback, n):
