@@ -1,14 +1,15 @@
 from setuptools import setup
 
 setup(
-    name='pdt',
+    name='asl',
     version='0.0.1',
     description='A library for learning algebraic structures',
     author='Zenna Tavares',
     author_email="zenna@mit.edu",
-    packages=['pdt'],
-    install_requires=['tensorflow>=1.3.0rc0',
-                      'numpy>=1.7'],
+    packages=['asl'],
+    install_requires=['pytorch',
+                      'numpy>=1.7',
+                      'tensorboardX'],
     url='https://github.com/zenna/asl',
     license='Apache License 2.0',
     classifiers=['License :: OSI Approved :: Apache Software License',

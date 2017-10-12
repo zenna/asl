@@ -50,6 +50,7 @@ class VarConvNet(nn.Module):
     # Uncombine
     return unstack_channel(x, self.out_sizes)
 
+
 class ModuleDict(nn.Module):
 
   def __init__(self, module_dict):
@@ -61,6 +62,10 @@ class ModuleDict(nn.Module):
   def __getitem__(self, name):
     return self.module_dict[name]
 
+  def __setitem__(self, name, value):
+    self.add_module(name, value)
+    self.module_dict[name] = value
+
   def keys(self):
     return self.module_dict.keys()
 
@@ -69,12 +74,6 @@ class ModuleDict(nn.Module):
 
   def items(self):
     return self.module_dict.items()
-
-
-
-  def __setitem__(self, name, value):
-    self.add_module(name, value)
-    self.module_dict[name] = value
 
 
 class ConstantNet(Constant, nn.Module):
