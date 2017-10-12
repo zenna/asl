@@ -100,6 +100,19 @@ def plot_empty(i, log, writer, **kwargs):
   writer.add_image('EmptySet', img, i)
 
 
+def neural_stack(element_type, stack_type):
+  push_img = PushNet(stack_type, element_type)
+  pop_img = PopNet(stack_type, element_type)
+  push_img.cuda()
+  pop_img.cuda()
+  empty_stack = Constant(stack_type)
+  neural_ref = {"push": push_img, "pop": pop_img, "empty": empty_stack}
+  return neural_ref
+
+
+def ref_stack(element_type, stack_type):
+  return {"push": list_push, "pop": list_pop, "empty": list_empty}
+
 def main():
   batch_size = 128
   matrix_stack = Type("Stack", (1, 28, 28), dtype="float32")

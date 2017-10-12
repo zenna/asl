@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from asl.type import expand_consts
 
 
 def unstack_channel(t, sizes, channel_dim=0):
@@ -38,6 +39,7 @@ class VarConvNet(nn.Module):
 
   def forward(self, *xs):
     assert len(xs) == len(self.in_sizes), "Wrong # inputs"
+    xs = expand_consts(xs) # TODO: Make optional
     x = torch.cat(xs, dim=self.channel_dim)
     # Combine inputs
     # Middle Layers

@@ -4,8 +4,17 @@ import torch
 import torchvision
 import torchvision.transforms as transforms
 import matplotlib.pyplot as plt
+from itertools import islice
+from torch.autograd import Variable
 
 plt.ion()
+
+
+def cuda(tensor, docuda=True):
+  if docuda:
+    return tensor.cuda()
+  else:
+    return tensor
 
 def as_img(t):
   return t.data.cpu().numpy().squeeze()
@@ -36,3 +45,13 @@ def trainloader(batch_size):
                                      batch_size=batch_size,
                                      shuffle=False, num_workers=1,
                                      drop_last=True)
+
+def iterget(dataiter, n, cuda=True):
+  if cuda:
+    return [Variable(data[0].cuda()) for data in list(islice(dataiter, n))]
+  else:
+    return [Variable(data[0].cuda()) for data in list(islice(dataiter, n))]
+
+def is_tensor_var(tensor):
+  "Is tensor either a tensor or variable?"
+  return isinstance(tensor, torch.autograd.Variable) or torch.is_tensor(tensor)
