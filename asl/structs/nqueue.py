@@ -4,7 +4,7 @@ from collections import deque
 
 from asl.type import Type, Function, FunctionType, Constant
 from asl.train import train
-from asl.nets import VarConvNet
+from asl.modules import VarConvNet
 from asl.callbacks import tb_loss
 from asl.util import draw, trainloader, as_img
 

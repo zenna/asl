@@ -1,15 +1,15 @@
 "Stack Data Structure trained from a reference implementation"
 import itertools
 
-from asl.type import Type, Function, Constant
-from asl.train import train, log, log_append
-from asl.nets import VarConvNet
+from asl.type import Type, Function
+from asl.train import trainloss, log, log_append
+from asl.modules import VarConvNet, ConstantNet, ModuleDict
 from asl.callbacks import tb_loss, every_n
-from asl.util import draw, trainloader, as_img
+from asl.util import draw, trainloader, as_img, iterget
 
 import torch
 from torch.autograd import Variable
-import torch.nn as nn
+from torch import optim, nn
 
 
 class Push(Function):
@@ -60,15 +60,8 @@ def list_pop(stack):
   return (stack, item)
 
 
-def list_empty():
-  return []
-
-
 def stack_trace(items, push, pop, empty):
     """Example stack trace"""
-    items = [Variable(data[0].cuda()) for data in list(itertools.islice(items, 3))]
-    # if expand_empty:
-    empty = empty()
     log_append("empty", empty)
 
     observes = []
@@ -105,36 +98,56 @@ def neural_stack(element_type, stack_type):
   pop_img = PopNet(stack_type, element_type)
   push_img.cuda()
   pop_img.cuda()
-  empty_stack = Constant(stack_type)
-  neural_ref = {"push": push_img, "pop": pop_img, "empty": empty_stack}
+  empty_stack = ConstantNet(stack_type)
+  neural_ref = ModuleDict({"push": push_img,
+                           "pop": pop_img,
+                           "empty": empty_stack})
   return neural_ref
 
 
 def ref_stack(element_type, stack_type):
-  return {"push": list_push, "pop": list_pop, "empty": list_empty}
+  return {"push": list_push, "pop": list_pop, "empty": []}
+
+
+def observe_loss(criterion, obs, refobs, state=None):
+  "MSE between observations from reference and training stack"
+  total_loss = 0.0
+  losses = [criterion(obs[i], refobs[i]) for i in range(len(obs))]
+  print([loss[0].data[0] for loss in losses])
+  total_loss = sum(losses)
+  return total_loss
+
 
 def main():
   batch_size = 128
+  tl = trainloader(batch_size)
+  dataiter = iter(tl)
+  refiter = iter(tl)
   matrix_stack = Type("Stack", (1, 28, 28), dtype="float32")
   mnist_type = Type("mnist_type", (1, 28, 28), dtype="float32")
-  push_img = PushNet(matrix_stack, mnist_type)
-  pop_img = PopNet(matrix_stack, mnist_type)
-  push_img.cuda()
-  pop_img.cuda()
-  empty_stack = Constant(matrix_stack,
-                        Variable(torch.rand(1, 1, 28, 28).cuda(),
-                                 requires_grad=True),
-                         batch_size)
-  stack_ref = {"push": list_push, "pop": list_pop, "empty": list_empty}
-  neural_ref = {"push": push_img, "pop": pop_img, "empty": empty_stack}
+  nstack = neural_stack(mnist_type, matrix_stack)
+  refstack = ref_stack(mnist_type, matrix_stack)
 
-  tl = trainloader(batch_size)
-  train(stack_trace, tl, stack_ref, neural_ref, batch_size,
-        callbacks=[tb_loss,
-                   every_n(plot_empty, 100),
-                   every_n(plot_observes, 100)],
-        nepochs=500)
+  criterion = nn.MSELoss()
+  optimizer = optim.Adam(nstack.parameters(), lr=0.0001)
 
+  def loss_gen():
+    try:
+      items = iterget(dataiter, 3)
+      ref_items = iterget(refiter, 3)
+    except StopIteration:
+      print("End of Epoch")
+      items_iter = iter(tl)
+      ref_items_iter = iter(tl)
+      items = iterget(items_iter, 3)
+      ref_items = iterget(ref_items_iter, 3)
+
+
+    observes = stack_trace(items, **nstack)
+    refobserves = stack_trace(ref_items, **refstack)
+    return observe_loss(criterion, observes, refobserves)
+
+  trainloss(loss_gen, optimizer,)
 
 if __name__ == "__main__":
   main()

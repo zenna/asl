@@ -8,7 +8,7 @@ from torch.autograd import Variable
 import torch.nn as nn
 
 from train import train
-from nets import VarConvNet
+from modules import VarConvNet
 
 from util import draw, trainloader
 

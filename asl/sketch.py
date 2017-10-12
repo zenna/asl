@@ -5,12 +5,17 @@ import torch
 import torch.nn as nn
 from torch.autograd import Variable
 
-from asl.type import Function, expand_consts
+from asl.type import Function
 from asl.util import iterget, cuda
 
 from asl.type import Type
 from asl.structs.nstack import neural_stack, ref_stack
+from asl.util import draw, trainloader, as_img
+from asl.train import trainloss, log_append
+from asl.modules import expand_consts
+from asl.callbacks import every_n
 
+from torch import optim
 
 def soft_ch(choices, which):
   "Soft choice of elements of choices"
@@ -24,10 +29,6 @@ def soft_ch(choices, which):
   return sum(scaled)
 
 
-def hard_ch(type, choices, which):
-  "Hard choice"
-
-
 class Sketch(Function, nn.Module):
   "Sketch Composition of Modules"
 
@@ -38,6 +39,8 @@ class Sketch(Function, nn.Module):
     self.neurobserves = []
     self.model = model
     self.ref_mdoel = ref_model
+    for name, module in self.model.items():
+      self.add_module(name, module)
 
   def ref_losses(self):
     "Return map from an interface to a loss saying whether its correct"
@@ -83,24 +86,58 @@ class ReverseSketch(Sketch):
     return out_items
 
 
-from asl.util import draw, trainloader, as_img
 
 def test_reverse_sketch():
   "Test Reverse Sketch"
   batch_size = 128
   tl = trainloader(batch_size)
-  tliter = iter(tl)
-  items = iterget(tliter, 3)
+  items_iter = iter(tl)
+
   matrix_stack = Type("Stack", (1, 28, 28), dtype="float32")
   mnist_type = Type("mnist_type", (1, 28, 28), dtype="float32")
   nstack = neural_stack(mnist_type, matrix_stack)
   refstack = ref_stack(mnist_type, matrix_stack)
   rev_sketch = ReverseSketch(Type, nstack, refstack)
-  out_items = rev_sketch(items)
-  import pdb; pdb.set_trace()
-  
+
+  rev_items_iter = iter(tl)
+  optimizer = optim.Adam(rev_sketch.parameters(), lr=0.0001)
+
+  def plot_items(i, log, writer, **kwargs):
+    writer.add_image('fwd/1', log['forward'][0][0][0], i)
+    writer.add_image('fwd/2', log['forward'][0][1][0], i)
+    writer.add_image('fwd/3', log['forward'][0][2][0], i)
+    writer.add_image('rev/1', log['reverse'][0][0][0], i)
+    writer.add_image('rev/2', log['reverse'][0][1][0], i)
+    writer.add_image('rev/3', log['reverse'][0][2][0], i)
+    writer.add_image('out/1', log['out'][0][0][0], i)
+    writer.add_image('out/2', log['out'][0][1][0], i)
+    writer.add_image('out/3', log['out'][0][2][0], i)
 
 
+  def loss_gen():
+    nonlocal items_iter, rev_items_iter
+    # Refresh hte iterators if they run out
+    try:
+      items = iterget(items_iter, 3)
+      rev_items = iterget(rev_items_iter, 3)
+    except StopIteration:
+      print("End of Epoch")
+      items_iter = iter(tl)
+      rev_items_iter = iter(tl)
+      items = iterget(items_iter, 3)
+      rev_items = iterget(rev_items_iter, 3)
+
+    out_items = rev_sketch(items)
+    rev_items.reverse()
+    log_append("forward", items)
+    log_append("reverse", rev_items)
+    log_append("out", out_items)
+
+    losses = [nn.MSELoss()(out_items[i], rev_items[i]) for i in range(3)]
+    loss = sum(losses)
+    return loss
+
+  trainloss(loss_gen, optimizer, [every_n(plot_items, 100)])
 
 
 if __name__ == "__main__":
