@@ -54,6 +54,7 @@ from functools import reduce # Valid in Python 2.6+, required in Python 3
 import operator
 def mul_product(xs):
   return reduce(operator.mul, xs, 1)
+import math
 
 class MLPNet(nn.Module):
   "ConvNet which takes variable inputs and variable outputs"
@@ -66,16 +67,21 @@ class MLPNet(nn.Module):
 
     self.nin = sum(self.flat_in_size)
     self.nout = sum(self.flat_out_size)
+    self.nmid = math.floor((self.nin + self.nout) / 2)
     self.in_sizes = in_sizes
     self.out_sizes = out_sizes
-    self.m = nn.Linear(self.nin, self.nout)
+    self.m1 = nn.Linear(self.nin, self.nmid)
+    self.m2 = nn.Linear(self.nmid, self.nout)
 
   def forward(self, *xs):
     assert len(xs) == len(self.in_sizes), "Wrong # inputs"
     exp_xs = expand_consts(xs) # TODO: Make optional
     exp_xs = [x.contiguous().view(x.size(0), -1) for x in exp_xs]
     x = torch.cat(exp_xs, dim=1)
-    y = self.m(x)
+    x = self.m1(x)
+    x = F.elu(x)
+    y = self.m2(x)
+
     outxs = unstack_channel(y, self.out_sizes)
     res = [x.contiguous().view(x.size(0), *self.out_sizes[i]) for (i, x) in enumerate(outxs)]
     return res

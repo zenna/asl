@@ -2,6 +2,9 @@ from tensorboardX import SummaryWriter
 from asl.callbacks import print_stats, every_n
 from asl.log import getlog, reset_log
 from functools import partial
+import types
+from collections import namedtuple
+CallbackData = namedtuple('CallbackData', ['i', 'writer', 'loss', 'log'], verbose=False)
 
 def all_epochs(i, epoch, nepochs, **kwargs):
   "Continue if we've done enough epochs"
@@ -26,24 +29,25 @@ def train(loss_gen,
     resetlog: reset log data after every iteration if true
   """
   callbacks = [] if callbacks is None else callbacks
-  callbacks = callbacks + [every_n(print_stats, 100)]
+  # callbacks = callbacks + []
   writer = SummaryWriter()
 
   i = 0
-  running_loss = 0.0
   while cont(i=i):
     loss = loss_gen()
     optimizer.zero_grad()
     loss.backward()
     optimizer.step()
 
+    cb_data = CallbackData(i, writer, loss.data[0], getlog())
     for callback in callbacks:
-      callback(i=i,
-               writer=writer,
-               loss=loss,
-               running_loss=running_loss,
-               log=getlog())
-    running_loss += loss.data[0]
+      if isinstance(callback, types.GeneratorType):
+        callback.send(cb_data)
+      else:
+        callback(i=i,
+                 writer=writer,
+                 loss=loss.data[0],
+                 log=getlog())
     i += 1
     if resetlog:
       reset_log()

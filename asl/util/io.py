@@ -1,55 +1,5 @@
-import getopt
-import os
-import csv
-import time
-import sys
 import argparse
 import torch
-
-
-def save_params(fname, params):
-  f = open(fname, 'w')
-  writer = csv.writer(f)
-  for key, value in params.items():
-    writer.writerow([key, value])
-  f.close()
-
-
-def save_dict_csv(fname, params):
-  f = open(fname, 'w')
-  writer = csv.writer(f)
-  for key, value in params.items():
-    writer.writerow([str(key), str(value)])
-  f.close()
-
-
-def append_time(sfx):
-  return "%s%s" % (str(time.time()), sfx)
-
-
-def gen_sfx_key(keys, options, add_time=True):
-  sfx_dict = {}
-  for key in keys:
-    sfx_dict[key] = options[key]
-  sfx = stringy_dict(sfx_dict)
-  if add_time is True:
-    sfx = append_time(sfx)
-  print("sfx:", sfx)
-  return sfx
-
-
-def mk_dir(dirname, datadir=os.environ['DATADIR']):
-  """Create directory with timestamp
-  Args:
-      sfx: a suffix string
-      dirname:
-      datadir: directory of all data
-  """
-  full_dir_name = os.path.join(datadir, dirname)
-  print("Data will be saved to", full_dir_name)
-  os.mkdir(full_dir_name)
-  return full_dir_name
-
 
 def add_std_args(parser):
   parser.add_argument('--batch_size', type=int, default=64, metavar='N',
