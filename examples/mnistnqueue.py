@@ -5,7 +5,7 @@ from asl.structs.nstack import PushNet, PopNet
 from asl.modules.modules import ConstantNet, ModuleDict
 from asl.util.misc import cuda
 from asl.type import Type
-from asl.callbacks import tb_loss, every_n, print_loss, converged, save_checkpoint
+from asl.callbacks import tb_loss, every_n, print_loss, converged, save_checkpoint, load_checkpoint
 from asl.util.misc import iterget, train_data
 from asl.util.io import handle_args
 from asl.util.data import trainloader
@@ -98,6 +98,9 @@ def train_stack(opt):
     refobserves = stack_trace(ref_items, **refstack)
     return observe_loss(criterion, observes, refobserves)
 
+  if opt.resume_path is not None:
+    load_checkpoint(opt.resume_path, nstack, optimizer)
+
   train(loss_gen, optimizer, maxiters=100000,
         cont=converged(1000),
         callbacks=[print_loss(100),
@@ -114,18 +117,19 @@ def opt_gen():
   # Generic Options
   log_dir = asl.util.io.log_dir(group="mnistqueue")
   asl.util.io.directory_check(log_dir)
-  batch_size = choice([32, 64, 96, 128])
-  lr = choice([0.0001, 0.001, 0.01, 0.1])
+  batch_size = choice([32])
+  lr = choice([0.0001])
   optim_algo = choice([optim.Adam])
   template = choice([asl.modules.templates.VarConvNet])
 
   specific = {'nitems': 3}
   template_opt = {}
   if template == asl.modules.templates.VarConvNet:
-    template_opt['nlayers'] = choice([1, 2, 3, 4])
+    template_opt['nlayers'] = choice([1])
     template_opt['batch_norm'] = np.random.rand() > 0.99
 
   opt = Opt(log_dir,
+            '/data/zenna/runs/mnistqueue/Oct14_14-22-30_megatron/checkpoint.pth',
             batch_size,
             lr,
             optim_algo,

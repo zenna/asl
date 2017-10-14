@@ -2,6 +2,7 @@
 from collections import namedtuple
 
 Opt = namedtuple('Opt', ['log_dir',
+                         'resume_path',
                          'batch_size',
                          'lr',
                          'optim',
