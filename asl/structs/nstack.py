@@ -21,10 +21,12 @@ class Pop(Function):
 
 
 class PushNet(Push, nn.Module):
-  def __init__(self, stack_type, item_type, template=VarConvNet, module=None):
+  def __init__(self, stack_type, item_type, module=None, template=VarConvNet,
+               template_opt=None):
     super(PushNet, self).__init__(stack_type, item_type)
     if module is None:
-      self.module = template(self.in_sizes(), self.out_sizes())
+      template_opt = {} if template_opt is None else template_opt
+      self.module = template(self.in_sizes(), self.out_sizes(), **template_opt)
     else:
       self.module = module
     self.add_module("Push", self.module)
@@ -34,13 +36,15 @@ class PushNet(Push, nn.Module):
 
 
 class PopNet(Pop, nn.Module):
-  def __init__(self, stack_type, item_type, template=VarConvNet, module=None):
+  def __init__(self, stack_type, item_type, module=None, template=VarConvNet,
+               template_opt=None):
     super(PopNet, self).__init__(stack_type, item_type)
     if module is None:
-      self.module = template(self.in_sizes(), self.out_sizes())
+      template_opt = {} if template_opt is None else template_opt
+      self.module = template(self.in_sizes(), self.out_sizes(), **template_opt)
     else:
       self.module = module
-    self.add_module("Push", self.module)
+    self.add_module("Pop", self.module)
 
 
   def forward(self, x):

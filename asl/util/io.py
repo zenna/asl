@@ -1,5 +1,9 @@
 import argparse
 import torch
+import os
+import socket
+from datetime import datetime
+
 
 def add_std_args(parser):
   parser.add_argument('--batch_size', type=int, default=64, metavar='N',
@@ -30,3 +34,38 @@ def handle_args(*add_cust_parses):
   args = parser.parse_args()
   args.cuda = not args.no_cuda and torch.cuda.is_available()
   return args
+
+
+def datadir(default='./data', varname='DATADIR'):
+  "Data directory"
+  if varname in os.environ:
+    return os.environ['DATADIR']
+  else:
+    return default
+
+
+def log_dir(root=datadir(), group='nogroup', comment=''):
+  "Log directory, e.g. ~/datadir/mnist/Oct14_02-43-22_my_comp/"
+  return os.path.join(root,
+                      'runs',
+                      group,
+                      datetime.now().strftime('%b%d_%H-%M-%S')+'_'+socket.gethostname()+comment)
+
+
+def directory_check(path):
+    '''Initialize the directory for log files.'''
+    # If the direcotry does not exist, create it!
+    if not os.path.exists(path):
+        os.makedirs(path)
+
+
+def trainloader(batch_size):
+  transform = transforms.Compose(
+  [transforms.ToTensor(),
+   transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+  trainset = torchvision.datasets.MNIST(root=datadir(), train=True,
+                                        download=True, transform=transform)
+  return torch.utils.data.DataLoader(trainset,
+                                     batch_size=batch_size,
+                                     shuffle=False, num_workers=1,
+                                     drop_last=True)

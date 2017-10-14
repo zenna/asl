@@ -38,7 +38,7 @@ def train(loss_gen,
   """
   cont = partial(max_iters, maxiters=maxiters) if cont is None else cont
   callbacks = [] if callbacks is None else callbacks
-  writer = SummaryWriter()
+  writer = SummaryWriter(opt.log_dir)
 
   i = 0
   cb_data = CallbackData(i, writer, None, getlog())

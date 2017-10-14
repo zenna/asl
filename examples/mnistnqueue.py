@@ -1,10 +1,17 @@
+import numpy as np
+import asl
+from asl.opt import Opt
+from asl.structs.nstack import PushNet, PopNet
+from asl.modules.modules import ConstantNet, ModuleDict
+from asl.util.misc import cuda
 from asl.type import Type
 from asl.callbacks import tb_loss, every_n, print_loss, converged
-from asl.util.misc import trainloader, iterget, train_data
-from asl.util.io import handle_args
+from asl.util.misc import iterget, train_data
+from asl.util.io import handle_args, trainloader
+from asl.util.data import trainloader
 from asl.log import log_append
 from asl.train import train
-from asl.structs.nstack import neural_stack, ref_stack
+from asl.structs.nstack import ref_stack
 from numpy.random import choice
 from torch import optim, nn
 
@@ -50,10 +57,7 @@ def observe_loss(criterion, obs, refobs, state=None):
   total_loss = sum(losses) / len(losses)
   return total_loss
 
-# Issues: 1. how to merge cmd line with opt
-# 2. opt  is dict vs nt vs class?
-# 3. different opts per interface
-# 4.
+
 def train_stack(opt):
   # opt = handle_args()
   print(opt)
@@ -69,13 +73,11 @@ def train_stack(opt):
   tl = trainloader(opt.batch_size)
   items_iter = iter(tl)
   ref_items_iter = iter(tl)
-  nstack = ModuleDict(PushNet(MatrixStack, Mnist, template=opt.template),
-                      PopNet(MatrixStack, Mnist, template=opt.template),
-                      ConstantNet(MatrixStack))
-
-  # neural_stack(MatrixStack, Mnist)
+  nstack = ModuleDict({'push': PushNet(MatrixStack, Mnist, template=opt.template, template_opt=opt.template_opt),
+                       'pop': PopNet(MatrixStack, Mnist, template=opt.template, template_opt=opt.template_opt),
+                       'empty': ConstantNet(MatrixStack)})
+  cuda(nstack)
   refstack = ref_stack()
-
   criterion = nn.MSELoss()
   optimizer = optim.Adam(nstack.parameters(), lr=opt.lr)
 
@@ -101,22 +103,15 @@ def train_stack(opt):
         callbacks=[print_loss(100),
                    plot_empty,
                    plot_observes])
-
-import asl
-import numpy as np
-from  collections import namedtuple
-Opt = namedtuple('Opt', ['batch_size',
-                         'lr',
-                         'optim',
-                         'template',
-                         'template_args',
-                         'specific'],
-                 verbose=False)
-
-
+# 1. Im not saving parameters or optimzation state
+# 2. Im not saving opt details
+# 3. templates not parameterized enough
+# 4. Do stop in terms of clocktime!
 def opt_gen():
-  "sampler"
+  "Options sampler"
   # Generic Options
+  log_dir = asl.util.io.log_dir(group="mnistqueue")
+  asl.util.io.directory_check(log_dir)
   batch_size = choice([32, 64, 96, 128])
   lr = choice([0.0001, 0.001, 0.01, 0.1])
   optim_algo = choice([optim.Adam])
@@ -126,9 +121,10 @@ def opt_gen():
   template_opt = {}
   if template == asl.modules.templates.VarConvNet:
     template_opt['nlayers'] = choice([1, 2, 3, 4])
-    template_opt['batch_norm'] = np.random.rand() > 0.5
+    template_opt['batch_norm'] = np.random.rand() > 0.99
 
-  opt = Opt(batch_size,
+  opt = Opt(log_dir,
+            batch_size,
             lr,
             optim_algo,
             template,

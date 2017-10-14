@@ -36,7 +36,7 @@ def print_loss(every, log_tb=True):
   return gen
 
 
-def converged(every, print_change=True, change_thres=-0.00005):
+def converged(every, print_change=True, change_thres=-0.000005):
   "Has the optimization converged?"
   def converged_gen(every):
     running_loss = 0.0
