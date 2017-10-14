@@ -59,10 +59,23 @@ def observe_loss(criterion, obs, refobs, state=None):
   total_loss = sum(losses) / len(losses)
   return total_loss
 
+from asl.hyper.search import run_local_batch
+import sys
 
-def train_stack(opt):
-  # opt = handle_args()
+def train_stack():
+  opt = handle_args()
   print(opt)
+  if opt.hyper:
+    print("Doing Hyper Parameter Search")
+    for _ in range(10):
+      file_path = '/home/zenna/repos/asl/examples/mnistnqueue.py'
+      opt_dict = {'sample': True}
+      run_local_batch(file_path, opt_dict, blocking=True)
+    sys.exit()
+  if opt.sample:
+    print("Sampling opt values from sampler")
+    opt = opt_gen()
+
   nitems = opt.specific['nitems']
   mnist_size = (1, 28, 28)
 
@@ -122,8 +135,8 @@ def opt_gen():
   # Generic Options
   log_dir = asl.util.io.log_dir(group="mnistqueue")
   asl.util.io.directory_check(log_dir)
-  batch_size = choice([32])
-  lr = choice([0.0001])
+  batch_size = choice([32, 64, 96, 128])
+  lr = choice([0.0001, 0.001, 0.01, 0.1])
   optim_algo = choice([optim.Adam])
   template = choice([asl.modules.templates.VarConvNet])
 
@@ -134,7 +147,7 @@ def opt_gen():
     template_opt['batch_norm'] = np.random.rand() > 0.99
 
   opt = Opt(log_dir,
-            '/data/zenna/runs/mnistqueue/Oct14_14-22-30_megatron/checkpoint.pth',
+            None,
             batch_size,
             lr,
             optim_algo,
@@ -144,4 +157,4 @@ def opt_gen():
   return opt
 
 if __name__ == "__main__":
-  train_stack(opt_gen())
+  train_stack()

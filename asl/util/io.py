@@ -6,6 +6,10 @@ from datetime import datetime
 
 
 def add_std_args(parser):
+  parser.add_argument('--hyper', action='store_true', default=False,
+                      help='Do hyper parameter search')
+  parser.add_argument('--sample', action='store_true', default=False,
+                      help='Sample parameter values')
   parser.add_argument('--batch_size', type=int, default=64, metavar='N',
                       help='input batch size for training (default: 64)')
   parser.add_argument('--test_batch_size', type=int, default=1000, metavar='N',
