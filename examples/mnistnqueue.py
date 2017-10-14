@@ -5,9 +5,9 @@ from asl.structs.nstack import PushNet, PopNet
 from asl.modules.modules import ConstantNet, ModuleDict
 from asl.util.misc import cuda
 from asl.type import Type
-from asl.callbacks import tb_loss, every_n, print_loss, converged
+from asl.callbacks import tb_loss, every_n, print_loss, converged, save_checkpoint
 from asl.util.misc import iterget, train_data
-from asl.util.io import handle_args, trainloader
+from asl.util.io import handle_args
 from asl.util.data import trainloader
 from asl.log import log_append
 from asl.train import train
@@ -99,10 +99,12 @@ def train_stack(opt):
     return observe_loss(criterion, observes, refobserves)
 
   train(loss_gen, optimizer, maxiters=100000,
-        cont=converged(100),
+        cont=converged(1000),
         callbacks=[print_loss(100),
                    plot_empty,
-                   plot_observes])
+                   plot_observes,
+                   save_checkpoint(100, nstack)],
+        log_dir=opt.log_dir)
 # 1. Im not saving parameters or optimzation state
 # 2. Im not saving opt details
 # 3. templates not parameterized enough

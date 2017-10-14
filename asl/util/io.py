@@ -53,19 +53,13 @@ def log_dir(root=datadir(), group='nogroup', comment=''):
 
 
 def directory_check(path):
-    '''Initialize the directory for log files.'''
-    # If the direcotry does not exist, create it!
-    if not os.path.exists(path):
-        os.makedirs(path)
+  '''Initialize the directory for log files.'''
+  # If the direcotry does not exist, create it!
+  if not os.path.exists(path):
+      os.makedirs(path)
 
 
-def trainloader(batch_size):
-  transform = transforms.Compose(
-  [transforms.ToTensor(),
-   transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
-  trainset = torchvision.datasets.MNIST(root=datadir(), train=True,
-                                        download=True, transform=transform)
-  return torch.utils.data.DataLoader(trainset,
-                                     batch_size=batch_size,
-                                     shuffle=False, num_workers=1,
-                                     drop_last=True)
+def save_checkpoint(state, filename='checkpoint.pth.tar'):
+  torch.save(state, filename)
+  if is_best:
+    shutil.copyfile(filename, 'model_best.pth.tar')

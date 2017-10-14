@@ -1,3 +1,6 @@
+import shutil
+import torch
+
 "Callbacks to be passed to optimization"
 def tb_loss(i, writer, loss, **kwargs):
   "Plot loss on tensorboard"
@@ -32,6 +35,36 @@ def print_loss(every, log_tb=True):
           data.writer.add_scalar('loss', loss_per_sample, data.i)
         running_loss = 0.0
   gen = print_loss_gen(every)
+  next(gen)
+  return gen
+
+
+import asl
+import os
+import math
+
+def save_checkpoint(every, model, verbose=True):
+  "Save check point every every iterations and best seen so far"
+  def save_checkpoint_gen(every, model):
+    best_loss = math.inf
+    while True:
+      data = yield
+      best_loss = min(best_loss, data.loss)
+      savepath = os.path.join(data.log_dir, "checkpoint.pth")
+      if (data.i + 1) % every == 0:
+        torch.save({'i': data.i + 1,
+                    'state_dict': model.state_dict(),
+                    'best_loss': best_loss,
+                    'optimizer': data.optimizer.state_dict()},
+                   savepath)
+        print(data.loss, " ", best_loss)
+        if data.loss <= best_loss:
+          if verbose:
+            print("Currently at best")
+          shutil.copyfile(savepath,
+                          os.path.join(data.log_dir, 'checkpoint_best.pth.tar'))
+
+  gen = save_checkpoint_gen(every, model)
   next(gen)
   return gen
 
