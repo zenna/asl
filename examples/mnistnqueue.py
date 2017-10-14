@@ -1,6 +1,7 @@
+import os
 import numpy as np
 import asl
-from asl.opt import Opt
+from asl.opt import Opt, opt_as_string
 from asl.structs.nstack import PushNet, PopNet
 from asl.modules.modules import ConstantNet, ModuleDict
 from asl.util.misc import cuda
@@ -13,6 +14,7 @@ from asl.log import log_append
 from asl.train import train
 from asl.structs.nstack import ref_stack
 from numpy.random import choice
+import torch
 from torch import optim, nn
 
 
@@ -100,6 +102,9 @@ def train_stack(opt):
 
   if opt.resume_path is not None:
     load_checkpoint(opt.resume_path, nstack, optimizer)
+
+  torch.save(opt, os.path.join(opt.log_dir, "opt.pkl"))
+  torch.save(opt_as_string(opt), os.path.join(opt.log_dir, "optstring.txt"))
 
   train(loss_gen, optimizer, maxiters=100000,
         cont=converged(1000),

@@ -57,9 +57,3 @@ def directory_check(path):
   # If the direcotry does not exist, create it!
   if not os.path.exists(path):
       os.makedirs(path)
-
-
-def save_checkpoint(state, filename='checkpoint.pth.tar'):
-  torch.save(state, filename)
-  if is_best:
-    shutil.copyfile(filename, 'model_best.pth.tar')
