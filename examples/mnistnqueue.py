@@ -1,23 +1,26 @@
+import sys
 import os
-import numpy as np
 import asl
-from asl.opt import Opt, opt_as_string
+from asl.opt import  opt_as_string
 from asl.structs.nstack import PushNet, PopNet
 from asl.modules.modules import ConstantNet, ModuleDict
 from asl.util.misc import cuda
 from asl.type import Type
-from asl.callbacks import tb_loss, every_n, print_loss, converged, save_checkpoint, load_checkpoint
+from asl.callbacks import print_loss, converged, save_checkpoint, load_checkpoint
 from asl.util.misc import iterget, train_data
 from asl.util.io import handle_args
 from asl.util.data import trainloader
 from asl.log import log_append
 from asl.train import train
 from asl.structs.nstack import ref_stack
+from asl.loss import observe_loss
+from asl.hyper.search import run_local_batch
 from numpy.random import choice
 import torch
 from torch import optim, nn
 
 
+# Make function of nitems
 def stack_trace(items, push, pop, empty):
   """Example stack trace"""
   log_append("empty", empty)
@@ -52,29 +55,8 @@ def plot_empty(i, log, writer, **kwargs):
   writer.add_image('EmptySet', img, i)
 
 
-def observe_loss(criterion, obs, refobs, state=None):
-  "MSE between observations from reference and training stack"
-  total_loss = 0.0
-  losses = [criterion(obs[i], refobs[i]) for i in range(len(obs))]
-  total_loss = sum(losses) / len(losses)
-  return total_loss
-
-from asl.hyper.search import run_local_batch
-import sys
-
 def train_stack():
-  opt = handle_args()
-  print(opt)
-  if opt.hyper:
-    print("Doing Hyper Parameter Search")
-    for _ in range(10):
-      file_path = '/home/zenna/repos/asl/examples/mnistnqueue.py'
-      opt_dict = {'sample': True}
-      run_local_batch(file_path, opt_dict, blocking=True)
-    sys.exit()
-  if opt.sample:
-    print("Sampling opt values from sampler")
-    opt = opt_gen()
+  opt = asl.util.io.handle_hyper(__file__, lambda: asl.opt.std_opt_gen({'nitems': 3}))
 
   nitems = opt.specific['nitems']
   mnist_size = (1, 28, 28)
@@ -124,37 +106,9 @@ def train_stack():
         callbacks=[print_loss(100),
                    plot_empty,
                    plot_observes,
-                   save_checkpoint(100, nstack)],
+                   save_checkpoint(1000, nstack)],
         log_dir=opt.log_dir)
-# 1. Im not saving parameters or optimzation state
-# 2. Im not saving opt details
-# 3. templates not parameterized enough
-# 4. Do stop in terms of clocktime!
-def opt_gen():
-  "Options sampler"
-  # Generic Options
-  log_dir = asl.util.io.log_dir(group="mnistqueue")
-  asl.util.io.directory_check(log_dir)
-  batch_size = choice([32, 64, 96, 128])
-  lr = choice([0.0001, 0.001, 0.01, 0.1])
-  optim_algo = choice([optim.Adam])
-  template = choice([asl.modules.templates.VarConvNet])
 
-  specific = {'nitems': 3}
-  template_opt = {}
-  if template == asl.modules.templates.VarConvNet:
-    template_opt['nlayers'] = choice([1])
-    template_opt['batch_norm'] = np.random.rand() > 0.99
-
-  opt = Opt(log_dir,
-            None,
-            batch_size,
-            lr,
-            optim_algo,
-            template,
-            template_opt,
-            specific)
-  return opt
 
 if __name__ == "__main__":
   train_stack()

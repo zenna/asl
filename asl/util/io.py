@@ -1,8 +1,10 @@
+import sys
 import argparse
 import torch
 import os
 import socket
 from datetime import datetime
+import asl
 
 
 def add_std_args(parser):
@@ -29,6 +31,10 @@ def add_std_args(parser):
   parser.add_argument('--log-interval', type=int, default=10, metavar='N',
                       help='how many batches to wait before logging training status')
 
+def add_hyper_params(parser):
+  parser.add_argument('--nsamples', type=int, default=10, metavar='NS',
+                      help='number of samples for hyperparameters (default: 10)')
+
 
 def handle_args(*add_cust_parses):
   parser = argparse.ArgumentParser(description='')
@@ -38,6 +44,23 @@ def handle_args(*add_cust_parses):
   args = parser.parse_args()
   args.cuda = not args.no_cuda and torch.cuda.is_available()
   return args
+
+
+def handle_hyper(path, opt_sampler):
+  # println("Show PATH", path)
+  opt = handle_args()
+  if opt.hyper:
+    print("Doing Hyper Parameter Search")
+    opt = handle_args(add_hyper_params)
+    for _ in range(opt.nsamples):
+      opt_dict = {'sample': True}
+      asl.hyper.search.run_local_batch(path, opt_dict, blocking=True)
+    sys.exit()
+  if opt.sample:
+    print("Sampling opt values from sampler")
+    opt = opt_sampler()
+  print(opt)
+  return opt
 
 
 def datadir(default='./data', varname='DATADIR'):
