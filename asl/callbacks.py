@@ -54,9 +54,11 @@ def converged(every, print_change=True, change_thres=-0.00005):
           print('absolute change (avg over {}) {}'.format(every, change))
           if last_running_loss != 0:
             relchange = change / last_running_loss
-            print('relative_change {}'.format(relchange))
-            if relchange / every > change_thres:
-              print("Stopping!")
+            per_iter = relchange / every
+            print('relative_change: {}, per iteration: {}'.format(relchange,
+                                                                  per_iter))
+            if per_iter > change_thres:
+              print("Relative change insufficeint, stopping!")
               cont = False
         else:
           show_change = True

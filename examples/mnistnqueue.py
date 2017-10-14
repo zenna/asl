@@ -5,7 +5,7 @@ from asl.util.io import handle_args
 from asl.log import log_append
 from asl.train import train
 from asl.structs.nstack import neural_stack, ref_stack
-
+from numpy.random import choice
 from torch import optim, nn
 
 
@@ -50,11 +50,14 @@ def observe_loss(criterion, obs, refobs, state=None):
   total_loss = sum(losses) / len(losses)
   return total_loss
 
-
-def train_stack():
-  options = handle_args()
-  print(options)
-  nitems = 3
+# Issues: 1. how to merge cmd line with opt
+# 2. opt  is dict vs nt vs class?
+# 3. different opts per interface
+# 4.
+def train_stack(opt):
+  # opt = handle_args()
+  print(opt)
+  nitems = opt.specific['nitems']
   mnist_size = (1, 28, 28)
 
   class MatrixStack(Type):
@@ -63,14 +66,18 @@ def train_stack():
   class Mnist(Type):
     size = mnist_size
 
-  tl = trainloader(options.batch_size)
+  tl = trainloader(opt.batch_size)
   items_iter = iter(tl)
   ref_items_iter = iter(tl)
-  nstack = neural_stack(MatrixStack, Mnist)
+  nstack = ModuleDict(PushNet(MatrixStack, Mnist, template=opt.template),
+                      PopNet(MatrixStack, Mnist, template=opt.template),
+                      ConstantNet(MatrixStack))
+
+  # neural_stack(MatrixStack, Mnist)
   refstack = ref_stack()
 
   criterion = nn.MSELoss()
-  optimizer = optim.Adam(nstack.parameters(), lr=options.lr)
+  optimizer = optim.Adam(nstack.parameters(), lr=opt.lr)
 
   def loss_gen():
     nonlocal items_iter, ref_items_iter
@@ -95,5 +102,39 @@ def train_stack():
                    plot_empty,
                    plot_observes])
 
+import asl
+import numpy as np
+from  collections import namedtuple
+Opt = namedtuple('Opt', ['batch_size',
+                         'lr',
+                         'optim',
+                         'template',
+                         'template_args',
+                         'specific'],
+                 verbose=False)
+
+
+def opt_gen():
+  "sampler"
+  # Generic Options
+  batch_size = choice([32, 64, 96, 128])
+  lr = choice([0.0001, 0.001, 0.01, 0.1])
+  optim_algo = choice([optim.Adam])
+  template = choice([asl.modules.templates.VarConvNet])
+
+  specific = {'nitems': 3}
+  template_opt = {}
+  if template == asl.modules.templates.VarConvNet:
+    template_opt['nlayers'] = choice([1, 2, 3, 4])
+    template_opt['batch_norm'] = np.random.rand() > 0.5
+
+  opt = Opt(batch_size,
+            lr,
+            optim_algo,
+            template,
+            template_opt,
+            specific)
+  return opt
+
 if __name__ == "__main__":
-  train_stack()
+  train_stack(opt_gen())
