@@ -18,14 +18,19 @@ def every_n(callback, n):
   return every_n_cb
 
 
-def print_loss(every):
-  "Print loss per every n"
-  running_loss = 0.0
-  while True:
-    data = yield
-    i = data.i
-    loss = data.loss
-    running_loss += loss
-    if (i + 1) % every == 0:
-      print('loss per %s : %.3f' % (every, running_loss / every))
-      running_loss = 0.0
+def print_loss(every, log_tb=True):
+  def print_loss_gen(every):
+    "Print loss per every n"
+    running_loss = 0.0
+    while True:
+      data = yield
+      running_loss += data.loss
+      if (data.i + 1) % every == 0:
+        loss_per_sample = running_loss / every
+        print('loss per sample (avg over %s) : %.3f' % (every, loss_per_sample))
+        if log_tb:
+          data.writer.add_scalar('loss', loss_per_sample, data.i)
+        running_loss = 0.0
+  gen = print_loss_gen(every)
+  next(gen)
+  return gen

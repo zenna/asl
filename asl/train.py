@@ -17,17 +17,19 @@ def max_iters(i, maxiters, **kwargs):
 def train(loss_gen,
           optimizer,
           callbacks=None,
-          cont=partial(max_iters, maxiters=100),
+          maxiters=1000,
+          cont=None,
           resetlog=True):
   """
   Optimization
   Args:
     loss_gen: function that returns scalar loss term to miminize
     callbacks: functions called with data every iteration, e.g for viz
-    nepochs: num epochs to execute
-    cont: function to determine when to stop
+    maxiters: num of iterations
+    cont: function to determine when to stop (overrides maxiters)
     resetlog: reset log data after every iteration if true
   """
+  cont = partial(max_iters, maxiters=maxiters) if cont is None else cont
   callbacks = [] if callbacks is None else callbacks
   # callbacks = callbacks + []
   writer = SummaryWriter()

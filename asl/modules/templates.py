@@ -36,6 +36,8 @@ class VarConvNet(nn.Module):
     out_channels = sum([size[ch_dim_wo_batch] for size in out_sizes])
     mid_channel = 16
     self.conv1 = nn.Conv2d(in_channels, mid_channel, 3, padding=1)
+    self.bn1 = nn.BatchNorm2d(mid_channel, affine=False)
+    self.bn2 = nn.BatchNorm2d(mid_channel, affine=False)
     self.convmid = nn.Conv2d(mid_channel, mid_channel, 3, padding=1)
     self.conv2 = nn.Conv2d(mid_channel, out_channels, 3, padding=1)
 
@@ -45,7 +47,7 @@ class VarConvNet(nn.Module):
     x = torch.cat(exp_xs, dim=self.channel_dim)
     # Combine inputs
     # Middle Layers
-    x = F.elu(self.conv1(x))
+    x = F.elu(self.bn1(self.conv1(x)))
     x = F.elu(self.conv2(x))
     # Uncombine
     return unstack_channel(x, self.out_sizes)

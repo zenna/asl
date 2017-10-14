@@ -15,7 +15,6 @@ from asl.util.io import handle_args
 from asl.util.generators import infinite_samples
 from asl.type import Type
 from asl.structs.nqueue import EnqueueNet, DequeueNet, ref_queue
-from asl.structs.nqueue import ref_queue
 from asl.util.misc import iterget
 from asl.train import train, max_iters
 from asl.modules.modules import ConstantNet, ModuleDict
