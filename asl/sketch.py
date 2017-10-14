@@ -27,7 +27,7 @@ class Sketch(Function, nn.Module):
     self.refobserves = []
     self.neurobserves = []
     self.model = model
-    self.ref_mdoel = ref_model
+    self.ref_model = ref_model
     self.add_module("interface", model)
 
   def ref_losses(self):
@@ -40,4 +40,4 @@ class Sketch(Function, nn.Module):
     "Union of reflosses and choice_losses"
 
   def forward(self, *xs):
-    return self.sketch(*xs, **self.model)
+    return self.sketch(*xs, **self.ref_model)
