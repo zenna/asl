@@ -19,8 +19,8 @@ def every_n(callback, n):
 
 
 def print_loss(every, log_tb=True):
+  "Print loss per every n"
   def print_loss_gen(every):
-    "Print loss per every n"
     running_loss = 0.0
     while True:
       data = yield
@@ -32,5 +32,37 @@ def print_loss(every, log_tb=True):
           data.writer.add_scalar('loss', loss_per_sample, data.i)
         running_loss = 0.0
   gen = print_loss_gen(every)
+  next(gen)
+  return gen
+
+
+def converged(every, print_change=True, change_thres=-0.00005):
+  "Has the optimization converged?"
+  def converged_gen(every):
+    running_loss = 0.0
+    last_running_loss = 0.0
+    show_change = False
+    cont = True
+    while True:
+      data = yield cont
+      if data.loss is None:
+        continue
+      running_loss += data.loss
+      if (data.i + 1) % every == 0:
+        if show_change:
+          change = (running_loss - last_running_loss)
+          print('absolute change (avg over {}) {}'.format(every, change))
+          if last_running_loss != 0:
+            relchange = change / last_running_loss
+            print('relative_change {}'.format(relchange))
+            if relchange / every > change_thres:
+              print("Stopping!")
+              cont = False
+        else:
+          show_change = True
+        last_running_loss = running_loss
+        running_loss = 0.0
+
+  gen = converged_gen(every)
   next(gen)
   return gen

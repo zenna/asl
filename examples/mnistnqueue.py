@@ -1,5 +1,5 @@
 from asl.type import Type
-from asl.callbacks import tb_loss, every_n, print_loss
+from asl.callbacks import tb_loss, every_n, print_loss, converged
 from asl.util.misc import trainloader, iterget, train_data
 from asl.util.io import handle_args
 from asl.log import log_append
@@ -47,12 +47,13 @@ def observe_loss(criterion, obs, refobs, state=None):
   "MSE between observations from reference and training stack"
   total_loss = 0.0
   losses = [criterion(obs[i], refobs[i]) for i in range(len(obs))]
-  total_loss = sum(losses)
+  total_loss = sum(losses) / len(losses)
   return total_loss
 
 
 def train_stack():
   options = handle_args()
+  print(options)
   nitems = 3
   mnist_size = (1, 28, 28)
 
@@ -89,7 +90,10 @@ def train_stack():
     return observe_loss(criterion, observes, refobserves)
 
   train(loss_gen, optimizer, maxiters=100000,
-        callbacks=[print_loss(100), plot_empty, plot_observes])
+        cont=converged(100),
+        callbacks=[print_loss(100),
+                   plot_empty,
+                   plot_observes])
 
 if __name__ == "__main__":
   train_stack()

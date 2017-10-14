@@ -1,18 +1,25 @@
-from tensorboardX import SummaryWriter
-from asl.callbacks import print_stats, every_n
-from asl.log import getlog, reset_log
+"Optimization features"
+from collections import namedtuple
 from functools import partial
 import types
-from collections import namedtuple
-CallbackData = namedtuple('CallbackData', ['i', 'writer', 'loss', 'log'], verbose=False)
+from tensorboardX import SummaryWriter
+from asl.log import getlog, reset_log
+CallbackData = namedtuple('CallbackData', ['i', 'writer', 'loss', 'log'],
+                          verbose=False)
 
-def all_epochs(i, epoch, nepochs, **kwargs):
-  "Continue if we've done enough epochs"
-  return epoch < nepochs
 
 def max_iters(i, maxiters, **kwargs):
   "Continue if we've done enough epochs"
   return i < maxiters
+
+
+def apl(fungen, cb_data):
+  "Apply a function or generator to data"
+  if isinstance(fungen, types.GeneratorType):
+    return fungen.send(cb_data)
+  else:
+    return fungen(**cb_data._asdict())
+
 
 def train(loss_gen,
           optimizer,
@@ -21,7 +28,7 @@ def train(loss_gen,
           cont=None,
           resetlog=True):
   """
-  Optimization
+  Optimization.
   Args:
     loss_gen: function that returns scalar loss term to miminize
     callbacks: functions called with data every iteration, e.g for viz
@@ -31,11 +38,11 @@ def train(loss_gen,
   """
   cont = partial(max_iters, maxiters=maxiters) if cont is None else cont
   callbacks = [] if callbacks is None else callbacks
-  # callbacks = callbacks + []
   writer = SummaryWriter()
 
   i = 0
-  while cont(i=i):
+  cb_data = CallbackData(i, writer, None, getlog())
+  while apl(cont, cb_data):
     loss = loss_gen()
     optimizer.zero_grad()
     loss.backward()
@@ -43,13 +50,7 @@ def train(loss_gen,
 
     cb_data = CallbackData(i, writer, loss.data[0], getlog())
     for callback in callbacks:
-      if isinstance(callback, types.GeneratorType):
-        callback.send(cb_data)
-      else:
-        callback(i=i,
-                 writer=writer,
-                 loss=loss.data[0],
-                 log=getlog())
+      apl(callback, cb_data)
     i += 1
     if resetlog:
       reset_log()

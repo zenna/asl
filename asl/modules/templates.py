@@ -25,7 +25,11 @@ def unstack_channel(t, sizes, channel_dim=0, slice_dim=1):
 class VarConvNet(nn.Module):
   "ConvNet which takes variable inputs and variable outputs"
 
-  def __init__(self, in_sizes, out_sizes, channel_dim=1):
+  def __init__(self, in_sizes, out_sizes,
+               channel_dim=1,
+               batch_norm=False,
+               nlayers=1,
+               mid_channel=24):
     super(VarConvNet, self).__init__()
     # Assumes batch not in size and all in/out same size except channel
     self.in_sizes = in_sizes
@@ -34,10 +38,12 @@ class VarConvNet(nn.Module):
     ch_dim_wo_batch = channel_dim - 1
     in_channels = sum([size[ch_dim_wo_batch] for size in in_sizes])
     out_channels = sum([size[ch_dim_wo_batch] for size in out_sizes])
-    mid_channel = 16
     self.conv1 = nn.Conv2d(in_channels, mid_channel, 3, padding=1)
-    self.bn1 = nn.BatchNorm2d(mid_channel, affine=False)
-    self.bn2 = nn.BatchNorm2d(mid_channel, affine=False)
+    self.batch_norm = batch_norm
+    if batch_norm:
+      self.bn1 = nn.BatchNorm2d(mid_channel, affine=False)
+      self.bn2 = nn.BatchNorm2d(mid_channel, affine=False)
+
     self.convmid = nn.Conv2d(mid_channel, mid_channel, 3, padding=1)
     self.conv2 = nn.Conv2d(mid_channel, out_channels, 3, padding=1)
 
@@ -46,9 +52,13 @@ class VarConvNet(nn.Module):
     exp_xs = expand_consts(xs) # TODO: Make optional
     x = torch.cat(exp_xs, dim=self.channel_dim)
     # Combine inputs
-    # Middle Layers
-    x = F.elu(self.bn1(self.conv1(x)))
-    x = F.elu(self.conv2(x))
+    # Middle
+    x = self.conv1(x)
+    if self.batch_norm:
+      x = self.bn(x)
+    x = F.elu(x)
+    x = self.conv2(x)
+    x = F.elu(x)
     # Uncombine
     return unstack_channel(x, self.out_sizes)
 
