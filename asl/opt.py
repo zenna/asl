@@ -1,4 +1,5 @@
 "Options"
+import os
 import sys
 import argparse
 from argparse import Namespace
@@ -7,31 +8,10 @@ import asl
 from numpy.random import choice
 from torch import optim
 import torch
-import numpy as np
 
 
-# Default optiosn
-# sampled options
-# Command line options
-
-# Opt = namedtuple('Opt', ['hyper',
-#                          'sample',
-#                          'batch_size',
-#                          'test_batch_size',
-#                          'epochs',
-#                          'log_dir',
-#                          'resume_path',
-#                          'cuda',
-#                          'seed',
-#                          'log_interval'
-#                          'optim_algo',
-#                          'lr',
-#                          'template',
-#                          'template_opt',
-#                          'specific'],
-#                  verbose=False)
-#
 def opt_as_string(opt):
+  "Options as a string"
   return pprint.pformat(vars(opt), indent=4)
 
 
@@ -48,11 +28,6 @@ def std_opt_sampler():
                   sample=True,
                   batch_size=batch_size,
                   test_batch_size=batch_size,
-                  epochs=1,
-                  resume_path='',
-                  no_cuda=False,
-                  seed=1,
-                  log_interval=100,
                   optim_algo=optim_algo,
                   lr=lr,
                   template=template,
@@ -132,3 +107,11 @@ def handle_hyper(opt, path, opt_sampler=std_opt_sampler):
     print("Sampling opt values from sampler")
     opt = merge(opt_sampler(), opt)
   return opt
+
+
+def save_opt(opt):
+    # Prepare directories
+  asl.util.io.directory_check(opt.log_dir)
+  print("Saving Options to ", opt.log_dir, "\n", opt)
+  torch.save(opt, os.path.join(opt.log_dir, "opt.pkl"))
+  torch.save(opt_as_string(opt), os.path.join(opt.log_dir, "optstring.txt"))

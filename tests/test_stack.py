@@ -1,7 +1,8 @@
 import sys
 from asl.type import Type, Function
 from asl.callbacks import tb_loss, every_n
-from asl.util.misc import draw, trainloader, as_img, iterget, train_data
+from asl.util.misc import draw, trainloader, as_img, iterget
+from asl.util.data import train_data
 from asl.util.io import handle_args
 from asl.log import log_append
 from asl.train import train
@@ -30,10 +31,10 @@ def stack_trace(items, push, pop, empty):
 
 def plot_observes(i, log, writer, **kwargs):
   "Show the empty set in tensorboardX"
-  refobserves = log['observes'][0]
+  ref_observes = log['observes'][0]
   nobserves = log['observes'][1]
-  for j in range(len(refobserves)):
-    writer.add_image('compare{}/ref'.format(j), refobserves[j][0], i)
+  for j in range(len(ref_observes)):
+    writer.add_image('compare{}/ref'.format(j), ref_observes[j][0], i)
     writer.add_image('compare{}/neural'.format(j), nobserves[j][0], i)
 
 
@@ -80,8 +81,8 @@ def test_stack():
       ref_items = iterget(ref_items_iter, 3, transform=train_data)
 
     observes = stack_trace(items, **nstack)
-    refobserves = stack_trace(ref_items, **refstack)
-    return observe_loss(criterion, observes, refobserves)
+    ref_observes = stack_trace(ref_items, **refstack)
+    return observe_loss(criterion, observes, ref_observes)
 
   train(loss_gen, optimizer)
 

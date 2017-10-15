@@ -47,10 +47,12 @@ class Dequeue(Function):
 
 
 class EnqueueNet(Enqueue, nn.Module):
-  def __init__(self, queue_type, item_type, template=VarConvNet, module=None):
-    super(EnqueueNet, self).__init__(queue_type, item_type)
+  def __init__(self, stack_type, item_type, module=None, template=VarConvNet,
+               template_opt=None):
+    super(EnqueueNet, self).__init__(stack_type, item_type)
     if module is None:
-      self.module = template(self.in_sizes(), self.out_sizes())
+      template_opt = {} if template_opt is None else template_opt
+      self.module = template(self.in_sizes(), self.out_sizes(), **template_opt)
     else:
       self.module = module
     self.add_module("Enqueue", self.module)
@@ -60,16 +62,20 @@ class EnqueueNet(Enqueue, nn.Module):
 
 
 class DequeueNet(Dequeue, nn.Module):
-  def __init__(self, queue_type, item_type, template=VarConvNet, module=None):
-    super(DequeueNet, self).__init__(queue_type, item_type)
+  def __init__(self, stack_type, item_type, module=None, template=VarConvNet,
+               template_opt=None):
+    super(DequeueNet, self).__init__(stack_type, item_type)
     if module is None:
-      self.module = template(self.in_sizes(), self.out_sizes())
+      template_opt = {} if template_opt is None else template_opt
+      self.module = template(self.in_sizes(), self.out_sizes(), **template_opt)
     else:
       self.module = module
-    self.add_module("Enqueue", self.module)
+    self.add_module("Dequeue", self.module)
+
 
   def forward(self, x):
     return self.module.forward(x)
+
 
 
 def list_enqueue(queue, element):

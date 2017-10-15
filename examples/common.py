@@ -1,11 +1,14 @@
-import os
+"Utils common for benchmarking"
 
-def default_benchmark_options():
-    "Get default options for asl training"
-    options = {}
-    options['num_iterations'] = (int, 1000)
-    options['save_every'] = (int, 100)
-    options['batch_size'] = (int, 512)
-    options['dirname'] = (str, "dirname")
-    options['datadir'] = (str, os.path.join(os.environ['DATADIR'], "asl"))
-    return options
+def plot_observes(i, log, writer, **kwargs):
+  "Show the empty set in tensorboardX"
+  batch = 0
+  for j in range(len(log['observes'])):
+    writer.add_image('comp{}/ref'.format(j), log['observes'][j][batch], i)
+    writer.add_image('comp{}/neural'.format(j), log['ref_observes'][j][batch], i)
+
+
+def plot_empty(i, log, writer, **kwargs):
+  "Show the empty set in tensorboardX"
+  img = log['empty'][0].value
+  writer.add_image('EmptySet', img, i)

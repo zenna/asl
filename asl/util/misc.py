@@ -8,6 +8,11 @@ from torch.autograd import Variable
 import matplotlib.pyplot as plt
 plt.ion()
 
+def imap(f, itr):
+  "Return an iterator which applies f to output of iterator"
+  while True:
+    yield f(next(itr))
+
 
 def use_gpu(default=True):
   "Check environment variable USE_GPU"
@@ -35,10 +40,6 @@ def draw(t):
   tnp = as_img(t)
   plt.imshow(tnp)
   plt.pause(0.01)
-
-
-def train_data(data):
-  return data[0]
 
 
 def identity(x):

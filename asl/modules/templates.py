@@ -43,9 +43,7 @@ class VarConvNet(nn.Module):
                h_channels=16,
                nhlayers=24,
                activation=F.elu):
-    import pdb; pdb.set_trace()
     super(VarConvNet, self).__init__()
-    import pdb; pdb.set_trace()
     # Assumes batch not in size and all in/out same size except channel
     self.in_sizes = in_sizes
     self.out_sizes = out_sizes
