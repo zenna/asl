@@ -1,26 +1,23 @@
-import sys
 import os
 import asl
-from asl.opt import  opt_as_string
+from asl.opt import opt_as_string
 from asl.structs.nstack import PushNet, PopNet
 from asl.modules.modules import ConstantNet, ModuleDict
 from asl.util.misc import cuda
 from asl.type import Type
 from asl.callbacks import print_loss, converged, save_checkpoint, load_checkpoint
 from asl.util.misc import iterget, train_data
-from asl.util.io import handle_args
 from asl.util.data import trainloader
 from asl.log import log_append
 from asl.train import train
 from asl.structs.nstack import ref_stack
 from asl.loss import observe_loss
-from asl.hyper.search import run_local_batch
 from numpy.random import choice
 import torch
 from torch import optim, nn
 
 
-# Make function of nitems
+# TODO: Make function of opt.nitems
 def stack_trace(items, push, pop, empty):
   """Example stack trace"""
   log_append("empty", empty)
@@ -55,10 +52,15 @@ def plot_empty(i, log, writer, **kwargs):
   writer.add_image('EmptySet', img, i)
 
 
-def train_stack():
-  opt = asl.util.io.handle_hyper(__file__, lambda: asl.opt.std_opt_gen({'nitems': 3}))
+def mnist_args(parser):
+  parser.add_argument('--opt.nitems', type=int, default=3, metavar='NI',
+                      help='number of iteems in trace (default: 3)')
 
-  nitems = opt.specific['nitems']
+
+def train_stack():
+  opt = asl.opt.handle_args(mnist_args)
+  opt = asl.opt.handle_hyper(opt, __file__)
+  opt.nitems = 3
   mnist_size = (1, 28, 28)
 
   class MatrixStack(Type):
@@ -82,22 +84,25 @@ def train_stack():
     nonlocal items_iter, ref_items_iter
 
     try:
-      items = iterget(items_iter, nitems, transform=train_data)
-      ref_items = iterget(ref_items_iter, nitems, transform=train_data)
+      items = iterget(items_iter, opt.nitems, transform=train_data)
+      ref_items = iterget(ref_items_iter, opt.nitems, transform=train_data)
     except StopIteration:
       print("End of Epoch")
       items_iter = iter(tl)
       ref_items_iter = iter(tl)
-      items = iterget(items_iter, nitems, transform=train_data)
-      ref_items = iterget(ref_items_iter, nitems, transform=train_data)
+      items = iterget(items_iter, opt.nitems, transform=train_data)
+      ref_items = iterget(ref_items_iter, opt.nitems, transform=train_data)
 
     observes = stack_trace(items, **nstack)
     refobserves = stack_trace(ref_items, **refstack)
     return observe_loss(criterion, observes, refobserves)
 
-  if opt.resume_path is not None:
+  if opt.resume_path is not None and opt.resume_path != '':
     load_checkpoint(opt.resume_path, nstack, optimizer)
 
+  # Prepare directories
+  asl.util.io.directory_check(opt.log_dir)
+  print("Saving Options to ", opt.log_dir, "\n", opt)
   torch.save(opt, os.path.join(opt.log_dir, "opt.pkl"))
   torch.save(opt_as_string(opt), os.path.join(opt.log_dir, "optstring.txt"))
 

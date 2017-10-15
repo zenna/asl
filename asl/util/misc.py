@@ -1,4 +1,6 @@
 "Miscellaneous Utilities"
+from functools import reduce
+import operator
 import os
 from distutils.util import strtobool
 import torch
@@ -7,11 +9,12 @@ import matplotlib.pyplot as plt
 plt.ion()
 
 
-def use_gpu(def_use_gpu=True):
+def use_gpu(default=True):
+  "Check environment variable USE_GPU"
   if "USE_GPU" in os.environ:
     return strtobool(os.environ["USE_GPU"])
   else:
-    return def_use_gpu
+    return default
 
 
 def cuda(tensor, use_cuda=None):
@@ -49,3 +52,8 @@ def iterget(dataiter, n, transform=identity):
 def is_tensor_var(tensor):
   "Is tensor either a tensor or variable?"
   return isinstance(tensor, torch.autograd.Variable) or torch.is_tensor(tensor)
+
+
+def mul_product(xs):
+  "x1 * x2 ... xn for all xi in xs"
+  return reduce(operator.mul, xs, 1)

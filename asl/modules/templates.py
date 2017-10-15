@@ -1,7 +1,19 @@
+"Templates (modules parameterized by shape)"
+from asl.modules.modules import expand_consts, ModuleDict
 import torch
 import torch.nn as nn
-from asl.modules.modules import expand_consts
 import torch.nn.functional as F
+import numpy as np
+import math
+from asl.util.misc import mul_product
+
+class MyClass(nn.Module):
+  def __init__(self):
+    super(MyClass, self).__init__()
+    # self.bok = nn.ModuleList([nn.Conv2d(10, 10, 3, padding=1) for i in range(3)])
+    self.mda = ModuleDict({str(i): nn.Conv2d(10, 10, 3, padding=1) for i in range(3)})
+
+
 
 # FIXME: Slice dim and channel dim should be same, confusing because off by 1
 # adjustmenets due to batching, revise!
@@ -28,45 +40,65 @@ class VarConvNet(nn.Module):
   def __init__(self, in_sizes, out_sizes,
                channel_dim=1,
                batch_norm=False,
-               nlayers=1,
-               mid_channel=24):
+               h_channels=16,
+               nhlayers=24,
+               activation=F.elu):
+    import pdb; pdb.set_trace()
     super(VarConvNet, self).__init__()
+    import pdb; pdb.set_trace()
     # Assumes batch not in size and all in/out same size except channel
     self.in_sizes = in_sizes
     self.out_sizes = out_sizes
     self.channel_dim = channel_dim
+    self.activation = activation
     ch_dim_wo_batch = channel_dim - 1
     in_channels = sum([size[ch_dim_wo_batch] for size in in_sizes])
     out_channels = sum([size[ch_dim_wo_batch] for size in out_sizes])
-    self.conv1 = nn.Conv2d(in_channels, mid_channel, 3, padding=1)
+
+    # Layers
+    self.conv1 = nn.Conv2d(in_channels, h_channels, 3, padding=1)
+    hlayers = [nn.Conv2d(h_channels, h_channels, 3, padding=1) for i in range(nhlayers)]
+    self.hlayers = nn.ModuleList(hlayers)
+
+    # Batch norm
     self.batch_norm = batch_norm
     if batch_norm:
-      self.bn1 = nn.BatchNorm2d(mid_channel, affine=False)
-      self.bn2 = nn.BatchNorm2d(mid_channel, affine=False)
+      blayers = [nn.BatchNorm2d(h_channels, affine=False) for i in range(nhlayers)]
+      self.blayers = nn.ModuleList(blayers)
 
-    self.convmid = nn.Conv2d(mid_channel, mid_channel, 3, padding=1)
-    self.conv2 = nn.Conv2d(mid_channel, out_channels, 3, padding=1)
+    self.conv2 = nn.Conv2d(h_channels, out_channels, 3, padding=1)
+
+  def sample_hyper(in_sizes, out_sizes, pbatch_norm=0.5, max_layers=5):
+    "Hyper Parameter Sampler"
+    batch_norm = np.random.rand() > pbatch_norm
+    nlayers = np.random.randint(1, max_layers)
+    h_channels = int(np.random.choice([12, 16, 24]))
+    act = np.random.choice([F.relu, F.elu])
+    return {'batch_norm': batch_norm,
+            'h_channels': h_channels,
+            'nhlayers': nlayers,
+            'activation': act}
 
   def forward(self, *xs):
     assert len(xs) == len(self.in_sizes), "Wrong # inputs"
-    exp_xs = expand_consts(xs) # TODO: Make optional
-    x = torch.cat(exp_xs, dim=self.channel_dim)
+    exp_xs = expand_consts(xs) # TODO: MOVE THIS TO FUNC,
     # Combine inputs
-    # Middle
+    x = torch.cat(exp_xs, dim=self.channel_dim)
     x = self.conv1(x)
-    if self.batch_norm:
-      x = self.bn(x)
-    x = F.elu(x)
+
+    # h layers
+    for (i, layer) in enumerate(self.hlayers):
+      x = layer(x)
+      if self.batch_norm:
+        x = self.blayers[i](x)
+      x = self.activation(x)
+
     x = self.conv2(x)
-    x = F.elu(x)
+    x = self.activation(x)
+
     # Uncombine
     return unstack_channel(x, self.out_sizes)
 
-from functools import reduce # Valid in Python 2.6+, required in Python 3
-import operator
-def mul_product(xs):
-  return reduce(operator.mul, xs, 1)
-import math
 
 class MLPNet(nn.Module):
   "ConvNet which takes variable inputs and variable outputs"
