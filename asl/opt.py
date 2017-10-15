@@ -5,6 +5,7 @@ import argparse
 from argparse import Namespace
 import pprint
 import asl
+from asl.hyper.search import run_local_batch
 from numpy.random import choice
 from torch import optim
 import torch
@@ -101,7 +102,7 @@ def handle_hyper(opt, path, opt_sampler=std_opt_sampler):
     opt = handle_args(add_hyper_params)
     for _ in range(opt.nsamples):
       opt_dict = {'sample': True}
-      asl.hyper.search.run_local_batch(path, opt_dict, blocking=True)
+      run_local_batch(path, opt_dict, blocking=True)
     sys.exit()
   if opt.sample:
     print("Sampling opt values from sampler")
