@@ -104,6 +104,7 @@ def handle_hyper(opt, path, opt_sampler=std_opt_sampler):
     for _ in range(opt.nsamples):
       opt_dict = {'sample': True}
       if opt.slurm:
+        # Add? --gres=gpu:1 --mem=16000
         run_sbatch(path, opt_dict)
       else:
         run_local_batch(path, opt_dict, blocking=True)
