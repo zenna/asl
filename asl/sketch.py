@@ -103,6 +103,7 @@ def loss_gen_gen(sketch, tl, itr_transform=None):
       return inner_loss_gen(sketch, items_iter, ref_items_iter)
     except StopIteration:
       print("End of Epoch, restarting iterators")
+      sketch.clear_observes()
       items_iter = itr(tl)
       ref_items_iter = itr(tl)
       return inner_loss_gen(sketch, items_iter, ref_items_iter)
