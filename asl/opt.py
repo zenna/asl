@@ -105,7 +105,10 @@ def handle_hyper(opt, path, opt_sampler=std_opt_sampler):
       opt_dict = {'sample': True}
       if opt.slurm:
         # Add? --gres=gpu:1 --mem=16000
-        run_sbatch(path, opt_dict)
+        sbatch_opt = {'output': os.path.join(opt.log_dir, "slurm.out"),
+                      'job-name': opt.run_name,
+                      't': 720}
+        run_sbatch(path, opt_dict, sbatch_opt)
       else:
         run_local_batch(path, opt_dict, blocking=True)
     sys.exit()

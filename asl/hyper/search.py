@@ -21,12 +21,14 @@ def make_batch_string(options):
 
 # Using Slurm #
 
-def run_sbatch(file_path, options, bash_run_path=None):
+def run_sbatch(file_path, options, sbatch_opt = None, bash_run_path=None):
   """Execute sbatch with options"""
   if bash_run_path is None:
     dir_path = os.path.dirname(os.path.realpath(__file__))
     bash_run_path = os.path.join(dir_path, 'run.sh')
-  run_str = ['sbatch', bash_run_path, file_path] + make_batch_string(options)
+
+  sbatch_opt = {} if sbatch_opt is None else sbatch_opt
+  run_str = ['sbatch'] = make_batch_string(sbatch_opt) + [bash_run_path, file_path] + make_batch_string(options)
   print(run_str)
   subprocess.call(run_str)
 
