@@ -37,6 +37,10 @@ def std_opt_sampler():
 
 
 def add_std_args(parser):
+  parser.add_argument('--name', type=str, default='', metavar='JN',
+                      help='Name of job')
+  parser.add_argument('--group', type=str, default='', metavar='JN',
+                      help='Group name')
   parser.add_argument('--hyper', action='store_true', default=False,
                       help='Do hyper parameter search')
   parser.add_argument('--sample', action='store_true', default=False,
@@ -47,7 +51,7 @@ def add_std_args(parser):
                       help='input batch size for testing (default: 1000)')
   parser.add_argument('--epochs', type=int, default=10, metavar='N',
                       help='number of epochs to train (default: 10)')
-  parser.add_argument('--log_dir', type=str, default=asl.util.io.log_dir(group="ungrouped"), metavar='D',
+  parser.add_argument('--log_dir', type=str, default=unique, metavar='D',
                       help='Path to store data')
   parser.add_argument('--resume_path', type=str, default='', metavar='R',
                       help='Path to resume parameters from')

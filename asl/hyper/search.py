@@ -28,7 +28,7 @@ def run_sbatch(file_path, options, sbatch_opt = None, bash_run_path=None):
     bash_run_path = os.path.join(dir_path, 'run.sh')
 
   sbatch_opt = {} if sbatch_opt is None else sbatch_opt
-  run_str = ['sbatch'] = make_batch_string(sbatch_opt) + [bash_run_path, file_path] + make_batch_string(options)
+  run_str = ['sbatch'] + make_batch_string(sbatch_opt) + [bash_run_path, file_path] + make_batch_string(options)
   print(run_str)
   subprocess.call(run_str)
 
