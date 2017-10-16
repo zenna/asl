@@ -104,7 +104,7 @@ def converged(every, print_change=True, change_thres=-0.000005):
 def validate(test_loss_gen, maxiters=100, cont=None, pre_callbacks=None,
              callbacks=None, post_callbacks=None):
   "Validation is done using a callback"
-  def validate_clos(optimizer, writer, **kwargs):
+  def validate_clos(i, optimizer, writer, **kwargs):
     print("Test Validation...")
     test_loss_cb = test_loss()
     cbs = [test_loss_cb] if callbacks is None else callbacks + [test_loss_cb]
@@ -112,6 +112,7 @@ def validate(test_loss_gen, maxiters=100, cont=None, pre_callbacks=None,
 
     train(test_loss_gen,
           optimizer,
+          start_i = i,
           callbacks=cbs,
           pre_callbacks=pre_callbacks,
           post_callbacks=post_cbs,
@@ -136,7 +137,7 @@ def test_loss(log_tb=True):
         loss = running_loss / (data.i - 1)
         print('test loss per sample at %s (avg over %s) : %.3f' % (data.start_i, data.i - 1, loss))
         if log_tb:
-          data.writer.add_scalar('loss', loss, data.start_i)
+          data.writer.add_scalar('test_loss', loss, data.start_i)
         running_loss = 0.0
   gen = test_loss_gen()
   next(gen)

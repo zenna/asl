@@ -71,7 +71,7 @@ def train(loss_gen,
   callbacks = [] if callbacks is None else callbacks
   writer = SummaryWriter(log_dir) if writer is None else writer
 
-  i = start_i
+  i = 0
   cb_data = CallbackData(start_i, i, writer, None, getlog(), optimizer, log_dir,
                          TrainMode.PRE)
 

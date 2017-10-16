@@ -77,6 +77,8 @@ def add_hyper_params(parser):
                       help='Use the SLURM batching system')
 
 def handle_log_dir(opt):
+  # if log_dir was specified, jsut keep that
+  # if log_dir not specified and name or group is specifeid
   if opt.log_dir is None:
     opt.log_dir = asl.util.io.log_dir(group=opt.group, comment=opt.name)
 
@@ -122,11 +124,13 @@ def handle_hyper(opt, path, opt_sampler=std_opt_sampler):
   if opt.hyper:
     print("Starting hyper parameter search")
     for _ in range(opt.nsamples):
-      opt_dict = {'sample': True}
+      opt_dict = {'sample': True,
+                  'name': opt.name,
+                  'group': opt.group}
       if opt.slurm:
         # Add? --gres=gpu:1 --mem=16000
         sbatch_opt = {'output': os.path.join(opt.log_dir, "slurm.out"),
-                      'job-name': opt.run_name,
+                      'job-name': opt.opt.name,
                       't': 720}
         run_sbatch(path, opt_dict, sbatch_opt)
       else:
