@@ -21,7 +21,7 @@ def soft_ch(choices, decision_vec):
 
 def soft_ch_var(choices, which):
   "Soft choice of elements of choices"
-  decision_vec = which(len(nchoices))
+  decision_vec = which(len(choices))
   return soft_ch(choices, decision_vec)
 
 

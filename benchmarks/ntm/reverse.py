@@ -8,12 +8,13 @@ copy of the input sequence (without the delimiter flag).
 from copy import copy
 from functools import partial
 
-from ..common.types import BernSeq
+from benchmarks.types import vec_queue, bern_seq
+import asl.opt
 
 from asl.sketch import Sketch, soft_ch
 from asl.callbacks import every_n, print_loss, converged, save_checkpoint
 from asl.util.misc import cuda
-from asl.util.io import handle_args
+from asl.opt import handle_hyper
 from asl.util.generators import infinite_samples
 from asl.type import Type
 from asl.structs.nqueue import EnqueueNet, DequeueNet, ref_queue
@@ -92,10 +93,6 @@ def plot_items(i, log, writer, **kwargs):
   writer.add_image('rev/1', log['items'][0][0][0], i)
   writer.add_image('rev/2', log['items'][0][1][0], i)
   writer.add_image('rev/3', log['items'][0][2][0], i)
-
-from ..types import vec_queue, bern_seq
-# import ..common
-import asl.opt
 
 def reverse_args(parser):
   parser.add_argument('--seq_len', type=int, default=8, metavar='NI',
