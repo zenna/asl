@@ -5,7 +5,7 @@ import argparse
 from argparse import Namespace
 import pprint
 import asl
-from asl.hyper.search import run_local_batch
+from asl.hyper.search import run_local_batch, run_sbatch
 from numpy.random import choice
 from torch import optim
 import torch
@@ -66,11 +66,13 @@ def add_hyper_params(parser):
                       help='number of samples for hyperparameters (default: 10)')
   parser.add_argument('--blocking', action='store_true', default=False,
                       help='Is hyper parameter search blocking?')
-
+  parser.add_argument('--slurm', action='store_true', default=False,
+                      help='Use the SLURM batching system')
 
 def handle_args(*add_cust_parses):
   parser = argparse.ArgumentParser(description='')
   add_std_args(parser)
+  add_hyper_params(parser)
   for add_cust_parse in add_cust_parses:
     add_cust_parse(parser)
   opt = parser.parse_args()
@@ -99,10 +101,12 @@ def merge(opt1, opt2):
 def handle_hyper(opt, path, opt_sampler=std_opt_sampler):
   if opt.hyper:
     print("Starting hyper parameter search")
-    opt = handle_args(add_hyper_params)
     for _ in range(opt.nsamples):
       opt_dict = {'sample': True}
-      run_local_batch(path, opt_dict, blocking=True)
+      if opt.slurm:
+        run_sbatch(path, opt_dict)
+      else:
+        run_local_batch(path, opt_dict, blocking=True)
     sys.exit()
   if opt.sample:
     print("Sampling opt values from sampler")
