@@ -36,7 +36,14 @@ def std_opt_sampler():
   return opt
 
 
+# Want
+# Want to use default logdir but with group name that is taken from cmdline
+
 def add_std_args(parser):
+  parser.add_argument('--name', type=str, default='', metavar='JN',
+                      help='Name of job')
+  parser.add_argument('--group', type=str, default='', metavar='JN',
+                      help='Group name')
   parser.add_argument('--hyper', action='store_true', default=False,
                       help='Do hyper parameter search')
   parser.add_argument('--sample', action='store_true', default=False,
@@ -47,7 +54,7 @@ def add_std_args(parser):
                       help='input batch size for testing (default: 1000)')
   parser.add_argument('--epochs', type=int, default=10, metavar='N',
                       help='number of epochs to train (default: 10)')
-  parser.add_argument('--log_dir', type=str, default=asl.util.io.log_dir(group="ungrouped"), metavar='D',
+  parser.add_argument('--log_dir', type=str, metavar='D',
                       help='Path to store data')
   parser.add_argument('--resume_path', type=str, default='', metavar='R',
                       help='Path to resume parameters from')
@@ -69,6 +76,23 @@ def add_hyper_params(parser):
   parser.add_argument('--slurm', action='store_true', default=False,
                       help='Use the SLURM batching system')
 
+def handle_log_dir(opt):
+  # if log_dir was specified, jsut keep that
+  # if log_dir not specified and name or group is specifeid
+  if opt.log_dir is None:
+    opt.log_dir = asl.util.io.log_dir(group=opt.group, comment=opt.name)
+
+
+def handle_cuda(opt):
+  if opt.cuda and not torch.cuda.is_available():
+    print("Chose CUDA but CUDA not available, continuing without CUDA!")
+    opt.cuda = False
+
+def handle_template(opt):
+  opt.template = asl.modules.templates.VarConvNet
+  opt.template_opt = {}
+
+
 def handle_args(*add_cust_parses):
   parser = argparse.ArgumentParser(description='')
   add_std_args(parser)
@@ -76,12 +100,10 @@ def handle_args(*add_cust_parses):
   for add_cust_parse in add_cust_parses:
     add_cust_parse(parser)
   opt = parser.parse_args()
-  if opt.cuda and not torch.cuda.is_available():
-    print("Chose CUDA but CUDA not available, continuing without CUDA!")
-    opt.cuda = False
 
-  opt.template = asl.modules.templates.VarConvNet
-  opt.template_opt = {}
+  handle_log_dir(opt)
+  handle_cuda(opt)
+  handle_template(opt)
   return opt
 
 
@@ -102,10 +124,15 @@ def handle_hyper(opt, path, opt_sampler=std_opt_sampler):
   if opt.hyper:
     print("Starting hyper parameter search")
     for _ in range(opt.nsamples):
-      opt_dict = {'sample': True}
+      opt_dict = {'sample': True,
+                  'name': opt.name,
+                  'group': opt.group}
       if opt.slurm:
         # Add? --gres=gpu:1 --mem=16000
-        run_sbatch(path, opt_dict)
+        sbatch_opt = {'output': os.path.join(opt.log_dir, "slurm.out"),
+                      'job-name': opt.name,
+                      'time': 720}
+        run_sbatch(path, opt_dict, sbatch_opt)
       else:
         run_local_batch(path, opt_dict, blocking=True)
     sys.exit()

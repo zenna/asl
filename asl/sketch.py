@@ -1,7 +1,7 @@
 "Sketching"
+from enum import Enum
 import torch
 import torch.nn as nn
-
 import asl
 from asl.loss import vec_dist
 from asl.type import Function
@@ -25,6 +25,12 @@ def soft_ch_var(choices, which):
   return soft_ch(choices, decision_vec)
 
 
+class Mode(Enum):
+  NOMODE = 0
+  REF = 1
+  NEURAL = 2
+
+
 class Sketch(Function, nn.Module):
   "Sketch Composition of Modules"
 
@@ -36,13 +42,13 @@ class Sketch(Function, nn.Module):
     self.model = model
     self.ref_model = ref_model
     self.add_module("interface", model)
-    self.mode = None
+    self.mode = Mode.NOMODE
 
   def observe(self, value):
-    if self.mode is None:
+    if self.mode is Mode.NOMODE:
       print("cant observe values without choosing mode")
       raise ValueError
-    elif self.mode is True:
+    elif self.mode is Mode.NEURAL:
       self.observes.append(value)
     else:
       self.ref_observes.append(value)
@@ -63,15 +69,15 @@ class Sketch(Function, nn.Module):
     self.observes = []
 
   def forward(self, *xs):
-    self.mode = True
+    self.mode = Mode.NEURAL
     res = self.sketch(*xs, **self.model)
-    self.mode = None
+    self.mode = Mode.NOMODE
     return res
 
   def forward_ref(self, *xs):
-    self.mode = False
+    self.mode = Mode.REF
     res = self.sketch(*xs, **self.ref_model)
-    self.mode = None
+    self.mode = Mode.NOMODE
     return res
 
 
@@ -100,6 +106,7 @@ def loss_gen_gen(sketch, tl, itr_transform=None):
       return inner_loss_gen(sketch, items_iter, ref_items_iter)
     except StopIteration:
       print("End of Epoch, restarting iterators")
+      sketch.clear_observes()
       items_iter = itr(tl)
       ref_items_iter = itr(tl)
       return inner_loss_gen(sketch, items_iter, ref_items_iter)

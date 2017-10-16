@@ -25,7 +25,7 @@ def use_gpu(default=True):
 def cuda(tensor, use_cuda=None):
   "Put tensor on GPU (maybe)"
   use_cuda = use_gpu() if use_cuda is None else use_cuda
-  if use_cuda:
+  if use_cuda and torch.cuda.is_available():
     return tensor.cuda()
   else:
     return tensor

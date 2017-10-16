@@ -6,14 +6,13 @@ from asl.modules.modules import ConstantNet, ModuleDict
 from asl.util.misc import cuda
 from asl.type import Type
 from asl.sketch import Sketch
-from asl.callbacks import print_loss, converged, save_checkpoint, load_checkpoint
+from asl.callbacks import print_loss, converged, save_checkpoint, load_checkpoint, validate, every_n
 from asl.util.data import trainloader
 from asl.log import log_append
 from asl.train import train
 from asl.structs.ndict import ref_dict
 from torch import optim
 import common
-
 
 class DictSketch(Sketch):
   def sketch(self, items, set_item, get_item, empty):
@@ -23,9 +22,11 @@ class DictSketch(Sketch):
     k1 = next(items)
     k2 = next(items)
     (adict,) = set_item(adict, k1, next(items))
+    log_append("{}/internal".format(self.mode.name), adict)
     (v, ) = get_item(adict, k1)
     self.observe(v)
     (adict,) = set_item(adict, k2, next(items))
+    log_append("{}/internal".format(self.mode.name), adict)
     (v2, ) = get_item(adict, k2)
     self.observe(v2)
     (v, ) = get_item(adict, k1)
@@ -63,13 +64,23 @@ def train_dict():
   if opt.resume_path is not None and opt.resume_path != '':
     load_checkpoint(opt.resume_path, ndict, optimizer)
 
-  train(loss_gen, optimizer, maxiters=100000,
+  tl_test = trainloader(opt.batch_size, False)
+  # FIXME Rename Traindata
+  test_loss_gen = asl.sketch.loss_gen_gen(dict_sketch, tl_test, asl.util.data.train_data)
+  validate_cb = every_n(validate(test_loss_gen), 1000)
+
+  train(loss_gen,
+        optimizer,
         cont=converged(1000),
         callbacks=[print_loss(100),
                    common.plot_empty,
                    common.plot_observes,
-                   save_checkpoint(1000, ndict)],
+                   common.plot_internals,
+                   save_checkpoint(1000, ndict),
+                   validate_cb],
         log_dir=opt.log_dir)
+  print('Finished Training')
+
 
 
 if __name__ == "__main__":
