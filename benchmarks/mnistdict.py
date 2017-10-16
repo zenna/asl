@@ -34,13 +34,13 @@ class DictSketch(Sketch):
 
 
 def mnist_args(parser):
-  parser.add_argument('--opt.nitems', type=int, default=3, metavar='NI',
+  parser.add_argument('--nitems', type=int, default=3, metavar='NI',
                       help='number of iteems in trace (default: 3)')
 
 def train_dict():
   opt = asl.opt.handle_args(mnist_args)
   opt = asl.opt.handle_hyper(opt, __file__)
-  opt.nitems = 3
+  nitems = 3
   mnist_size = (1, 28, 28)
 
   class MatrixDict(Type):

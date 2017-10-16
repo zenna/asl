@@ -1,6 +1,12 @@
-def observe_loss(criterion, obs, refobs, state=None):
-  "MSE between observations from reference and training stack"
-  total_loss = 0.0
-  losses = [criterion(obs[i], refobs[i]) for i in range(len(obs))]
-  total_loss = sum(losses) / len(losses)
-  return total_loss
+from torch import nn
+
+def mean(xs):
+  return sum(xs) / len(xs)
+
+
+def dist(x, y):
+  return nn.MSELoss()(x, y) # TODO: Specialize this by type
+
+
+def vec_dist(xs, ys, dist=nn.MSELoss(), accumulate=mean):
+    return accumulate([dist(xs[i], ys[i]) for i in range(len(xs))])
