@@ -1,7 +1,7 @@
 "Sketching"
+from enum import Enum
 import torch
 import torch.nn as nn
-
 import asl
 from asl.type import Function
 from asl.modules.modules import expand_consts
@@ -27,6 +27,12 @@ def dist(x, y):
   return nn.MSELoss()(x, y) # TODO: Specialize this by type
 
 
+class Mode(Enum):
+  NOMODE = 0
+  REF = 1
+  NEURAL = 2
+
+
 class Sketch(Function, nn.Module):
   "Sketch Composition of Modules"
 
@@ -38,13 +44,13 @@ class Sketch(Function, nn.Module):
     self.model = model
     self.ref_model = ref_model
     self.add_module("interface", model)
-    self.mode = None
+    self.mode = Mode.NOMODE
 
   def observe(self, value):
-    if self.mode is None:
+    if self.mode is Mode.NOMODE:
       print("cant observe values without choosing mode")
       raise ValueError
-    elif self.mode is True:
+    elif self.mode is Mode.NEURAL:
       self.observes.append(value)
     else:
       self.ref_observes.append(value)
@@ -66,15 +72,15 @@ class Sketch(Function, nn.Module):
     self.observes = []
 
   def forward(self, *xs):
-    self.mode = True
+    self.mode = Mode.NEURAL
     res = self.sketch(*xs, **self.model)
-    self.mode = None
+    self.mode = Mode.NOMODE
     return res
 
   def forward_ref(self, *xs):
-    self.mode = False
+    self.mode = Mode.REF
     res = self.sketch(*xs, **self.ref_model)
-    self.mode = None
+    self.mode = Mode.NOMODE
     return res
 
 

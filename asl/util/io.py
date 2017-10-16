@@ -1,8 +1,12 @@
-import sys
-import argparse
 import os
 import socket
 from datetime import datetime
+import string
+import random
+
+
+def id_gen(size=3, chars=string.ascii_lowercase):
+  return ''.join(random.choice(chars) for _ in range(size))
 
 
 def datadir(default='./data', varname='DATADIR'):
@@ -18,7 +22,7 @@ def log_dir(root=datadir(), group='nogroup', comment=''):
   return os.path.join(root,
                       'runs',
                       group,
-                      datetime.now().strftime('%b%d_%H-%M-%S')+'_'+socket.gethostname()+comment)
+                      id_gen() + '_' + datetime.now().strftime('%b%d_%H-%M-%S')+'_'+socket.gethostname()+'_'+comment)
 
 
 def directory_check(path):

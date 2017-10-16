@@ -9,11 +9,11 @@ def train_data(data):
   return asl.util.misc.cuda(Variable(data[0]))
 
 
-def trainloader(batch_size):
+def trainloader(batch_size, train=True):
   transform = transforms.Compose(
   [transforms.ToTensor(),
    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
-  trainset = torchvision.datasets.MNIST(root=datadir(), train=True,
+  trainset = torchvision.datasets.MNIST(root=datadir(), train=train,
                                         download=True, transform=transform)
   return torch.utils.data.DataLoader(trainset,
                                      batch_size=batch_size,

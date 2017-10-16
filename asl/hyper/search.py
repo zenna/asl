@@ -1,8 +1,6 @@
 "Funcs to search over hyperparameters"
 import subprocess
 import os
-from wacacore.train.hyper import rand_product
-
 
 def stringify(k, v):
   """Turn a key value into command line argument"""

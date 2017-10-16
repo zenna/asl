@@ -1,5 +1,9 @@
 import shutil
 import torch
+import asl
+import os
+import math
+from asl.train import train, TrainMode
 
 "Callbacks to be passed to optimization"
 def tb_loss(i, writer, loss, **kwargs):
@@ -38,12 +42,6 @@ def print_loss(every, log_tb=True):
   next(gen)
   return gen
 
-
-import asl
-import os
-import math
-
-
 def save_checkpoint(every, model, verbose=True):
   "Save data every every steps"
   def save_checkpoint_innner(log_dir, i, optimizer, **kwargs):
@@ -67,31 +65,6 @@ def load_checkpoint(resume_path, model, optimizer, verbose=True):
   # optimizer.load_state_dict(checkpoint['optimizer'])
   model.load_state_dict(checkpoint['state_dict'])
   model.eval()
-
-# def save_checkpoint(every, model, verbose=True):
-#   "Save check point every every iterations and best seen so far"
-#   def save_checkpoint_gen(every, model):
-#     best_loss = math.inf
-#     while True:
-#       data = yield
-#       best_loss = min(best_loss, data.loss)
-#       savepath = os.path.join(data.log_dir, "checkpoint.pth")
-#       if (data.i + 1) % every == 0:
-#         torch.save({'i': data.i + 1,
-#                     'state_dict': model.state_dict(),
-#                     'best_loss': best_loss,
-#                     'optimizer': data.optimizer.state_dict()},
-#                    savepath)
-#         print(data.loss, " ", best_loss)
-#         if data.loss <= best_loss:
-#           if verbose:
-#             print("Currently at best")
-#           shutil.copyfile(savepath,
-#                           os.path.join(data.log_dir, 'checkpoint_best.pth.tar'))
-#
-#   gen = save_checkpoint_gen(every, model)
-#   next(gen)
-#   return gen
 
 
 def converged(every, print_change=True, change_thres=-0.000005):
@@ -124,5 +97,47 @@ def converged(every, print_change=True, change_thres=-0.000005):
         running_loss = 0.0
 
   gen = converged_gen(every)
+  next(gen)
+  return gen
+
+
+def validate(test_loss_gen, maxiters=100, cont=None, pre_callbacks=None,
+             callbacks=None, post_callbacks=None):
+  "Validation is done using a callback"
+  def validate_clos(optimizer, writer, **kwargs):
+    print("Test Validation...")
+    test_loss_cb = test_loss()
+    cbs = [test_loss_cb] if callbacks is None else callbacks + [test_loss_cb]
+    post_cbs = [test_loss_cb] if post_callbacks is None else post_callbacks + [test_loss_cb]
+
+    train(test_loss_gen,
+          optimizer,
+          callbacks=cbs,
+          pre_callbacks=pre_callbacks,
+          post_callbacks=post_cbs,
+          maxiters=maxiters,
+          cont=cont,
+          writer=writer,
+          close_writer=False,
+          resetlog=False,
+          optimize=False)
+  return validate_clos
+
+
+def test_loss(log_tb=True):
+  "Accumulate training loss then print/save"
+  def test_loss_gen():
+    running_loss = 0.0
+    while True:
+      data = yield
+      if data.train_mode == TrainMode.RUN:
+        running_loss += data.loss
+      elif data.train_mode == TrainMode.POST:
+        loss = running_loss / (data.i - 1)
+        print('test loss per sample at %s (avg over %s) : %.3f' % (data.start_i, data.i - 1, loss))
+        if log_tb:
+          data.writer.add_scalar('loss', loss, data.start_i)
+        running_loss = 0.0
+  gen = test_loss_gen()
   next(gen)
   return gen

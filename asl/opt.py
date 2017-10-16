@@ -36,6 +36,9 @@ def std_opt_sampler():
   return opt
 
 
+# Want
+# Want to use default logdir but with group name that is taken from cmdline
+
 def add_std_args(parser):
   parser.add_argument('--name', type=str, default='', metavar='JN',
                       help='Name of job')
@@ -51,7 +54,7 @@ def add_std_args(parser):
                       help='input batch size for testing (default: 1000)')
   parser.add_argument('--epochs', type=int, default=10, metavar='N',
                       help='number of epochs to train (default: 10)')
-  parser.add_argument('--log_dir', type=str, default=unique, metavar='D',
+  parser.add_argument('--log_dir', type=str, metavar='D',
                       help='Path to store data')
   parser.add_argument('--resume_path', type=str, default='', metavar='R',
                       help='Path to resume parameters from')
@@ -73,6 +76,21 @@ def add_hyper_params(parser):
   parser.add_argument('--slurm', action='store_true', default=False,
                       help='Use the SLURM batching system')
 
+def handle_log_dir(opt):
+  if opt.log_dir is None:
+    opt.log_dir = asl.util.io.log_dir(group=opt.group, comment=opt.name)
+
+
+def handle_cuda(opt):
+  if opt.cuda and not torch.cuda.is_available():
+    print("Chose CUDA but CUDA not available, continuing without CUDA!")
+    opt.cuda = False
+
+def handle_template(opt):
+  opt.template = asl.modules.templates.VarConvNet
+  opt.template_opt = {}
+
+
 def handle_args(*add_cust_parses):
   parser = argparse.ArgumentParser(description='')
   add_std_args(parser)
@@ -80,12 +98,10 @@ def handle_args(*add_cust_parses):
   for add_cust_parse in add_cust_parses:
     add_cust_parse(parser)
   opt = parser.parse_args()
-  if opt.cuda and not torch.cuda.is_available():
-    print("Chose CUDA but CUDA not available, continuing without CUDA!")
-    opt.cuda = False
 
-  opt.template = asl.modules.templates.VarConvNet
-  opt.template_opt = {}
+  handle_log_dir(opt)
+  handle_cuda(opt)
+  handle_template(opt)
   return opt
 
 
