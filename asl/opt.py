@@ -131,7 +131,7 @@ def handle_hyper(opt, path, opt_sampler=std_opt_sampler):
         # Add? --gres=gpu:1 --mem=16000
         sbatch_opt = {'output': os.path.join(opt.log_dir, "slurm.out"),
                       'job-name': opt.name,
-                      't': 720}
+                      'time': 720}
         run_sbatch(path, opt_dict, sbatch_opt)
       else:
         run_local_batch(path, opt_dict, blocking=True)
