@@ -1,3 +1,8 @@
+from benchmarks.types import vec_stack, bern_seq, matrix_stack
+import benchmarks.common as common
+import asl.opt
+
+
 import torch
 from typing import List
 import asl
