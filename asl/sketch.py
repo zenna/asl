@@ -44,7 +44,7 @@ class Sketch(Function, nn.Module):
     self.add_module("interface", model)
     self.mode = Mode.NOMODE
 
-  def observe(self, value, label):
+  def observe(self, value, label=''):
     if self.mode is Mode.NOMODE:
       print("cant observe values without choosing mode")
       raise ValueError
