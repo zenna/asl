@@ -3,28 +3,26 @@ from enum import Enum
 import torch
 import torch.nn as nn
 import asl
+from asl.loss import vec_dist
 from asl.type import Function
 from asl.modules.modules import expand_consts
 
 
-def soft_ch(choices, which):
+def soft_ch(choices, decision_vec):
   "Soft choice of elements of choices"
   nchoices = len(choices)
   if nchoices == 1:
     return choices[0]
   choices = expand_consts(choices)
-  decision_vec = which(nchoices)
   decision_vec = torch.nn.Softmax()(decision_vec)
   scaled = [choices[i] * decision_vec[0, i] for i in range(nchoices)]
   return sum(scaled)
 
 
-def mean(xs):
-  return sum(xs) / len(xs)
-
-
-def dist(x, y):
-  return nn.MSELoss()(x, y) # TODO: Specialize this by type
+def soft_ch_var(choices, which):
+  "Soft choice of elements of choices"
+  decision_vec = which(len(choices))
+  return soft_ch(choices, decision_vec)
 
 
 class Mode(Enum):
@@ -55,7 +53,7 @@ class Sketch(Function, nn.Module):
     else:
       self.ref_observes.append(value)
 
-  def observe_loss(self, accumulate=mean):
+  def observe_loss(self):
     "Loss between observed and references"
     nobs = len(self.ref_observes)
     if nobs != len(self.observes):
@@ -64,8 +62,7 @@ class Sketch(Function, nn.Module):
       print("No observes found")
       raise ValueError
 
-    losses = [dist(self.observes[i], self.ref_observes[i]) for i in range(nobs)]
-    return accumulate(losses)
+    return vec_dist(self.observes, self.ref_observes)
 
   def clear_observes(self):
     self.ref_observes = []

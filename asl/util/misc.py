@@ -50,6 +50,11 @@ def iterget(dataiter, n, transform=identity):
   return [Variable(cuda(transform(next(dataiter)))) for i in range(n)]
 
 
+def take(iter, n):
+  "Take n items for iterator"
+  return [next(iter) for i in range(n)]
+
+
 def is_tensor_var(tensor):
   "Is tensor either a tensor or variable?"
   return isinstance(tensor, torch.autograd.Variable) or torch.is_tensor(tensor)

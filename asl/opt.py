@@ -5,6 +5,7 @@ import argparse
 from argparse import Namespace
 import pprint
 import asl
+import asl.util.io
 from asl.hyper.search import run_local_batch, run_sbatch
 from numpy.random import choice
 from torch import optim
