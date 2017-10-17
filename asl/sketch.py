@@ -44,7 +44,7 @@ class Sketch(Function, nn.Module):
     self.add_module("interface", model)
     self.mode = Mode.NOMODE
 
-  def observe(self, value):
+  def observe(self, value, label):
     if self.mode is Mode.NOMODE:
       print("cant observe values without choosing mode")
       raise ValueError
@@ -52,6 +52,7 @@ class Sketch(Function, nn.Module):
       self.observes.append(value)
     else:
       self.ref_observes.append(value)
+    return value
 
   def observe_loss(self):
     "Loss between observed and references"

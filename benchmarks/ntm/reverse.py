@@ -16,7 +16,7 @@ from asl.structs.nstack import PushNet, PopNet, ref_stack
 from asl.util.misc import iterget, take
 from asl.train import train, max_iters
 from asl.modules.modules import ConstantNet, ModuleDict
-from asl.log import log_append
+from asl.log import log_append, log
 from asl.loss import vec_dist
 from torch import optim
 
@@ -46,6 +46,27 @@ def onehot(i, onehot_len, batch_size):
   y_onehot.zero_()
   return Variable(cuda(y_onehot.scatter_(1, y, 1)), requires_grad=False)
 
+
+def plot_sketch(i, log, writer, batch=0, **kwargs):
+  "Show internal structure"
+  for (j, img) in enumerate(log['item_index']):
+    writer.add_image('item_index/{}'.format(j), img, i)
+  for (j, img) in enumerate(log['pop_item']):
+    writer.add_image('pop_item/{}'.format(j), img[0:1, :], i)
+  for (j, img) in enumerate(log['push_item']):
+    writer.add_image('push_item/{}'.format(j), img[0:1, :], i)
+  for (j, img) in enumerate(log['pop_stack']):
+    writer.add_image('pop_stack/{}'.format(j), img[batch], i)
+  for (j, img) in enumerate(log['push_stack']):
+    writer.add_image('push_stack/{}'.format(j), img[batch], i)
+  for (j, img) in enumerate(log['outputs']):
+    writer.add_image('outputs/{}'.format(j), img[0:1, :], i)
+  for (j, img) in enumerate(log['items']):
+    writer.add_image('items/{}'.format(j), img[0:1, :], i)
+  for (j, img) in enumerate(log['rev_items']):
+    writer.add_image('rev_items/{}'.format(j), img[0:1, :], i)
+
+
 class CopySketch(Sketch):
   "Sketch for copy of list of elements"
 
@@ -69,11 +90,15 @@ class CopySketch(Sketch):
     stack = empty
     out_items = []
     for i in range(self.seq_len):
-      (stack,) = push(stack,
-                         soft_ch(items, self.choose_item(i)))
+      choice = log_append("item_index", self.choose_item(i))
+      item = log_append("push_item", soft_ch(items, choice))
+      (stack,) = push(stack, item)
+      log_append("push_stack", stack)
 
-    for _ in range(self.seq_len):
+    for i in range(self.seq_len):
       (stack, item) = pop(stack)
+      log_append("pop_stack", stack)
+      log_append("pop_item", item)
       out_items.append(item)
 
     return out_items
@@ -90,7 +115,7 @@ def reverse_args(parser):
   parser.add_argument('--seq_len', type=int, default=4, metavar='NI',
                       help='Length of sequence')
   parser.add_argument('--stack_len', type=int, default=8, metavar='NI',
-                      help='Length of sequence')
+                      help='Length oitemsf sequence')
 
 
 def benchmark_copy_sketch(batch_size, stack_len, seq_len, template, log_dir,
@@ -122,8 +147,10 @@ def benchmark_copy_sketch(batch_size, stack_len, seq_len, template, log_dir,
     rev_items = items.copy()
     rev_items.reverse()
     outputs = copy_sketch(items)
-    log_append("outputs", outputs)
-    log_append("items", items)
+    log("outputs", outputs)
+    log("items", items)
+    log("rev_items", rev_items)
+
     # import pdb; pdb.set_trace()
     return vec_dist(outputs, rev_items, dist=nn.BCELoss())
 
@@ -132,6 +159,7 @@ def benchmark_copy_sketch(batch_size, stack_len, seq_len, template, log_dir,
         optimizer,
         cont=converged(1000),
         callbacks=[print_loss(100),
+                   every_n(plot_sketch, 500),
                   #  common.plot_empty,
                   #  common.plot_observes,
                    save_checkpoint(1000, copy_sketch)],
@@ -140,4 +168,5 @@ def benchmark_copy_sketch(batch_size, stack_len, seq_len, template, log_dir,
 if __name__ == "__main__":
   opt = asl.opt.handle_args(reverse_args)
   opt = asl.opt.handle_hyper(opt, __file__)
+  asl.opt.save_opt(opt)
   benchmark_copy_sketch(**vars(opt))

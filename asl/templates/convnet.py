@@ -1,12 +1,10 @@
 "Templates (modules parameterized by shape)"
-from asl.modules.modules import expand_consts, ModuleDict
-import torch
+import random
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-import random
-from asl.util.misc import mul_product
 from asl.templates.packing import split_channel, cat_channels, slither
+from asl.modules.modules import expand_consts
 
 
 def channels(sizes):
