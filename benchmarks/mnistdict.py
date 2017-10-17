@@ -1,3 +1,4 @@
+import torch
 from typing import List
 import asl
 import asl.opt
