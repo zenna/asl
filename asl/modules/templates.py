@@ -123,6 +123,7 @@ class MLPNet(nn.Module):
     x = self.m1(x)
     x = F.elu(x)
     y = self.m2(x)
+    y = F.sigmoid(y)
 
     outxs = unstack_channel(y, self.out_sizes)
     res = [x.contiguous().view(x.size(0), *self.out_sizes[i]) for (i, x) in enumerate(outxs)]
