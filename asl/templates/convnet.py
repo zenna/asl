@@ -6,33 +6,7 @@ import torch.nn.functional as F
 import numpy as np
 import math
 from asl.util.misc import mul_product
-
-class MyClass(nn.Module):
-  def __init__(self):
-    super(MyClass, self).__init__()
-    # self.bok = nn.ModuleList([nn.Conv2d(10, 10, 3, padding=1) for i in range(3)])
-    self.mda = ModuleDict({str(i): nn.Conv2d(10, 10, 3, padding=1) for i in range(3)})
-
-
-
-# FIXME: Slice dim and channel dim should be same, confusing because off by 1
-# adjustmenets due to batching, revise!
-def unstack_channel(t, sizes, channel_dim=0, slice_dim=1):
-  assert len(sizes) > 0
-  channels = [size[channel_dim] for size in sizes]
-  if len(sizes) == 1:
-    # print("Only one output skipping unstack")
-    return (t,)
-  else:
-    outputs = []
-    c0 = 0
-    for c in channels:
-      # print("Split ", c0, ":", c0 + c)
-      outputs.append(t.narrow(slice_dim, c0, c))
-      c0 = c
-
-  return tuple(outputs)
-
+from asl.templates.packing import unstack_channel, cat_channels
 
 class VarConvNet(nn.Module):
   "ConvNet which takes variable inputs and variable outputs"
@@ -42,6 +16,7 @@ class VarConvNet(nn.Module):
                batch_norm=False,
                h_channels=16,
                nhlayers=24,
+               combine_inputs=cat_channels,
                activation=F.elu):
     super(VarConvNet, self).__init__()
     # Assumes batch not in size and all in/out same size except channel
@@ -49,6 +24,7 @@ class VarConvNet(nn.Module):
     self.out_sizes = out_sizes
     self.channel_dim = channel_dim
     self.activation = activation
+    self.combine_inputs = combine_inputs
     ch_dim_wo_batch = channel_dim - 1
     in_channels = sum([size[ch_dim_wo_batch] for size in in_sizes])
     out_channels = sum([size[ch_dim_wo_batch] for size in out_sizes])
@@ -81,7 +57,7 @@ class VarConvNet(nn.Module):
     assert len(xs) == len(self.in_sizes), "Wrong # inputs"
     exp_xs = expand_consts(xs) # TODO: MOVE THIS TO FUNC,
     # Combine inputs
-    x = torch.cat(exp_xs, dim=self.channel_dim)
+    x = self.combine_inputs(exp_xs)
     x = self.conv1(x)
 
     # h layers
@@ -96,34 +72,3 @@ class VarConvNet(nn.Module):
 
     # Uncombine
     return unstack_channel(x, self.out_sizes)
-
-
-class MLPNet(nn.Module):
-  "ConvNet which takes variable inputs and variable outputs"
-
-  def __init__(self, in_sizes, out_sizes, channel_dim=1):
-    super(MLPNet, self).__init__()
-    # Assumes batch not in size and all in/out same size except channel
-    self.flat_in_size = [mul_product(size) for size in in_sizes]
-    self.flat_out_size = [mul_product(size) for size in out_sizes]
-
-    self.nin = sum(self.flat_in_size)
-    self.nout = sum(self.flat_out_size)
-    self.nmid = math.floor((self.nin + self.nout) / 2)
-    self.in_sizes = in_sizes
-    self.out_sizes = out_sizes
-    self.m1 = nn.Linear(self.nin, self.nmid)
-    self.m2 = nn.Linear(self.nmid, self.nout)
-
-  def forward(self, *xs):
-    assert len(xs) == len(self.in_sizes), "Wrong # inputs"
-    exp_xs = expand_consts(xs) # TODO: Make optional
-    exp_xs = [x.contiguous().view(x.size(0), -1) for x in exp_xs]
-    x = torch.cat(exp_xs, dim=1)
-    x = self.m1(x)
-    x = F.elu(x)
-    y = self.m2(x)
-
-    outxs = unstack_channel(y, self.out_sizes)
-    res = [x.contiguous().view(x.size(0), *self.out_sizes[i]) for (i, x) in enumerate(outxs)]
-    return res
