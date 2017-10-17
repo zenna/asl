@@ -1,7 +1,7 @@
 "Stack Data Structure trained from a reference implementation"
 from collections import deque
 from asl.type import Function
-from asl.modules.templates import VarConvNet
+from asl.templates.convnet import VarConvNet
 from asl.modules.modules import ConstantNet, ModuleDict
 from asl.util.misc import cuda
 from torch import nn

@@ -4,14 +4,30 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-import math
+import random
 from asl.util.misc import mul_product
-from asl.templates.packing import unstack_channel, cat_channels
+from asl.templates.packing import split_channel, cat_channels, slither
+
+
+def channels(sizes):
+  total = 0
+  for size in sizes:
+    if len(size) == 1:
+      total += 1
+    elif len(size) == 3:
+      total += size[0]
+    else:
+      print("Only sizes of 2 and 4 supported")
+      raise ValueError
+  return total
+
 
 class VarConvNet(nn.Module):
   "ConvNet which takes variable inputs and variable outputs"
 
-  def __init__(self, in_sizes, out_sizes,
+  def __init__(self,
+               in_sizes,
+               out_sizes,
                channel_dim=1,
                batch_norm=False,
                h_channels=16,
@@ -25,9 +41,8 @@ class VarConvNet(nn.Module):
     self.channel_dim = channel_dim
     self.activation = activation
     self.combine_inputs = combine_inputs
-    ch_dim_wo_batch = channel_dim - 1
-    in_channels = sum([size[ch_dim_wo_batch] for size in in_sizes])
-    out_channels = sum([size[ch_dim_wo_batch] for size in out_sizes])
+    in_channels = channels(in_sizes)
+    out_channels = channels(out_sizes)
 
     # Layers
     self.conv1 = nn.Conv2d(in_channels, h_channels, 3, padding=1)
@@ -46,7 +61,7 @@ class VarConvNet(nn.Module):
     "Hyper Parameter Sampler"
     batch_norm = np.random.rand() > pbatch_norm
     nlayers = np.random.randint(1, max_layers)
-    h_channels = int(np.random.choice([12, 16, 24]))
+    h_channels = random.choice([12, 16, 24])
     act = np.random.choice([F.relu, F.elu])
     return {'batch_norm': batch_norm,
             'h_channels': h_channels,
@@ -71,4 +86,5 @@ class VarConvNet(nn.Module):
     x = self.activation(x)
 
     # Uncombine
-    return unstack_channel(x, self.out_sizes)
+    split_channels = split_channel(x, self.out_sizes)
+    return tuple(map(slither, split_channels, self.out_sizes)) # FIXME, not all men

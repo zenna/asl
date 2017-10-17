@@ -1,7 +1,7 @@
 "Stack Data Structure trained from a reference implementation"
 from asl.type import Function
 from asl.modules.modules import ConstantNet, ModuleDict
-from asl.modules.templates import VarConvNet
+from asl.templates.convnet import VarConvNet
 from asl.util.misc import cuda
 from torch import nn
 
@@ -20,6 +20,13 @@ class Pop(Function):
     super(Pop, self).__init__([stack_type], [stack_type, item_type])
 
 
+def type_check(xs, types):
+  assert len(xs) == len(types)
+  for i, x in enumerate(xs):
+    same_size = xs[i].size()[1:] == types[i].size
+    assert same_size
+  return xs
+
 class PushNet(Push, nn.Module):
   def __init__(self, stack_type, item_type, module=None, template=VarConvNet,
                template_opt=None):
@@ -31,8 +38,10 @@ class PushNet(Push, nn.Module):
       self.module = module
     self.add_module("Push", self.module)
 
-  def forward(self, x, y):
-    return self.module.forward(x, y)
+  def forward(self, *xs):
+    args = type_check(xs, self.in_types)
+    res = self.module.forward(*args)
+    return type_check(res, self.out_types)
 
 
 class PopNet(Pop, nn.Module):
@@ -46,9 +55,10 @@ class PopNet(Pop, nn.Module):
       self.module = module
     self.add_module("Pop", self.module)
 
-
-  def forward(self, x):
-    return self.module.forward(x)
+  def forward(self, *xs):
+    args = type_check(xs, self.in_types)
+    res = self.module.forward(*args)
+    return type_check(res, self.out_types)
 
 
 def list_push(stack, element):

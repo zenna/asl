@@ -1,26 +1,21 @@
-"""Copy Benchmark - Can a neural network learn to copy
-From NTM Paper:
-- The network is presented with an input sequence of random binary vectors, followed by a delimiter flag.
-- The networks were trained to copy sequences of eight bit random vectors, where the
-sequence lengths were randomised between 1 and 20. The target sequence was simply a
-copy of the input sequence (without the delimiter flag).
-"""
-from benchmarks.types import vec_queue, bern_seq
+"""Reverse Benchmark - Can a neural network learn to reverse a sequence"""
+from benchmarks.types import vec_stack, bern_seq, matrix_stack
 import benchmarks.common as common
 import asl.opt
 
-from asl.modules.templates import MLPNet
+from asl.templates.packing import stretch_cat
+from asl.templates.convnet import VarConvNet
+from asl.templates.mlp import MLPNet
 from asl.sketch import Sketch, soft_ch
 from asl.callbacks import every_n, print_loss, converged, save_checkpoint
 from asl.util.misc import cuda
 from asl.opt import handle_hyper
 from asl.util.generators import infinite_samples
 from asl.type import Type
-from asl.structs.nqueue import EnqueueNet, DequeueNet, ref_queue
+from asl.structs.nstack import PushNet, PopNet, ref_stack
 from asl.util.misc import iterget, take
 from asl.train import train, max_iters
 from asl.modules.modules import ConstantNet, ModuleDict
-from asl.modules.templates import MLPNet
 from asl.log import log_append
 from asl.loss import vec_dist
 from torch import optim
@@ -59,7 +54,6 @@ class CopySketch(Sketch):
                                      [List[element_type]],
                                      model,
                                      ref_model)
-    self.choice_len = 10
     self.onehot_len = seq_len
     self.choosenet = MLPNet([(self.onehot_len,)], [(seq_len,)])
     self.seq_len = seq_len
@@ -70,16 +64,16 @@ class CopySketch(Sketch):
     (item_choice, ) = self.choosenet(ionehot)
     return F.sigmoid(item_choice) # FIXME: Net should do this sigmoiding
 
-  def sketch(self, items, enqueue, dequeue, empty):
+  def sketch(self, items, push, pop, empty):
     # import pdb; pdb.set_trace()
-    queue = empty
+    stack = empty
     out_items = []
     for i in range(self.seq_len):
-      (queue,) = enqueue(queue,
+      (stack,) = push(stack,
                          soft_ch(items, self.choose_item(i)))
 
     for _ in range(self.seq_len):
-      (queue, item) = dequeue(queue)
+      (stack, item) = pop(stack)
       out_items.append(item)
 
     return out_items
@@ -93,28 +87,32 @@ def plot_items(i, log, writer, **kwargs):
   writer.add_image('rev/3', log['items'][0][2][0], i)
 
 def reverse_args(parser):
-  parser.add_argument('--seq_len', type=int, default=8, metavar='NI',
+  parser.add_argument('--seq_len', type=int, default=4, metavar='NI',
                       help='Length of sequence')
-  parser.add_argument('--queue_len', type=int, default=8, metavar='NI',
+  parser.add_argument('--stack_len', type=int, default=8, metavar='NI',
                       help='Length of sequence')
 
 
-def benchmark_copy_sketch(batch_size, queue_len, seq_len, template, log_dir,
+def benchmark_copy_sketch(batch_size, stack_len, seq_len, template, log_dir,
                           lr, template_opt, **kwargs):
-  queue_len = queue_len
+  stack_len = stack_len
   seq_len = seq_len  # From paper: between 1 and 20
   BernSeq = bern_seq(seq_len)
-  VecQueue = vec_queue(queue_len)
-  nqueue = ModuleDict({'enqueue': EnqueueNet(VecQueue, BernSeq,
-                                             template=MLPNet,
-                                             template_opt={}),
-                       'dequeue': DequeueNet(VecQueue, BernSeq,
-                                             template=MLPNet,
-                                             template_opt={}),
-                       'empty': ConstantNet(VecQueue)})
+  MatrixStack = matrix_stack(1, seq_len, seq_len)
+  template_opt['combine_inputs'] = lambda xs: stretch_cat(xs,
+                                                          MatrixStack.size,
+                                                          2)
+  template_opt['activation'] = F.sigmoid
+  nstack = ModuleDict({'push': PushNet(MatrixStack, BernSeq,
+                                             template=VarConvNet,
+                                             template_opt=template_opt),
+                       'pop': PopNet(MatrixStack, BernSeq,
+                                             template=VarConvNet,
+                                             template_opt=template_opt),
+                       'empty': ConstantNet(MatrixStack)})
 
-  refqueue = ref_queue()
-  copy_sketch = CopySketch(BernSeq, nqueue, refqueue, seq_len)
+  refstack = ref_stack()
+  copy_sketch = CopySketch(BernSeq, nstack, refstack, seq_len)
   cuda(copy_sketch)
   bern_iter = BernSeq.iter(batch_size)
 
