@@ -130,8 +130,7 @@ def handle_hyper(opt, path, opt_sampler=std_opt_sampler):
                   'group': opt.group}
       if opt.slurm:
         # Add? --gres=gpu:1 --mem=16000
-        sbatch_opt = {'output': os.path.join(opt.log_dir, "slurm.out"),
-                      'job-name': opt.name,
+        sbatch_opt = {'job-name': opt.name,
                       'time': 720}
         run_sbatch(path, opt_dict, sbatch_opt)
       else:
