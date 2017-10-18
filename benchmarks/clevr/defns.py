@@ -1,43 +1,18 @@
 from asl.type import Function, Type
 import torch.nn as nn
 from asl.templates.mlp import MLPNet
+from asl.net import Net
 
-# right now the push abstraction is doing nothing useufl
-# what might it do?
-#
-
-def type_check(xs, types):
-  assert len(xs) == len(types)
-  for i, x in enumerate(xs):
-    same_size = xs[i].size()[1:] == types[i].size
-    assert same_size
-  return xs
-
-
-class Net(nn.Module):
-  def __init__(self, name, module=None, template=MLPNet, template_opt=None):
-    super(Net, self).__init__()
-    if module is None:
-      template_opt = {} if template_opt is None else template_opt
-      self.module = template(self.in_sizes(), self.out_sizes(), **template_opt)
-    else:
-      self.module = module
-    self.add_module(name, self.module)
-
-  def forward(self, *xs):
-    args = type_check(xs, self.in_types)
-    res = self.module.forward(*args)
-    return type_check(res, self.out_types)
-
-# Fixed types
 
 class SceneGraph(Type):
   "Stack represented as a vector"
   size = (10, 2, 3)
 
+
 class Object(Type):
   "Object represented as one hot matrix"
   size = (4, 8)
+
 
 class ObjectSet(Type):
   "Object set represented as one hot matrix"
@@ -45,43 +20,38 @@ class ObjectSet(Type):
 
 
 class Relation(Type):
-  "Object set represented as one hot matrix"
+  "Relation as sparse relation matrix"
   size = (4, 10, 10)
 
 
 class Boolean(Type):
-  "Object set represented as one hot matrix"
+  "Boolean"
   size = (1,)
 
 
 class Integer(Type):
-  "Object set represented as one hot matrix"
+  "Integer"
   size = (10,)
 
 
 class Color(Type):
-  "Object set represented as one hot matrix"
+  "Enum, one hot"
   size = (8,)
 
 
 class Material(Type):
-  "Object set represented as one hot matrix"
+  "Maeterial One hot"
   size = (8,)
 
 
 class Shape(Type):
-  "Object set represented as one hot matrix"
+  "Shape one hto"
   size = (8,)
 
 
 class Size(Type):
-  "Object set represented as one hot matrix"
+  "Size one hot"
   size = (8,)
-
-class Scene(Function, Net):
-  def __init__(self, name="Scene", module=None, template=MLPNet, template_opt=None):
-    Function.__init__(self, [SceneGraph], [ObjectSet])
-    Net.__init__(self, "Scene", module, template, template_opt)
 
 
 class Unique(Function, Net):

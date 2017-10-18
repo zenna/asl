@@ -7,6 +7,7 @@ import asl.util.torch
 from asl.util.misc import take
 import torch
 
+
 def clevr_iter(clevr_root,
                data_type,
                train=True):
@@ -33,30 +34,57 @@ def scenes_iter(clevr_root=os.path.join(datadir(), "CLEVR_v1.0"),
   return clevr_iter(clevr_root, "scenes", train)
 
 
+# def data_iter(batch_size, train=True):
+#   "Iterates paired scene and question data"
+#   if batch_size % 10 != 0:
+#     raise ValueError
+#
+#   qitr = questions_iter(train=train)
+#   sitr = scenes_iter(train=train)
+#   ndraws = batch_size // 10
+#
+#   while True:
+#     rel_tens = []
+#     obj_set_tens = []
+#     progs = []
+#     answers = []
+#     for i in range(ndraws):
+#       s1 = next(sitr)
+#       scene1 = SceneGraph.from_json(s1)
+#       rel_ten = scene1.relations.tensor()
+#       objset_ten = scene1.object_set.tensor()
+#       rel_tens.append(rel_ten)
+#       obj_set_tens.append(objset_ten)
+#       ques = take(qitr, 10)
+#       ten_progs = [q['program'] for q in ques]
+#       ten_answers = [q['answer'] for q in ques]
+#       progs.append(ten_progs)
+#       answers.append(ten_answers)
+#
+#     yield progs, obj_set_tens, rel_tens, answers
+
+
 def data_iter(batch_size, train=True):
   "Iterates paired scene and question data"
-  if batch_size % 10 != 0:
-    raise ValueError
-
   qitr = questions_iter(train=train)
   sitr = scenes_iter(train=train)
   ndraws = batch_size // 10
 
   while True:
-    scenes = []
+    rel_tens = []
+    obj_set_tens = []
     progs = []
-    for i in range(ndraws):
-      s1 = next(sitr)
-      scene1 = SceneGraph.from_json(s1)
-      scene1_ten = scene1.tensor()
-      ques = take(qitr, 10)
-      ten_progs = [q['program'] for q in ques]
-      ten_scenes = [scene1_ten for i in range(10)]
-      scenes = scenes + ten_scenes
-      progs = progs + ten_progs
+    answers = []
+    for i in range(batch_size):
+      qi = next(qitr)
+      si = next(sitr)
+      scenei = SceneGraph.from_json(si)
+      rel_tens.append(scenei.relations.tensor())
+      obj_set_tens.append(scenei.object_set.tensor())
+      progs.append(qi['program'])
+      answers.append(qi['answers'])
 
-    yield (scenes, progs)
-
+    yield progs, obj_set_tens, rel_tens, answers
 
 class Shape(Enum):
   def tensor(self):
@@ -91,6 +119,15 @@ class Color(Enum):
   cyan = 5
   brown = 6
   purple = 7
+
+
+class Relation(Enum):
+  def tensor(self):
+    return asl.util.torch.onehot(self.value, 8, 1)
+  left = 0
+  right = 1
+  front = 2
+  behind = 3
 
 
 class ClevrObject():
@@ -140,8 +177,8 @@ class Relations():
     relations = {}
     for (i, obj) in enumerate(object_set.objects):
       hello = {}
-      for rel in ['left', 'right', 'front', 'behind']:
-        objsids = json['relationships'][rel][i]
+      for rel in Relation:
+        objsids = json['relationships'][rel.name][i]
         hello[rel] = [object_set.objects[j] for j in objsids]
       relations[obj] = hello
 
@@ -180,8 +217,8 @@ def unique(object_set):
   else:
     return object_set.objects[0]
 
-def relate(scene_graph, object, relation):
-  return ClevrObjectSet(scene_graph.relations.relations[object][relation])
+def relate(relations, object, relation):
+  return ClevrObjectSet(relations.relations[object][relation])
 
 def count(object_set):
   return len(object_set.objects)
@@ -274,50 +311,59 @@ def rem(object_set, object):
   return ClevrObjectSet([obj for obj in object_set.objects if obj != object])
 
 
-def same_shape(scene_graph, object):
-  return rem(filter_shape(scene(scene_graph), query_shape(object)), object)
+def same_shape(scene_object_set, object):
+  return rem(filter_shape(scene_object_set, query_shape(object)), object)
 
 
-def same_size(scene_graph, object):
-  return rem(filter_size(scene(scene_graph), query_size(object)), object)
+def same_size(scene_object_set, object):
+  return rem(filter_size(scene_object_set, query_size(object)), object)
 
 
-def same_material(scene_graph, object):
-  return rem(filter_material(scene(scene_graph), query_material(object)), object)
+def same_material(scene_object_set, object):
+  return rem(filter_material(scene_object_set, query_material(object)), object)
 
 
-def same_color(scene_graph, object):
-  return rem(filter_color(scene(scene_graph), query_color(object)), object)
+def same_color(scene_object_set, object):
+  return rem(filter_color(scene_object_set, query_color(object)), object)
 
-def func_from_string(func_string):
+def eval_string(func_string):
   return eval(func_string)
 
+# def value(val):
 
 VALUE = {}
 VALUE.update({x.name: x for x in Color})
 VALUE.update({x.name: x for x in Material})
 VALUE.update({x.name: x for x in Shape})
 VALUE.update({x.name: x for x in Size})
-VALUE.update({'left': 'left',
-              'right': 'right',
-              'front': 'front',
-              'behind': 'behind'})
+VALUE.update({x.name: x for x in Relation})
 
+# VALUE.update({'left': 'left',
+#               'right': 'right',
+#               'front': 'front',
+#               'behind': 'behind'})
+#
 
-def interpret(json, inscene):
+def interpret(json,
+              scene_object_set,
+              relations,
+              func_from_string=eval_string,
+              value_transform=asl.util.misc.identity):
   "interpret the json function spec"
   fouts = [() for i in json]
   for i, call in enumerate(json):
     fname = call['function']
     if fname == "scene":
-      fouts[i] = scene(inscene)
+      fouts[i] = scene_object_set
     else:
       f = func_from_string(fname)
       inputs = [fouts[i] for i in call['inputs']]
-      value_inputs = [VALUE[val] for val in call['value_inputs']]
+      value_inputs = [value_transform(VALUE[val]) for val in call['value_inputs']]
       all_inputs = inputs + value_inputs
-      if fname in ["same_shape", "same_color", "same_material", "same_size", "relate"]:
-        all_inputs = [inscene] + all_inputs
+      if fname in ["same_shape", "same_color", "same_material", "same_size"]:
+        all_inputs = [scene_object_set] + all_inputs
+      if fname == "relate":
+        all_inputs = [relations] + all_inputs
 
       fouts[i] = f(*all_inputs)
   return fouts[-1]
@@ -333,15 +379,16 @@ def test_interpret():
     for i in range(10):
       q1 = next(qitr)
       scene = SceneGraph.from_json(s1)
-      res = interpret(q1['program'], scene)
+      res = interpret(q1['program'], scene.object_set, scene.relations)
       print(res, q1['answer'])
+
+# test_interpret()
 
 def proghasfunc(func, program):
  return any(list(map(lambda call: call['function'] == func, program)))
 
 
-ref_clevr = {'scene': scene,
-             'unique': unique,
+ref_clevr = {'unique': unique,
              'relate': relate,
              'count': count,
              'exist': exist,
@@ -368,7 +415,6 @@ ref_clevr = {'scene': scene,
              'same_size': same_size,
              'same_material': same_material,
              'same_color': same_color}
-# test_interpret()
 #
 # qitr = questions_iter()
 # sitr = scenes_iter()

@@ -11,7 +11,8 @@ def onehot(i, onehot_len, batch_size):
   y_onehot = torch.FloatTensor(batch_size, onehot_len)
   # In your for loop
   y_onehot.zero_()
-  return Variable(cuda(y_onehot.scatter_(1, y, 1)), requires_grad=False)
+  # FIXME: Hacked to return just one element
+  return Variable(cuda(y_onehot.scatter_(1, y, 1)), requires_grad=False)[0]
 
 
 def onehotmany(i_s, onehot_len):
