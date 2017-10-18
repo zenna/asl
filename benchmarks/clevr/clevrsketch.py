@@ -94,7 +94,13 @@ def benchmark_clevr_sketch(batch_size, template, log_dir, lr, template_opt, **kw
   data_itr = data_iter(batch_size)
 
   def loss_gen():
-    progs, objsets, rels, answers = next(data_itr)
+    nonlocal data_itr
+    try:
+      progs, objsets, rels, answers = next(data_itr)
+    except StopIteration:
+      data_itr = data_iter(batch_size)
+      progs, objsets, rels, answers = next(data_itr)
+
     outputs = clevr_sketch(progs, objsets, rels)
     deltas = [nn.BCELoss()(outputs[i][0], ans_tensor(answers[i])) for i in range(len(outputs))]
     return sum(deltas) / len(deltas)
