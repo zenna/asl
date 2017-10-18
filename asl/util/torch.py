@@ -12,7 +12,7 @@ def onehot(i, onehot_len, batch_size):
   # In your for loop
   y_onehot.zero_()
   # FIXME: Hacked to return just one element
-  return Variable(cuda(y_onehot.scatter_(1, y, 1)), requires_grad=False)[0]
+  return y_onehot.scatter_(1, y, 1)[0]
 
 
 def onehotmany(i_s, onehot_len):

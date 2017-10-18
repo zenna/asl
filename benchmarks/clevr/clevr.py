@@ -5,7 +5,9 @@ import asl
 from asl.util.io import datadir
 import asl.util.torch
 from asl.util.misc import take
+from asl.util.misc import cuda
 import torch
+from torch.autograd import Variable
 
 
 def clevr_iter(clevr_root,
@@ -68,7 +70,6 @@ def data_iter(batch_size, train=True):
   "Iterates paired scene and question data"
   qitr = questions_iter(train=train)
   sitr = scenes_iter(train=train)
-  ndraws = batch_size // 10
 
   while True:
     rel_tens = []
@@ -79,16 +80,18 @@ def data_iter(batch_size, train=True):
       qi = next(qitr)
       si = next(sitr)
       scenei = SceneGraph.from_json(si)
-      rel_tens.append(scenei.relations.tensor())
-      obj_set_tens.append(scenei.object_set.tensor())
+      rel_ten = scenei.relations.tensor()
+      rel_tens.append(rel_ten.expand(1, *rel_ten.size()))
+      obj_ten = scenei.object_set.tensor()
+      obj_set_tens.append(cuda(obj_ten.expand(1, *obj_ten.size())))
       progs.append(qi['program'])
-      answers.append(qi['answers'])
+      answers.append(qi['answer'])
 
     yield progs, obj_set_tens, rel_tens, answers
 
 class Shape(Enum):
   def tensor(self):
-    return asl.util.torch.onehot(self.value, 8, 1)
+    return Variable(cuda(asl.util.torch.onehot(self.value, 8, 1)))
   cube = 0
   sphere = 1
   cylinder = 2
@@ -96,21 +99,21 @@ class Shape(Enum):
 
 class Material(Enum):
   def tensor(self):
-    return asl.util.torch.onehot(self.value, 8, 1)
+    return Variable(cuda(asl.util.torch.onehot(self.value, 8, 1)))
   metal = 0
   rubber = 1
 
 
 class Size(Enum):
   def tensor(self):
-    return asl.util.torch.onehot(self.value, 8, 1)
+    return Variable(cuda(asl.util.torch.onehot(self.value, 8, 1)))
   small = 0
   large = 1
 
 
 class Color(Enum):
   def tensor(self):
-    return asl.util.torch.onehot(self.value, 8, 1)
+    return Variable(cuda(asl.util.torch.onehot(self.value, 8, 1)))
   red = 0
   green = 1
   gray = 2
@@ -123,11 +126,28 @@ class Color(Enum):
 
 class Relation(Enum):
   def tensor(self):
-    return asl.util.torch.onehot(self.value, 8, 1)
+    return Variable(cuda(asl.util.torch.onehot(self.value, 8, 1)))
   left = 0
   right = 1
   front = 2
   behind = 3
+
+
+class Boolean(Enum):
+  def tensor(self):
+    return Variable(cuda(asl.util.torch.onehot(self.value, 2, 1)))
+  "Boolean"
+  yes = 0
+  no = 1
+
+
+class Integer(Enum):
+  def tensor(self):
+    return Variable(cuda(asl.util.torch.onehot(self.value, 1, 1)))
+  "Boolean"
+  yes = 0
+  no = 1
+
 
 
 class ClevrObject():
@@ -144,10 +164,10 @@ class ClevrObject():
                        size=Size[json['size']])
 
   def tensor(self):
-    return asl.util.torch.onehotmany([self.color.value,
-                                      self.size.value,
-                                      self.material.value,
-                                      self.shape.value], 8)
+    return Variable(cuda(asl.util.torch.onehotmany([self.color.value,
+                                                    self.size.value,
+                                                    self.material.value,
+                                                    self.shape.value], 8)))
 
 
 class ClevrObjectSet():
@@ -163,7 +183,7 @@ class ClevrObjectSet():
     obj_tensors = [t.tensor().expand(1, 4, 8) for t in self.objects]
     ndummies = max_n_objects - len(obj_tensors)
     assert ndummies >= 0
-    dummies = [torch.zeros(1, 4, 8) for i in range(ndummies)]
+    dummies = [Variable(cuda(torch.zeros(1, 4, 8))) for i in range(ndummies)]
     return torch.cat(obj_tensors + dummies, 0)
 
 
@@ -193,7 +213,7 @@ class Relations():
         for obj2 in obj1rels:
           rel_ten[i, j, obj2] = 1.0
 
-    return rel_ten
+    return Variable(cuda(rel_ten))
 
 
 class SceneGraph():
@@ -326,10 +346,9 @@ def same_material(scene_object_set, object):
 def same_color(scene_object_set, object):
   return rem(filter_color(scene_object_set, query_color(object)), object)
 
-def eval_string(func_string):
-  return eval(func_string)
-
-# def value(val):
+def eval_string(func_string, inputs):
+  f = eval(func_string)
+  return f(*inputs)
 
 VALUE = {}
 VALUE.update({x.name: x for x in Color})
@@ -337,6 +356,8 @@ VALUE.update({x.name: x for x in Material})
 VALUE.update({x.name: x for x in Shape})
 VALUE.update({x.name: x for x in Size})
 VALUE.update({x.name: x for x in Relation})
+VALUE.update({x.name: x for x in Boolean})
+
 
 # VALUE.update({'left': 'left',
 #               'right': 'right',
@@ -347,7 +368,7 @@ VALUE.update({x.name: x for x in Relation})
 def interpret(json,
               scene_object_set,
               relations,
-              func_from_string=eval_string,
+              apply=eval_string,
               value_transform=asl.util.misc.identity):
   "interpret the json function spec"
   fouts = [() for i in json]
@@ -356,7 +377,6 @@ def interpret(json,
     if fname == "scene":
       fouts[i] = scene_object_set
     else:
-      f = func_from_string(fname)
       inputs = [fouts[i] for i in call['inputs']]
       value_inputs = [value_transform(VALUE[val]) for val in call['value_inputs']]
       all_inputs = inputs + value_inputs
@@ -365,8 +385,31 @@ def interpret(json,
       if fname == "relate":
         all_inputs = [relations] + all_inputs
 
-      fouts[i] = f(*all_inputs)
+      fouts[i] = apply(fname, all_inputs)
+
   return fouts[-1]
+
+num_to_string = {'0': 0,
+                 '1': 1,
+                 '2': 2,
+                 '3': 3,
+                 '4': 4,
+                 '5': 5,
+                 '6': 6,
+                 '7': 7,
+                 '8': 8,
+                 '9': 9}
+
+
+def ans_tensor(ans):
+  "Convert the query answer into a tensor"
+  if ans in num_to_string:
+    value = num_to_string[ans]
+    return Variable(cuda(asl.util.torch.onehot(value, 10, 1)))
+  else:
+    value = VALUE[ans]
+    return value.tensor()
+  return
 
 
 def test_interpret():

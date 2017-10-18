@@ -42,7 +42,6 @@ class MLPNet(nn.Module):
 
   def forward(self, *xs):
     assert len(xs) == len(self.in_sizes), "Wrong # inputs"
-    import pdb; pdb.set_trace()
     exp_xs = expand_consts(xs) # TODO: Make optional
     exp_xs = [x.contiguous().view(x.size(0), -1) for x in exp_xs]
     x = torch.cat(exp_xs, dim=1)

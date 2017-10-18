@@ -25,7 +25,7 @@ import torch
 from torch import nn
 from torch.autograd import Variable
 import torch.nn.functional as F
-from benchmarks.clevr.clevr import scenes_iter, data_iter, ref_clevr, interpret
+from benchmarks.clevr.clevr import scenes_iter, data_iter, ref_clevr, interpret, ans_tensor
 from benchmarks.clevr.defns import *
 
 class ClevrSketch(Sketch):
@@ -36,19 +36,16 @@ class ClevrSketch(Sketch):
 
   def sketch(self, progs, objsets, rels, **kwargs):
     results = []
-    def lookup(fname):
-      return kwargs[fname]
+    def netapply(fname, inputs):
+      f = kwargs[fname]
+      return f(*inputs)[0]
     def tensor(value):
-      import pdb; pdb.set_trace()
       x = value.tensor()
-      return x.expand(10, *x.size())
+      return x.expand(1, *x.size())
     for (i, _) in enumerate(objsets):
-      local_res = []
-      for ques in progs[i]:
-        res = interpret(ques, objsets[i], rels[i], func_from_string=lookup,
-                        value_transform=tensor)
-        local_res.append(res)
-      results.append(local_res)
+      res = interpret(progs[i], objsets[i], rels[i], apply=netapply,
+                      value_transform=tensor)
+      results.append(res)
 
     return results
 
@@ -98,19 +95,16 @@ def benchmark_clevr_sketch(batch_size, template, log_dir, lr, template_opt, **kw
 
   def loss_gen():
     progs, objsets, rels, answers = next(data_itr)
-    clevr_sketch(progs, objsets, rels)
-    # 1. Take question batch
-    # 2. Take corresponding scene
-    # 3. convert scene to tensor form
-    # pass both into sketch
-    # find loss between output and answer
-    return vec_dist(outputs, dist=nn.BCELoss())
+    outputs = clevr_sketch(progs, objsets, rels)
+    deltas = [nn.BCELoss()(outputs[i][0], ans_tensor(answers[i])) for i in range(len(outputs))]
+    return sum(deltas) / len(deltas)
+
 
   optimizer = optim.Adam(clevr_sketch.parameters(), lr)
   train(loss_gen,
         optimizer,
         cont=converged(1000),
-        callbacks=[print_loss(100),
+        callbacks=[print_loss(1),
                   #  every_n(plot_sketch, 500),
                   #  common.plot_empty,
                   #  common.plot_observes,

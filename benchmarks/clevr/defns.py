@@ -4,9 +4,9 @@ from asl.templates.mlp import MLPNet
 from asl.net import Net
 
 
-class SceneGraph(Type):
+class Relations(Type):
   "Stack represented as a vector"
-  size = (10, 2, 3)
+  size = (4, 10, 10)
 
 
 class Object(Type):
@@ -21,12 +21,12 @@ class ObjectSet(Type):
 
 class Relation(Type):
   "Relation as sparse relation matrix"
-  size = (4, 10, 10)
+  size = (8, )
 
 
 class Boolean(Type):
   "Boolean"
-  size = (1,)
+  size = (2,)
 
 
 class Integer(Type):
@@ -62,7 +62,7 @@ class Unique(Function, Net):
 
 class Relate(Function, Net):
   def __init__(self="Relate", name="Relate", module=None, template=MLPNet, template_opt=None):
-    Function.__init__(self, [SceneGraph, Object, Relation], [ObjectSet])
+    Function.__init__(self, [Relations, Object, Relation], [ObjectSet])
     Net.__init__(self, " name", module, template, template_opt)
 
 
@@ -182,23 +182,23 @@ class QueryColor(Function, Net):
 
 class SameShape(Function, Net):
   def __init__(self, name="SameShape", module=None, template=MLPNet, template_opt=None):
-    Function.__init__(self, [SceneGraph, Object], [ObjectSet])
+    Function.__init__(self, [ObjectSet, Object], [ObjectSet])
     Net.__init__(self, "SameShape", module, template, template_opt)
 
 
 class SameSize(Function, Net):
   def __init__(self, name="SameSize", module=None, template=MLPNet, template_opt=None):
-    Function.__init__(self, [SceneGraph, Object], [ObjectSet])
+    Function.__init__(self, [ObjectSet, Object], [ObjectSet])
     Net.__init__(self, "SameSize", module, template, template_opt)
 
 
 class SameMaterial(Function, Net):
   def __init__(self, name="SameMaterial", module=None, template=MLPNet, template_opt=None):
-    Function.__init__(self, [SceneGraph, Object], [ObjectSet])
+    Function.__init__(self, [ObjectSet, Object], [ObjectSet])
     Net.__init__(self, "SameMaterial", module, template, template_opt)
 
 
 class SameColor(Function, Net):
   def __init__(self, name="SameColor", module=None, template=MLPNet, template_opt=None):
-    Function.__init__(self, [SceneGraph, Object], [ObjectSet])
+    Function.__init__(self, [ObjectSet, Object], [ObjectSet])
     Net.__init__(self, "SameColor", module, template, template_opt)
