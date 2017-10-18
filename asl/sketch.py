@@ -36,6 +36,7 @@ class Sketch(Function, nn.Module):
 
   def __init__(self, in_types, out_types, model, ref_model):
     super(Sketch, self).__init__(in_types, out_types)
+    nn.Module.__init__(self)
     self.mods = []
     self.ref_observes = []
     self.observes = []

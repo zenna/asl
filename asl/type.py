@@ -1,4 +1,4 @@
-class Type:
+class Type(object):
   """A type is a Type"""
   def __init__(self, name, size, dtype, observable=True):
     self.name = name
@@ -10,7 +10,7 @@ class Type:
     return _size
 
 
-class FunctionType:
+class FunctionType(object):
   "Function Type"
 
   def __init__(self, in_types, out_types):
@@ -18,11 +18,10 @@ class FunctionType:
     self.out_types = out_types
 
 
-class Function():
+class Function(object):
   "Typed Function"
 
   def __init__(self, in_types, out_types):
-    super(Function, self).__init__()
     self.in_types = in_types
     self.out_types = out_types
 
@@ -43,7 +42,7 @@ class Function():
     return len(self.type().out_types)
 
 
-class Constant:
+class Constant(object):
   "Typed Constant"
 
   def __init__(self, type):
