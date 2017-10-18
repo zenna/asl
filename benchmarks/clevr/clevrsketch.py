@@ -1,32 +1,22 @@
-"""Reverse Benchmark - Can a neural network learn to reverse a sequence"""
-from benchmarks.types import vec_stack, bern_seq, matrix_stack
-import benchmarks.common as common
+"""Clevr Benchmark """
+# FIXME: CLEANUP import hell
 import asl.opt
-
-from asl.templates.packing import stretch_cat
 from asl.templates.convnet import VarConvNet
 from asl.templates.mlp import MLPNet
-from asl.sketch import Sketch, soft_ch
 from asl.callbacks import every_n, print_loss, converged, save_checkpoint
 from asl.util.misc import cuda
-from asl.opt import handle_hyper
-from asl.util.generators import infinite_samples
-from asl.type import Type
-from asl.structs.nstack import PushNet, PopNet, ref_stack
-from asl.util.misc import iterget, take
 from asl.train import train, max_iters
-from asl.modules.modules import ConstantNet, ModuleDict
+from asl.modules.modules import ModuleDict
 from asl.log import log_append, log
 from asl.loss import vec_dist
 from torch import optim
 
-from typing import List, Any
 import torch
+from typing import Any
 from torch import nn
-from torch.autograd import Variable
-import torch.nn.functional as F
 from benchmarks.clevr.clevr import scenes_iter, data_iter, ref_clevr, interpret, ans_tensor
 from benchmarks.clevr.defns import *
+from asl.sketch import Sketch
 
 class ClevrSketch(Sketch):
   "Sketch for copy of list of elements"
@@ -56,6 +46,33 @@ def reverse_args(parser):
   parser.add_argument('--stack_len', type=int, default=8, metavar='NI',
                       help='Length oitemsf sequence')
 
+
+def accuracy(est, target):
+  "Find accuracy of estimation for target"
+  est_int = [torch.max(t, 1)[1] for t in est]
+  target_int = [torch.max(ans, 0)[1] for ans in target]
+  diffs  = [est_int[i].data[0] == target_int[i].data[0] for i in range(len(target))]
+  ncorrect = sum(diffs)
+  acc = ncorrect / len(diffs)
+  return acc, ncorrect
+
+def print_accuracy(every, log_tb=True):
+  "Print accuracy per every n"
+  def print_accuracy_gen(every):
+    running_accuracy = 0.0
+    while True:
+      data = yield
+      acc = data.log['accuracy']
+      running_accuracy += acc
+      if (data.i + 1) % every == 0:
+        accuracy_per_sample = running_accuracy / every
+        print('accuracy per sample (avg over %s) : %.3f %%' % (every, accuracy_per_sample))
+        if log_tb:
+          data.writer.add_scalar('accuracy', accuracy_per_sample, data.i)
+        running_accuracy = 0.0
+  gen = print_accuracy_gen(every)
+  next(gen)
+  return gen
 
 def benchmark_clevr_sketch(batch_size, template, log_dir, lr, template_opt, **kwargs):
   template = MLPNet
@@ -102,7 +119,12 @@ def benchmark_clevr_sketch(batch_size, template, log_dir, lr, template_opt, **kw
       progs, objsets, rels, answers = next(data_itr)
 
     outputs = clevr_sketch(progs, objsets, rels)
-    deltas = [nn.BCEWithLogitsLoss()(outputs[i][0], ans_tensor(answers[i])) for i in range(len(outputs))]
+    anstensors = [ans_tensor(ans) for ans in answers]
+    acc, ncorrect = accuracy(outputs, anstensors)
+    log("accuracy", acc)
+    log("ncorrect", ncorrect)
+    log("outof", len(answers))
+    deltas = [nn.BCEWithLogitsLoss()(outputs[i][0], anstensors[i]) for i in range(len(outputs))]
     return sum(deltas) / len(deltas)
 
 
@@ -111,6 +133,7 @@ def benchmark_clevr_sketch(batch_size, template, log_dir, lr, template_opt, **kw
         optimizer,
         cont=converged(1000),
         callbacks=[print_loss(10),
+                  print_accuracy(10),
                   #  every_n(plot_sketch, 500),
                   #  common.plot_empty,
                   #  common.plot_observes,
