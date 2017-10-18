@@ -31,7 +31,7 @@ class Boolean(Type):
 
 class Integer(Type):
   "Integer"
-  size = (10,)
+  size = (11,)
 
 
 class Color(Type):

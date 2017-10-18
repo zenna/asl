@@ -406,7 +406,7 @@ def ans_tensor(ans):
   "Convert the query answer into a tensor"
   if ans in num_to_string:
     value = num_to_string[ans]
-    return Variable(cuda(asl.util.torch.onehot(value, 10, 1)))
+    return Variable(cuda(asl.util.torch.onehot(value, 11, 1)))
   else:
     value = VALUE[ans]
     return value.tensor()
