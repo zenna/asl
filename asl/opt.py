@@ -21,7 +21,7 @@ def std_opt_sampler():
   "Options sampler"
   # Generic Options
   batch_size = choice([32, 64, 96, 128])
-  lr = choice([0.0001, 0.001, 0.01, 0.1])
+  lr = choice([0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1])
   optim_algo = choice([optim.Adam])
   template = choice([asl.templates.convnet.VarConvNet])
   template_opt = template.sample_hyper(None, None)

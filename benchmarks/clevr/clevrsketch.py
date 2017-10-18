@@ -96,7 +96,7 @@ def benchmark_clevr_sketch(batch_size, template, log_dir, lr, template_opt, **kw
   def loss_gen():
     progs, objsets, rels, answers = next(data_itr)
     outputs = clevr_sketch(progs, objsets, rels)
-    deltas = [nn.BCELoss()(outputs[i][0], ans_tensor(answers[i])) for i in range(len(outputs))]
+    deltas = [nn.BCEWithLogitsLoss()(outputs[i][0], ans_tensor(answers[i])) for i in range(len(outputs))]
     return sum(deltas) / len(deltas)
 
 
@@ -104,7 +104,7 @@ def benchmark_clevr_sketch(batch_size, template, log_dir, lr, template_opt, **kw
   train(loss_gen,
         optimizer,
         cont=converged(1000),
-        callbacks=[print_loss(1),
+        callbacks=[print_loss(10),
                   #  every_n(plot_sketch, 500),
                   #  common.plot_empty,
                   #  common.plot_observes,
