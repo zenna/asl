@@ -10,6 +10,8 @@ from asl.util.misc import cuda
 from asl.encoding import OneHot1D, Encoding
 import torch
 from torch.autograd import Variable
+from asl.util.torch import maybe_expand
+
 
 def clevr_iter(clevr_root,
                data_type,
@@ -52,9 +54,9 @@ def data_iter(batch_size, train=True):
       si = next(sitr)
       scenei = SceneGraph.from_json(si)
       rel_ten = scenei.relations.tensor()
-      rel_tens.append(rel_ten.expand(1, *rel_ten.size()))
+      rel_tens.append(rel_ten)
       obj_ten = scenei.object_set.tensor()
-      obj_set_tens.append(cuda(obj_ten.expand(1, *obj_ten.size())))
+      obj_set_tens.append(obj_ten)
       progs.append(qi['program'])
       answers.append(qi['answer'])
 
@@ -66,8 +68,9 @@ class Shape():
 
 
 class ShapeOneHot1D(Shape, OneHot1D):
-  _pad = 8
-  pass
+  typesize = (8,)
+  def __init__(self, value, expand_one=True):
+    self.value = maybe_expand(ShapeOneHot1D, value, expand_one)
 
 
 class ShapeEnum(Shape, Enum):
@@ -81,10 +84,12 @@ class Material():
 
 
 class MaterialOneHot1D(Material, OneHot1D):
-  pass
+  typesize = (8,)
+  def __init__(self, value, expand_one=True):
+    self.value = maybe_expand(MaterialOneHot1D, value, expand_one)
 
 
-class MaterialEnum(Enum):
+class MaterialEnum(Material, Enum):
   metal = 0
   rubber = 1
 
@@ -94,7 +99,9 @@ class Size():
 
 
 class SizeOneHot1D(Size, OneHot1D):
-  pass
+  typesize = (8,)
+  def __init__(self, value, expand_one=True):
+    self.value = maybe_expand(SizeOneHot1D, value, expand_one)
 
 
 class SizeEnum(Size, Enum):
@@ -107,7 +114,10 @@ class Color():
 
 
 class ColorOneHot1D(Color, OneHot1D):
-  pass
+  typesize = (8,)
+  def __init__(self, value, expand_one=True):
+    self.value = maybe_expand(ColorOneHot1D, value, expand_one)
+
 
 
 class ColorEnum(Color, Enum):
@@ -127,7 +137,9 @@ class Relation():
 
 
 class RelationOneHot1D(Relation, OneHot1D):
-  pass
+  typesize = (8, )
+  def __init__(self, value, expand_one=True):
+    self.value = maybe_expand(RelationOneHot1D, value, expand_one)
 
 
 class RelationEnum(Relation, Enum):
@@ -142,7 +154,9 @@ class Boolean():
 
 
 class BooleanOneHot1D(Boolean, OneHot1D):
-  pass
+  typesize = (2,)
+  def __init__(self, value, expand_one=True):
+    self.value = maybe_expand(BooleanOneHot1D, value, expand_one)
 
 
 class BooleanEnum(Boolean, Enum):
@@ -156,7 +170,9 @@ class Integer():
 
 
 class IntegerOneHot1D(Integer, OneHot1D):
-  pass
+  typesize = (11,)
+  def __init__(self, value, expand_one=True):
+    self.value = maybe_expand(IntegerOneHot1D, value, expand_one)
 
 
 class ClevrObject():
@@ -180,8 +196,10 @@ class ClevrObject():
 
 class TensorClevrObject(Encoding):
   "An embedding of an object as a tensor"
-  _size = (4, 8)
-  pass
+  typesize = (4, 8)
+
+  def __init__(self, value, expand_one=True):
+    self.value = maybe_expand(TensorClevrObject, value, expand_one)
 
 
 class ClevrObjectSet():
@@ -198,13 +216,15 @@ class ClevrObjectSet():
     ndummies = max_n_objects - len(obj_tensors)
     assert ndummies >= 0
     dummies = [Variable(cuda(torch.zeros(1, 4, 8))) for i in range(ndummies)]
-    return torch.cat(obj_tensors + dummies, 0)
+    return TensorClevrObjectSet(torch.cat(obj_tensors + dummies, 0))
 
 
 class TensorClevrObjectSet(Encoding):
   "An embedding of an object as a tensor"
-  _size = (10, 4, 8)
-  pass
+  typesize = (10, 4, 8)
+
+  def __init__(self, value, expand_one=True):
+    self.value = maybe_expand(TensorClevrObjectSet, value, expand_one)
 
 
 class Relations():
@@ -233,13 +253,15 @@ class Relations():
         for obj2 in obj1rels:
           rel_ten[i, j, obj2] = 1.0
 
-    return Variable(cuda(rel_ten))
+    return TensorRelations(Variable(cuda(rel_ten)))
 
 
-class TensorRelations(Type):
-  "Stack represented as a vector"
-  size = (4, 10, 10)
+class TensorRelations(Encoding):
+  "Relations represented as a matrix"
+  typesize = (4, 10, 10)
 
+  def __init__(self, value, expand_one=True):
+    self.value = maybe_expand(TensorRelations, value, expand_one)
 
 
 class SceneGraph():
@@ -428,6 +450,8 @@ num_to_string = {'0': 0,
                  '10':10}
 
 
+from asl.encoding import onehot1d
+
 def ans_tensor(ans):
   "Convert the query answer into a tensor"
   if ans in num_to_string:
@@ -435,7 +459,8 @@ def ans_tensor(ans):
     return IntegerOneHot1D(Variable(cuda(asl.util.torch.onehot(value, 11, 1))))
   else:
     value = VALUE[ans]
-    return value.tensor()
+    # PARMATERIZE THIS CHOICE
+    return onehot1d(value)
   return
 
 

@@ -10,6 +10,7 @@ from asl.modules.modules import ModuleDict
 from asl.log import log_append, log
 from asl.loss import vec_dist
 from asl.encoding import onehot1d
+from asl.encoding import equal, dist
 from torch import optim
 import argparse
 import numpy as np
@@ -43,13 +44,13 @@ class ClevrSketch(Sketch):
 
     return results
 
+from asl.encoding import equal
+
 def accuracy(est, target):
   "Find accuracy of estimation for target"
-  est_int = [torch.max(t, 1)[1] for t in est]
-  target_int = [torch.max(ans, 0)[1] for ans in target]
-  diffs  = [est_int[i].data[0] == target_int[i].data[0] for i in range(len(target))]
-  ncorrect = sum(diffs)
-  acc = ncorrect / len(diffs)
+  eqs = [equal(est[i], target[i]) for i in range(len(est))]
+  ncorrect = sum(eqs)
+  acc = ncorrect / len(eqs)
   return acc, ncorrect
 
 def print_accuracy(every, log_tb=True):
@@ -163,7 +164,7 @@ def benchmark_clevr_sketch(share_funcs,
     log("accuracy", acc)
     log("ncorrect", ncorrect)
     log("outof", len(answers))
-    deltas = [nn.BCEWithLogitsLoss()(outputs[i][0], anstensors[i]) for i in range(len(outputs))]
+    deltas = [dist(outputs[i], anstensors[i]) for i in range(len(outputs))]
     return sum(deltas) / len(deltas)
 
 

@@ -27,3 +27,13 @@ def onehotmany(i_s, onehot_len):
 def onebatch(x):
   "Make a single batch out of x"
   return x.expand(1, *x.size())
+
+
+def maybe_expand(cls, value, expand_one):
+  sz = len(value.size())
+  if sz == len(cls.typesize) and expand_one:
+    return onebatch(value)
+  elif (sz == len(cls.typesize) + 1) and expand_one:
+    return value
+  else:
+    raise ValueError

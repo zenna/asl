@@ -1,10 +1,12 @@
 from asl.archs.mlp import MLPNet
 import torch.nn as nn
 
+
 def type_check(xs, types):
+  "Check the types and sizes are consistent"
   assert len(xs) == len(types)
   for i, x in enumerate(xs):
-    same_size = xs[i].size()[1:] == types[i].size
+    same_size = x.size()[1:] == types[i].typesize
     assert same_size
   return xs
 
@@ -29,5 +31,6 @@ class Net(nn.Module):
 
   def forward(self, *xs):
     args = type_check(xs, self.in_types)
-    res = self.module.forward(*args)
-    return type_check(res, self.out_types)
+    res = self.module.forward(*(arg.value for arg in args))
+    type_check(res, self.out_types)
+    return [self.out_types[i](res[i]) for i in range(len(res))]

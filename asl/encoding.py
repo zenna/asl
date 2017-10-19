@@ -1,9 +1,11 @@
 from enum import Enum
+from multipledispatch import dispatch
 import torch.nn as nn
 from torch.autograd import Variable
 from asl.util.misc import cuda
-from multipledispatch import dispatch
 from asl.util.torch import onehot
+from asl.type import Type
+import torch
 
 "Common encodings"
 # One Hot Encodings
@@ -18,11 +20,15 @@ class Encoding():
 class OneHot1D(Encoding):
   pass
 
+@dispatch(OneHot1D, OneHot1D)
+def equal(x, y):
+  same = torch.max(x.value, 1)[1] == torch.max(y.value, 1)[1]
+  return same.data[0]
 
 @dispatch(OneHot1D, OneHot1D)
 def dist(x, y):
   # Check length
-  return nn.BCEWithLogitsLoss()(x, y)
+  return nn.BCEWithLogitsLoss()(x.value, y.value)
 
 
 def compound_encoding(cl, encoding):
@@ -34,14 +40,5 @@ def compound_encoding(cl, encoding):
 def onehot1d(enum, length=None):
   "Encode a Color as a one hot vector"
   EnumOneHot1D = compound_encoding(enum.__class__.__bases__[0], OneHot1D)
-  length = len(enum.__class__) if length is None else length
+  length = EnumOneHot1D.typesize[0] if length is None else length
   return EnumOneHot1D(Variable(cuda(onehot(enum.value, length, 1))))
-
-# @dispatch(ColorOneHot1D, ColorOneHot1D)
-# def equal(x, y):
-#   return nn.BCELoss()(x.value, y.value)
-#
-# @dispatch(Enum)
-# def onehot1d(color):
-#   "Encode a Color as a one hot vector"
-#   return ColorOneHot1D(Variable(cuda(onehot(color.value, 8, 1))))
