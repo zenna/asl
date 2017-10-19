@@ -61,8 +61,8 @@ def train_stack():
     size = mnist_size
 
   tl = trainloader(opt.batch_size)
-  nstack = ModuleDict({'push': PushNet(MatrixStack, Mnist, template=opt.template, template_opt=opt.template_opt),
-                       'pop': PopNet(MatrixStack, Mnist, template=opt.template, template_opt=opt.template_opt),
+  nstack = ModuleDict({'push': PushNet(MatrixStack, Mnist, arch=opt.arch, arch_opt=opt.arch_opt),
+                       'pop': PopNet(MatrixStack, Mnist, arch=opt.arch, arch_opt=opt.arch_opt),
                        'empty': ConstantNet(MatrixStack)})
 
   stack_sketch = StackSketch([List[Mnist]], [Mnist], nstack, ref_stack())

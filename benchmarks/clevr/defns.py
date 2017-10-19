@@ -1,6 +1,6 @@
 from asl.type import Function, Type
 import torch.nn as nn
-from asl.templates.mlp import MLPNet
+from asl.archs.mlp import MLPNet
 from asl.net import Net
 
 

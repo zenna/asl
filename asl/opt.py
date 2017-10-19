@@ -23,8 +23,8 @@ def std_opt_sampler():
   batch_size = choice([32, 64, 96, 128])
   lr = choice([0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1])
   optim_algo = choice([optim.Adam])
-  template = choice([asl.templates.convnet.ConvNet])
-  template_opt = template.sample_hyper(None, None)
+  arch = choice([asl.archs.convnet.ConvNet])
+  arch_opt = arch.sample_hyper(None, None)
 
   opt = Namespace(hyper=False,
                   sample=True,
@@ -32,8 +32,8 @@ def std_opt_sampler():
                   test_batch_size=batch_size,
                   optim_algo=optim_algo,
                   lr=lr,
-                  template=template,
-                  template_opt=template_opt)
+                  arch=arch,
+                  arch_opt=arch_opt)
   return opt
 
 
@@ -89,9 +89,9 @@ def handle_cuda(opt):
     print("Chose CUDA but CUDA not available, continuing without CUDA!")
     opt.cuda = False
 
-def handle_template(opt):
-  opt.template = asl.templates.convnet.ConvNet
-  opt.template_opt = {}
+def handle_arch(opt):
+  opt.arch = asl.archs.convnet.ConvNet
+  opt.arch_opt = {}
 
 
 def handle_args(*add_cust_parses):
@@ -104,7 +104,7 @@ def handle_args(*add_cust_parses):
 
   handle_log_dir(opt)
   handle_cuda(opt)
-  handle_template(opt)
+  handle_arch(opt)
   return opt
 
 

@@ -1,7 +1,7 @@
 "Stack Data Structure trained from a reference implementation"
 from asl.type import Function
 from asl.modules.modules import ConstantNet, ModuleDict
-from asl.templates.convnet import ConvNet
+from asl.archs.convnet import ConvNet
 from asl.util.misc import cuda
 from torch import nn
 
@@ -22,12 +22,12 @@ class GetItem(Function):
 
 
 class SetItemNet(SetItem, nn.Module):
-  def __init__(self, dict_type, key_type, value_type, module=None, template=ConvNet,
-               template_opt=None):
+  def __init__(self, dict_type, key_type, value_type, module=None, arch=ConvNet,
+               arch_opt=None):
     super(SetItemNet, self).__init__(dict_type, key_type, value_type)
     if module is None:
-      template_opt = {} if template_opt is None else template_opt
-      self.module = template(self.in_sizes(), self.out_sizes(), **template_opt)
+      arch_opt = {} if arch_opt is None else arch_opt
+      self.module = arch(self.in_sizes(), self.out_sizes(), **arch_opt)
     else:
       self.module = module
     self.add_module("SetItem", self.module)
@@ -37,12 +37,12 @@ class SetItemNet(SetItem, nn.Module):
 
 
 class GetItemNet(GetItem, nn.Module):
-  def __init__(self, dict_type, key_type, value_type, module=None, template=ConvNet,
-               template_opt=None):
+  def __init__(self, dict_type, key_type, value_type, module=None, arch=ConvNet,
+               arch_opt=None):
     super(GetItemNet, self).__init__(dict_type, key_type, value_type)
     if module is None:
-      template_opt = {} if template_opt is None else template_opt
-      self.module = template(self.in_sizes(), self.out_sizes(), **template_opt)
+      arch_opt = {} if arch_opt is None else arch_opt
+      self.module = arch(self.in_sizes(), self.out_sizes(), **arch_opt)
     else:
       self.module = module
     self.add_module("GetItem", self.module)

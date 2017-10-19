@@ -1,6 +1,6 @@
 import math
 import random
-from asl.templates.packing import split_channel
+from asl.archs.packing import split_channel
 from asl.util.misc import mul_product
 from asl.modules.modules import expand_consts
 import torch

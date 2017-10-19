@@ -57,8 +57,8 @@ def train_dict():
     size = mnist_size
 
   tl = trainloader(opt.batch_size)
-  ndict = ModuleDict({'set_item': SetItemNet(MatrixDict, Mnist, Mnist, template=opt.template, template_opt=opt.template_opt),
-                       'get_item': GetItemNet(MatrixDict, Mnist, Mnist, template=opt.template, template_opt=opt.template_opt),
+  ndict = ModuleDict({'set_item': SetItemNet(MatrixDict, Mnist, Mnist, arch=opt.arch, arch_opt=opt.arch_opt),
+                       'get_item': GetItemNet(MatrixDict, Mnist, Mnist, arch=opt.arch, arch_opt=opt.arch_opt),
                        'empty': ConstantNet(MatrixDict)})
 
   dict_sketch = DictSketch([List[Mnist]], [Mnist], ndict, ref_dict())

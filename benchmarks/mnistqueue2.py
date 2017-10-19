@@ -46,8 +46,8 @@ def train_queue():
     size = mnist_size
 
   tl = trainloader(opt.batch_size)
-  nqueue = ModuleDict({'enqueue': EnqueueNet(MatrixQueue, Mnist, template=opt.template, template_opt=opt.template_opt),
-                       'dequeue': DequeueNet(MatrixQueue, Mnist, template=opt.template, template_opt=opt.template_opt),
+  nqueue = ModuleDict({'enqueue': EnqueueNet(MatrixQueue, Mnist, arch=opt.arch, arch_opt=opt.arch_opt),
+                       'dequeue': DequeueNet(MatrixQueue, Mnist, arch=opt.arch, arch_opt=opt.arch_opt),
                        'empty': ConstantNet(MatrixQueue)})
 
   queue_sketch = QueueSketch([List[Mnist]], [Mnist], nqueue, ref_queue())

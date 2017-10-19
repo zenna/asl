@@ -3,9 +3,9 @@ from benchmarks.types import vec_stack, bern_seq, matrix_stack
 import benchmarks.common as common
 import asl.opt
 
-from asl.templates.packing import stretch_cat
-from asl.templates.convnet import ConvNet
-from asl.templates.mlp import MLPNet
+from asl.archs.packing import stretch_cat
+from asl.archs.convnet import ConvNet
+from asl.archs.mlp import MLPNet
 from asl.sketch import Sketch, soft_ch
 from asl.callbacks import every_n, print_loss, converged, save_checkpoint
 from asl.util.misc import cuda
@@ -27,7 +27,7 @@ from torch.autograd import Variable
 import torch.nn.functional as F
 
 # TODO
-# - Get the template sampling
+# - Get the arch sampling
 # - Update the sketch so that it is possible
 # - Make different modes for differnet kinds of training
    # opt both ovserve loss and supervised loss
@@ -118,22 +118,22 @@ def reverse_args(parser):
                       help='Length oitemsf sequence')
 
 
-def benchmark_copy_sketch(batch_size, stack_len, seq_len, template, log_dir,
-                          lr, template_opt, **kwargs):
+def benchmark_copy_sketch(batch_size, stack_len, seq_len, arch, log_dir,
+                          lr, arch_opt, **kwargs):
   stack_len = stack_len
   seq_len = seq_len  # From paper: between 1 and 20
   BernSeq = bern_seq(seq_len)
   MatrixStack = matrix_stack(1, seq_len, seq_len)
-  template_opt['combine_inputs'] = lambda xs: stretch_cat(xs,
+  arch_opt['combine_inputs'] = lambda xs: stretch_cat(xs,
                                                           MatrixStack.size,
                                                           2)
-  template_opt['activation'] = F.sigmoid
+  arch_opt['activation'] = F.sigmoid
   nstack = ModuleDict({'push': PushNet(MatrixStack, BernSeq,
-                                             template=ConvNet,
-                                             template_opt=template_opt),
+                                             arch=ConvNet,
+                                             arch_opt=arch_opt),
                        'pop': PopNet(MatrixStack, BernSeq,
-                                             template=ConvNet,
-                                             template_opt=template_opt),
+                                             arch=ConvNet,
+                                             arch_opt=arch_opt),
                        'empty': ConstantNet(MatrixStack)})
 
   refstack = ref_stack()

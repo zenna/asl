@@ -18,7 +18,7 @@ from asl.structs.nqueue import EnqueueNet, DequeueNet, ref_queue
 from asl.util.misc import iterget
 from asl.train import train, max_iters
 from asl.modules.modules import ConstantNet, ModuleDict
-from asl.modules.templates import MLPNet
+from asl.modules.archs import MLPNet
 from asl.log import log_append
 from torch import optim
 
@@ -77,7 +77,7 @@ class CopySketch(Sketch):
 
 
 def neural_queue(element_type, queue_type):
-  enqueue_img = EnqueueNet(queue_type, element_type, template=MLPNet)
+  enqueue_img = EnqueueNet(queue_type, element_type, arch=MLPNet)
   dequeue_img = DequeueNet(queue_type, element_type, MLPNet)
   empty_queue = ConstantNet(queue_type)
   neural_ref = ModuleDict({"enqueue": enqueue_img,

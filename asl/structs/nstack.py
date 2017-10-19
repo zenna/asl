@@ -1,7 +1,7 @@
 "Stack Data Structure trained from a reference implementation"
 from asl.type import Function
 from asl.modules.modules import ConstantNet, ModuleDict
-from asl.templates.convnet import ConvNet
+from asl.archs.convnet import ConvNet
 from asl.util.misc import cuda
 from torch import nn
 
@@ -28,12 +28,12 @@ def type_check(xs, types):
   return xs
 
 class PushNet(Push, nn.Module):
-  def __init__(self, stack_type, item_type, module=None, template=ConvNet,
-               template_opt=None):
+  def __init__(self, stack_type, item_type, module=None, arch=ConvNet,
+               arch_opt=None):
     super(PushNet, self).__init__(stack_type, item_type)
     if module is None:
-      template_opt = {} if template_opt is None else template_opt
-      self.module = template(self.in_sizes(), self.out_sizes(), **template_opt)
+      arch_opt = {} if arch_opt is None else arch_opt
+      self.module = arch(self.in_sizes(), self.out_sizes(), **arch_opt)
     else:
       self.module = module
     self.add_module("Push", self.module)
@@ -45,12 +45,12 @@ class PushNet(Push, nn.Module):
 
 
 class PopNet(Pop, nn.Module):
-  def __init__(self, stack_type, item_type, module=None, template=ConvNet,
-               template_opt=None):
+  def __init__(self, stack_type, item_type, module=None, arch=ConvNet,
+               arch_opt=None):
     super(PopNet, self).__init__(stack_type, item_type)
     if module is None:
-      template_opt = {} if template_opt is None else template_opt
-      self.module = template(self.in_sizes(), self.out_sizes(), **template_opt)
+      arch_opt = {} if arch_opt is None else arch_opt
+      self.module = arch(self.in_sizes(), self.out_sizes(), **arch_opt)
     else:
       self.module = module
     self.add_module("Pop", self.module)

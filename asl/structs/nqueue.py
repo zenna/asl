@@ -1,7 +1,7 @@
 "Stack Data Structure trained from a reference implementation"
 from collections import deque
 from asl.type import Function
-from asl.templates.convnet import ConvNet
+from asl.archs.convnet import ConvNet
 from asl.modules.modules import ConstantNet, ModuleDict
 from asl.util.misc import cuda
 from torch import nn
@@ -23,9 +23,9 @@ class Dequeue(Function):
 
 # class NetFunction(nn.Module):
 #
-#   def __init__(self, name, template=ConvNet, module=None):
+#   def __init__(self, name, arch=ConvNet, module=None):
 #     if module is None:
-#       self.module = template(self.in_sizes(), self.out_sizes())
+#       self.module = arch(self.in_sizes(), self.out_sizes())
 #     else:
 #       self.module = module
 #     self.add_module(name, self.module)
@@ -35,24 +35,24 @@ class Dequeue(Function):
 #
 #
 # class EnqueueNet(Enqueue, NetFunction):
-#   def __init__(self, queue_type, item_type, template, module=None):
+#   def __init__(self, queue_type, item_type, arch, module=None):
 #     Enqueue.__init__(self, queue_type, item_type)
-#     NetFunction.__init__(self, "Enqeue", template, module)
+#     NetFunction.__init__(self, "Enqeue", arch, module)
 #
 #
 # class DequeueNet(Dequeue, NetFunction):
-#   def __init__(self, queue_type, item_type, template, module=None):
+#   def __init__(self, queue_type, item_type, arch, module=None):
 #     Dequeue.__init__(self, queue_type, item_type)
-#     NetFunction.__init__(self, "Deqeue", template, module)
+#     NetFunction.__init__(self, "Deqeue", arch, module)
 
 
 class EnqueueNet(Enqueue, nn.Module):
-  def __init__(self, stack_type, item_type, module=None, template=ConvNet,
-               template_opt=None):
+  def __init__(self, stack_type, item_type, module=None, arch=ConvNet,
+               arch_opt=None):
     super(EnqueueNet, self).__init__(stack_type, item_type)
     if module is None:
-      template_opt = {} if template_opt is None else template_opt
-      self.module = template(self.in_sizes(), self.out_sizes(), **template_opt)
+      arch_opt = {} if arch_opt is None else arch_opt
+      self.module = arch(self.in_sizes(), self.out_sizes(), **arch_opt)
     else:
       self.module = module
     self.add_module("Enqueue", self.module)
@@ -62,12 +62,12 @@ class EnqueueNet(Enqueue, nn.Module):
 
 
 class DequeueNet(Dequeue, nn.Module):
-  def __init__(self, stack_type, item_type, module=None, template=ConvNet,
-               template_opt=None):
+  def __init__(self, stack_type, item_type, module=None, arch=ConvNet,
+               arch_opt=None):
     super(DequeueNet, self).__init__(stack_type, item_type)
     if module is None:
-      template_opt = {} if template_opt is None else template_opt
-      self.module = template(self.in_sizes(), self.out_sizes(), **template_opt)
+      arch_opt = {} if arch_opt is None else arch_opt
+      self.module = arch(self.in_sizes(), self.out_sizes(), **arch_opt)
     else:
       self.module = module
     self.add_module("Dequeue", self.module)

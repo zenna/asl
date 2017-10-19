@@ -1,4 +1,4 @@
-"""Residual Network template, modified from torchvision"""
+"""Residual Network arch, modified from torchvision"""
 import math
 import torch.nn as nn
 

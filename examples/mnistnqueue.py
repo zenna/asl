@@ -72,8 +72,8 @@ def train_stack():
   tl = trainloader(opt.batch_size)
   items_iter = iter(tl)
   ref_items_iter = iter(tl)
-  nstack = ModuleDict({'push': PushNet(MatrixStack, Mnist, template=opt.template, template_opt=opt.template_opt),
-                       'pop': PopNet(MatrixStack, Mnist, template=opt.template, template_opt=opt.template_opt),
+  nstack = ModuleDict({'push': PushNet(MatrixStack, Mnist, arch=opt.arch, arch_opt=opt.arch_opt),
+                       'pop': PopNet(MatrixStack, Mnist, arch=opt.arch, arch_opt=opt.arch_opt),
                        'empty': ConstantNet(MatrixStack)})
   cuda(nstack)
   refstack = ref_stack()

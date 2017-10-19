@@ -1,4 +1,4 @@
-from asl.templates.mlp import MLPNet
+from asl.archs.mlp import MLPNet
 import torch.nn as nn
 
 def type_check(xs, types):
@@ -10,14 +10,14 @@ def type_check(xs, types):
 
 
 class Net(nn.Module):
-  def __init__(self, name, module=None, template=MLPNet, template_opt=None,
+  def __init__(self, name, module=None, arch=MLPNet, arch_opt=None,
                sample=False):
     super(Net, self).__init__()
     if module is None:
-      template_opt = {} if template_opt is None else template_opt
+      arch_opt = {} if arch_opt is None else arch_opt
       if sample:
-        template_opt = template.sample_hyper(self.in_sizes(), self.out_sizes())
-      self.module = template(self.in_sizes(), self.out_sizes(), **template_opt)
+        arch_opt = arch.sample_hyper(self.in_sizes(), self.out_sizes())
+      self.module = arch(self.in_sizes(), self.out_sizes(), **arch_opt)
     else:
       self.module = module
     self.add_module(name, self.module)
