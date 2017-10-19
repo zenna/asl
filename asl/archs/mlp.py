@@ -62,13 +62,13 @@ class MLPNet(nn.Module):
                nmids=None,
                activations=None):
     super(MLPNet, self).__init__()
-    nhlayers = len(nmids)
     self.nin = nelements(in_sizes)
     self.nout = nelements(out_sizes)
     nmids = [] if nmids is None else nmids
     self.in_sizes = in_sizes
     self.out_sizes = out_sizes
     self.batch_norm = batch_norm
+    nhlayers = len(nmids)
 
     # Layers
     layers = []
@@ -91,7 +91,7 @@ class MLPNet(nn.Module):
 
     self.layers = nn.ModuleList(layers)
     if activations is None:
-      self.activations = [F.elu for i in range(layers)]
+      self.activations = [F.elu for i in range(nhlayers + 1)]
     else:
       self.activations = activations
 

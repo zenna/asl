@@ -3,7 +3,7 @@
 import asl.opt
 from asl.archs.convnet import ConvNet
 from asl.archs.mlp import MLPNet
-from asl.callbacks import every_n, print_loss, converged, save_checkpoint
+from asl.callbacks import every_n, print_loss, converged, save_checkpoint, nancancel
 from asl.util.misc import cuda
 from asl.train import train, max_iters
 from asl.modules.modules import ModuleDict
@@ -171,13 +171,14 @@ def benchmark_clevr_sketch(share_funcs,
   optimizer = optim.Adam(clevr_sketch.parameters(), lr)
   train(loss_gen,
         optimizer,
-        cont=converged(1000),
+        cont=converged(100),
         callbacks=[print_loss(10),
                   print_accuracy(10),
+                  nancancel,
                   #  every_n(plot_sketch, 500),
                   #  common.plot_empty,
                   #  common.plot_observes,
-                   save_checkpoint(1000, clevr_sketch)],
+                   save_checkpoint(100, clevr_sketch)],
         log_dir=log_dir)
 
 if __name__ == "__main__":

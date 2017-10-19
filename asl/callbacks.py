@@ -101,6 +101,14 @@ def converged(every, print_change=True, change_thres=-0.000005):
   return gen
 
 
+import sys
+# FIXME: This should be a cont not used as callback
+def nancancel(loss, **kwargs):
+  if loss != loss:
+    print("Loss is NAN: ", loss, " stopping!")
+    sys.exit()
+
+
 def validate(test_loss_gen, maxiters=100, cont=None, pre_callbacks=None,
              callbacks=None, post_callbacks=None):
   "Validation is done using a callback"
