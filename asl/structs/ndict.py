@@ -1,7 +1,7 @@
 "Stack Data Structure trained from a reference implementation"
 from asl.type import Function
 from asl.modules.modules import ConstantNet, ModuleDict
-from asl.templates.convnet import VarConvNet
+from asl.templates.convnet import ConvNet
 from asl.util.misc import cuda
 from torch import nn
 
@@ -22,7 +22,7 @@ class GetItem(Function):
 
 
 class SetItemNet(SetItem, nn.Module):
-  def __init__(self, dict_type, key_type, value_type, module=None, template=VarConvNet,
+  def __init__(self, dict_type, key_type, value_type, module=None, template=ConvNet,
                template_opt=None):
     super(SetItemNet, self).__init__(dict_type, key_type, value_type)
     if module is None:
@@ -37,7 +37,7 @@ class SetItemNet(SetItem, nn.Module):
 
 
 class GetItemNet(GetItem, nn.Module):
-  def __init__(self, dict_type, key_type, value_type, module=None, template=VarConvNet,
+  def __init__(self, dict_type, key_type, value_type, module=None, template=ConvNet,
                template_opt=None):
     super(GetItemNet, self).__init__(dict_type, key_type, value_type)
     if module is None:

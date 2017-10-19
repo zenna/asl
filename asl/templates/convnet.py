@@ -20,8 +20,19 @@ def channels(sizes):
   return total
 
 
-class VarConvNet(nn.Module):
+class ConvNet(nn.Module):
   "ConvNet which takes variable inputs and variable outputs"
+
+  def sample_hyper(in_sizes, out_sizes, pbatch_norm=0.5, max_layers=5):
+    "Sample hyper parameters"
+    batch_norm = np.random.rand() > pbatch_norm
+    nlayers = np.random.randint(1, max_layers)
+    h_channels = random.choice([12, 16, 24])
+    act = np.random.choice([F.relu, F.elu])
+    return {'batch_norm': batch_norm,
+            'h_channels': h_channels,
+            'nhlayers': nlayers,
+            'activation': act}
 
   def __init__(self,
                in_sizes,
@@ -32,7 +43,7 @@ class VarConvNet(nn.Module):
                nhlayers=24,
                combine_inputs=cat_channels,
                activation=F.elu):
-    super(VarConvNet, self).__init__()
+    super(ConvNet, self).__init__()
     # Assumes batch not in size and all in/out same size except channel
     self.in_sizes = in_sizes
     self.out_sizes = out_sizes
@@ -54,17 +65,6 @@ class VarConvNet(nn.Module):
       self.blayers = nn.ModuleList(blayers)
 
     self.conv2 = nn.Conv2d(h_channels, out_channels, 3, padding=1)
-
-  def sample_hyper(in_sizes, out_sizes, pbatch_norm=0.5, max_layers=5):
-    "Hyper Parameter Sampler"
-    batch_norm = np.random.rand() > pbatch_norm
-    nlayers = np.random.randint(1, max_layers)
-    h_channels = random.choice([12, 16, 24])
-    act = np.random.choice([F.relu, F.elu])
-    return {'batch_norm': batch_norm,
-            'h_channels': h_channels,
-            'nhlayers': nlayers,
-            'activation': act}
 
   def forward(self, *xs):
     assert len(xs) == len(self.in_sizes), "Wrong # inputs"

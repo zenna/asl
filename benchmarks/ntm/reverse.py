@@ -4,7 +4,7 @@ import benchmarks.common as common
 import asl.opt
 
 from asl.templates.packing import stretch_cat
-from asl.templates.convnet import VarConvNet
+from asl.templates.convnet import ConvNet
 from asl.templates.mlp import MLPNet
 from asl.sketch import Sketch, soft_ch
 from asl.callbacks import every_n, print_loss, converged, save_checkpoint
@@ -129,10 +129,10 @@ def benchmark_copy_sketch(batch_size, stack_len, seq_len, template, log_dir,
                                                           2)
   template_opt['activation'] = F.sigmoid
   nstack = ModuleDict({'push': PushNet(MatrixStack, BernSeq,
-                                             template=VarConvNet,
+                                             template=ConvNet,
                                              template_opt=template_opt),
                        'pop': PopNet(MatrixStack, BernSeq,
-                                             template=VarConvNet,
+                                             template=ConvNet,
                                              template_opt=template_opt),
                        'empty': ConstantNet(MatrixStack)})
 

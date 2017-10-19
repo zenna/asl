@@ -1,7 +1,7 @@
 "Stack Data Structure trained from a reference implementation"
 from collections import deque
 from asl.type import Function
-from asl.templates.convnet import VarConvNet
+from asl.templates.convnet import ConvNet
 from asl.modules.modules import ConstantNet, ModuleDict
 from asl.util.misc import cuda
 from torch import nn
@@ -23,7 +23,7 @@ class Dequeue(Function):
 
 # class NetFunction(nn.Module):
 #
-#   def __init__(self, name, template=VarConvNet, module=None):
+#   def __init__(self, name, template=ConvNet, module=None):
 #     if module is None:
 #       self.module = template(self.in_sizes(), self.out_sizes())
 #     else:
@@ -47,7 +47,7 @@ class Dequeue(Function):
 
 
 class EnqueueNet(Enqueue, nn.Module):
-  def __init__(self, stack_type, item_type, module=None, template=VarConvNet,
+  def __init__(self, stack_type, item_type, module=None, template=ConvNet,
                template_opt=None):
     super(EnqueueNet, self).__init__(stack_type, item_type)
     if module is None:
@@ -62,7 +62,7 @@ class EnqueueNet(Enqueue, nn.Module):
 
 
 class DequeueNet(Dequeue, nn.Module):
-  def __init__(self, stack_type, item_type, module=None, template=VarConvNet,
+  def __init__(self, stack_type, item_type, module=None, template=ConvNet,
                template_opt=None):
     super(DequeueNet, self).__init__(stack_type, item_type)
     if module is None:

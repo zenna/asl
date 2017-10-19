@@ -10,10 +10,13 @@ def type_check(xs, types):
 
 
 class Net(nn.Module):
-  def __init__(self, name, module=None, template=MLPNet, template_opt=None):
+  def __init__(self, name, module=None, template=MLPNet, template_opt=None,
+               sample=False):
     super(Net, self).__init__()
     if module is None:
       template_opt = {} if template_opt is None else template_opt
+      if sample:
+        template_opt = template.sample_hyper(self.in_sizes(), self.out_sizes())
       self.module = template(self.in_sizes(), self.out_sizes(), **template_opt)
     else:
       self.module = module

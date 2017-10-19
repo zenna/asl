@@ -55,150 +55,174 @@ class Size(Type):
 
 
 class Unique(Function, Net):
-  def __init__(self="Unique", name="Unique", module=None, template=MLPNet, template_opt=None):
+  def __init__(self="Unique", name="Unique", **kwargs):
     Function.__init__(self, [ObjectSet], [Object])
-    Net.__init__(self, " name", module, template, template_opt)
+    Net.__init__(self, " name", **kwargs)
 
 
 class Relate(Function, Net):
-  def __init__(self="Relate", name="Relate", module=None, template=MLPNet, template_opt=None):
+  def __init__(self="Relate", name="Relate", **kwargs):
     Function.__init__(self, [Relations, Object, Relation], [ObjectSet])
-    Net.__init__(self, " name", module, template, template_opt)
+    Net.__init__(self, " name", **kwargs)
 
 
 class Count(Function, Net):
-  def __init__(self, name="Count", module=None, template=MLPNet, template_opt=None):
+  def __init__(self, name="Count", **kwargs):
     Function.__init__(self, [ObjectSet], [Integer])
-    Net.__init__(self, "Count", module, template, template_opt)
+    Net.__init__(self, "Count", **kwargs)
 
 
 class Exist(Function, Net):
-  def __init__(self, name="Exist", module=None, template=MLPNet, template_opt=None):
+  def __init__(self, name="Exist", **kwargs):
     Function.__init__(self, [ObjectSet], [Boolean])
-    Net.__init__(self, "Exist", module, template, template_opt)
+    Net.__init__(self, "Exist", **kwargs)
+
+
+class Filter(Function, Net):
+  def __init__(self, name="Filter", **kwargs):
+    Function.__init__(self, [ObjectSet, Size], [ObjectSet])
+    Net.__init__(self, "Filter", **kwargs)
 
 
 class FilterSize(Function, Net):
-  def __init__(self, name="FilterSize", module=None, template=MLPNet, template_opt=None):
+  def __init__(self, name="FilterSize", **kwargs):
     Function.__init__(self, [ObjectSet, Size], [ObjectSet])
-    Net.__init__(self, "FilterSize", module, template, template_opt)
+    Net.__init__(self, "FilterSize", **kwargs)
 
 
 class FilterColor(Function, Net):
-  def __init__(self, name="FilterColor", module=None, template=MLPNet, template_opt=None):
+  def __init__(self, name="FilterColor", **kwargs):
     Function.__init__(self, [ObjectSet, Color], [ObjectSet])
-    Net.__init__(self, "FilterColor", module, template, template_opt)
+    Net.__init__(self, "FilterColor", **kwargs)
 
 
 class FilterMaterial(Function, Net):
-  def __init__(self, name="FilterMaterial", module=None, template=MLPNet, template_opt=None):
+  def __init__(self, name="FilterMaterial", **kwargs):
     Function.__init__(self, [ObjectSet, Material], [ObjectSet])
-    Net.__init__(self, "FilterMaterial", module, template, template_opt)
+    Net.__init__(self, "FilterMaterial", **kwargs)
 
 
 class FilterShape(Function, Net):
-  def __init__(self, name="FilterShape", module=None, template=MLPNet, template_opt=None):
+  def __init__(self, name="FilterShape", **kwargs):
     Function.__init__(self, [ObjectSet, Shape], [ObjectSet])
-    Net.__init__(self, "FilterShape", module, template, template_opt)
+    Net.__init__(self, "FilterShape", **kwargs)
 
 
 class Intersect(Function, Net):
-  def __init__(self, name="Intersect", module=None, template=MLPNet, template_opt=None):
+  def __init__(self, name="Intersect", **kwargs):
     Function.__init__(self, [ObjectSet, ObjectSet], [ObjectSet])
-    Net.__init__(self, "Intersect", module, template, template_opt)
+    Net.__init__(self, "Intersect", **kwargs)
 
 
 class Union(Function, Net):
-  def __init__(self, name="Union", module=None, template=MLPNet, template_opt=None):
+  def __init__(self, name="Union", **kwargs):
     Function.__init__(self, [ObjectSet, ObjectSet], [ObjectSet])
-    Net.__init__(self, "Union", module, template, template_opt)
+    Net.__init__(self, "Union", **kwargs)
 
 
 class GreaterThan(Function, Net):
-  def __init__(self, name="GreaterThan", module=None, template=MLPNet, template_opt=None):
+  def __init__(self, name="GreaterThan", **kwargs):
     Function.__init__(self, [Integer, Integer], [Boolean])
-    Net.__init__(self, "GreaterThan", module, template, template_opt)
+    Net.__init__(self, "GreaterThan", **kwargs)
 
 
 class LessThan(Function, Net):
-  def __init__(self, name="LessThan", module=None, template=MLPNet, template_opt=None):
+  def __init__(self, name="LessThan", **kwargs):
     Function.__init__(self, [Integer, Integer], [Boolean])
-    Net.__init__(self, "LessThan", module, template, template_opt)
+    Net.__init__(self, "LessThan", **kwargs)
 
 
 class EqualInteger(Function, Net):
-  def __init__(self, name="EqualInteger", module=None, template=MLPNet, template_opt=None):
+  def __init__(self, name="EqualInteger", **kwargs):
     Function.__init__(self, [Integer, Integer], [Boolean])
-    Net.__init__(self, "EqualInteger", module, template, template_opt)
+    Net.__init__(self, "EqualInteger", **kwargs)
+
+
+class Equal(Function, Net):
+  def __init__(self, name="Equal", **kwargs):
+    Function.__init__(self, [Material, Material], [Boolean])
+    Net.__init__(self, "Equal", **kwargs)
 
 
 class EqualMaterial(Function, Net):
-  def __init__(self, name="EqualMaterial", module=None, template=MLPNet, template_opt=None):
+  def __init__(self, name="EqualMaterial", **kwargs):
     Function.__init__(self, [Material, Material], [Boolean])
-    Net.__init__(self, "EqualMaterial", module, template, template_opt)
+    Net.__init__(self, "EqualMaterial", **kwargs)
 
 
 class EqualSize(Function, Net):
-  def __init__(self, name="EqualSize", module=None, template=MLPNet, template_opt=None):
+  def __init__(self, name="EqualSize", **kwargs):
     Function.__init__(self, [Size, Size], [Boolean])
-    Net.__init__(self, "EqualSize", module, template, template_opt)
+    Net.__init__(self, "EqualSize", **kwargs)
 
 
 class EqualShape(Function, Net):
-  def __init__(self, name="EqualShape", module=None, template=MLPNet, template_opt=None):
+  def __init__(self, name="EqualShape", **kwargs):
     Function.__init__(self, [Shape, Shape], [Boolean])
-    Net.__init__(self, "EqualShape", module, template, template_opt)
+    Net.__init__(self, "EqualShape", **kwargs)
 
 
 class EqualColor(Function, Net):
-  def __init__(self, name="EqualColor", module=None, template=MLPNet, template_opt=None):
+  def __init__(self, name="EqualColor", **kwargs):
     Function.__init__(self, [Color, Color], [Boolean])
-    Net.__init__(self, "EqualColor", module, template, template_opt)
+    Net.__init__(self, "EqualColor", **kwargs)
+
+
+class Query(Function, Net):
+  def __init__(self, name="Query", **kwargs):
+    Function.__init__(self, [Object], [Shape])
+    Net.__init__(self, "Query", **kwargs)
 
 
 class QueryShape(Function, Net):
-  def __init__(self, name="QueryShape", module=None, template=MLPNet, template_opt=None):
+  def __init__(self, name="QueryShape", **kwargs):
     Function.__init__(self, [Object], [Shape])
-    Net.__init__(self, "QueryShape", module, template, template_opt)
+    Net.__init__(self, "QueryShape", **kwargs)
 
 
 class QuerySize(Function, Net):
-  def __init__(self, name="QuerySize", module=None, template=MLPNet, template_opt=None):
+  def __init__(self, name="QuerySize", **kwargs):
     Function.__init__(self, [Object], [Size])
-    Net.__init__(self, "QuerySize", module, template, template_opt)
+    Net.__init__(self, "QuerySize", **kwargs)
 
 
 class QueryMaterial(Function, Net):
-  def __init__(self, name="QueryMaterial", module=None, template=MLPNet, template_opt=None):
+  def __init__(self, name="QueryMaterial", **kwargs):
     Function.__init__(self, [Object], [Material])
-    Net.__init__(self, "QueryMaterial", module, template, template_opt)
+    Net.__init__(self, "QueryMaterial", **kwargs)
 
 
 class QueryColor(Function, Net):
-  def __init__(self, name="QueryColor", module=None, template=MLPNet, template_opt=None):
+  def __init__(self, name="QueryColor", **kwargs):
     Function.__init__(self, [Object], [Color])
-    Net.__init__(self, "QueryColor", module, template, template_opt)
+    Net.__init__(self, "QueryColor", **kwargs)
+
+
+class Same(Function, Net):
+  def __init__(self, name="Same", **kwargs):
+    Function.__init__(self, [ObjectSet, Object], [ObjectSet])
+    Net.__init__(self, "Same", **kwargs)
 
 
 class SameShape(Function, Net):
-  def __init__(self, name="SameShape", module=None, template=MLPNet, template_opt=None):
+  def __init__(self, name="SameShape", **kwargs):
     Function.__init__(self, [ObjectSet, Object], [ObjectSet])
-    Net.__init__(self, "SameShape", module, template, template_opt)
+    Net.__init__(self, "SameShape", **kwargs)
 
 
 class SameSize(Function, Net):
-  def __init__(self, name="SameSize", module=None, template=MLPNet, template_opt=None):
+  def __init__(self, name="SameSize", **kwargs):
     Function.__init__(self, [ObjectSet, Object], [ObjectSet])
-    Net.__init__(self, "SameSize", module, template, template_opt)
+    Net.__init__(self, "SameSize", **kwargs)
 
 
 class SameMaterial(Function, Net):
-  def __init__(self, name="SameMaterial", module=None, template=MLPNet, template_opt=None):
+  def __init__(self, name="SameMaterial", **kwargs):
     Function.__init__(self, [ObjectSet, Object], [ObjectSet])
-    Net.__init__(self, "SameMaterial", module, template, template_opt)
+    Net.__init__(self, "SameMaterial", **kwargs)
 
 
 class SameColor(Function, Net):
-  def __init__(self, name="SameColor", module=None, template=MLPNet, template_opt=None):
+  def __init__(self, name="SameColor", **kwargs):
     Function.__init__(self, [ObjectSet, Object], [ObjectSet])
-    Net.__init__(self, "SameColor", module, template, template_opt)
+    Net.__init__(self, "SameColor", **kwargs)
