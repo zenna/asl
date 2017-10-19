@@ -10,6 +10,9 @@ from asl.modules.modules import ModuleDict
 from asl.log import log_append, log
 from asl.loss import vec_dist
 from torch import optim
+import argparse
+import numpy as np
+
 
 import torch
 from typing import Any
@@ -70,9 +73,19 @@ def print_accuracy(every, log_tb=True):
 def clevr_args(parser):
   parser.add_argument('--share_funcs', action='store_true', default=False,
                       help='Sample parameter values')
+  parser.add_argument('--batch_norm', action='store_true', default=False,
+                      help='Do batch norm')
+
+
+def clevr_args_sample():
+  "Options sampler"
+  return argparse.Namespace(share_funcs=np.random.rand() > 0.5,
+                            batch_norm=np.random.rand() > 0.5)
+
 
 
 def benchmark_clevr_sketch(share_funcs,
+                           batch_norm,
                            batch_size,
                            arch,
                            log_dir,
@@ -81,22 +94,22 @@ def benchmark_clevr_sketch(share_funcs,
                            sample,
                            **kwargs):
   arch = MLPNet
-  arch_opt = MLPNet
+  sample_args = {'pbatch_norm': int(batch_norm)}
 
-  neu_clevr = {'unique': Unique(arch=arch, arch_opt=arch_opt, sample=sample),
-               'relate': Relate(arch=arch, arch_opt=arch_opt, sample=sample),
-               'count': Count(arch=arch, arch_opt=arch_opt, sample=sample),
-               'exist': Exist(arch=arch, arch_opt=arch_opt, sample=sample),
-               'intersect': Intersect(arch=arch, arch_opt=arch_opt, sample=sample),
-               'union': Union(arch=arch, arch_opt=arch_opt, sample=sample),
-               'greater_than': GreaterThan(arch=arch, arch_opt=arch_opt, sample=sample),
-               'less_than': LessThan(arch=arch, arch_opt=arch_opt, sample=sample),
-               'equal_integer': EqualInteger(arch=arch, arch_opt=arch_opt, sample=sample)}
+  neu_clevr = {'unique': Unique(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args),
+               'relate': Relate(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args),
+               'count': Count(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args),
+               'exist': Exist(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args),
+               'intersect': Intersect(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args),
+               'union': Union(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args),
+               'greater_than': GreaterThan(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args),
+               'less_than': LessThan(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args),
+               'equal_integer': EqualInteger(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args)}
   if share_funcs:
-    fil = Filter(arch=arch, arch_opt=arch_opt, sample=sample)
-    eq = Equal(arch=arch, arch_opt=arch_opt, sample=sample)
-    query = Query(arch=arch, arch_opt=arch_opt, sample=sample)
-    same = Same(arch=arch, arch_opt=arch_opt, sample=sample)
+    fil = Filter(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args)
+    eq = Equal(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args)
+    query = Query(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args)
+    same = Same(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args)
     neu_clevr.update({'filter_size': fil,
                       'filter_color': fil,
                       'filter_material': fil,
@@ -114,22 +127,22 @@ def benchmark_clevr_sketch(share_funcs,
                       'same_material': same,
                       'same_color': same})
   else:
-    neu_clevr.update({'filter_size': FilterSize(arch=arch, arch_opt=arch_opt, sample=sample),
-                      'filter_color': FilterColor(arch=arch, arch_opt=arch_opt, sample=sample),
-                      'filter_material': FilterMaterial(arch=arch, arch_opt=arch_opt, sample=sample),
-                      'filter_shape': FilterShape(arch=arch, arch_opt=arch_opt, sample=sample),
-                      'equal_material': EqualMaterial(arch=arch, arch_opt=arch_opt, sample=sample),
-                      'equal_size': EqualSize(arch=arch, arch_opt=arch_opt, sample=sample),
-                      'equal_shape': EqualShape(arch=arch, arch_opt=arch_opt, sample=sample),
-                      'equal_color': EqualColor(arch=arch, arch_opt=arch_opt, sample=sample),
-                      'query_shape': QueryShape(arch=arch, arch_opt=arch_opt, sample=sample),
-                      'query_size': QuerySize(arch=arch, arch_opt=arch_opt, sample=sample),
-                      'query_material': QueryMaterial(arch=arch, arch_opt=arch_opt, sample=sample),
-                      'query_color': QueryColor(arch=arch, arch_opt=arch_opt, sample=sample),
-                      'same_shape': SameShape(arch=arch, arch_opt=arch_opt, sample=sample),
-                      'same_size': SameSize(arch=arch, arch_opt=arch_opt, sample=sample),
-                      'same_material': SameMaterial(arch=arch, arch_opt=arch_opt, sample=sample),
-                      'same_color': SameColor(arch=arch, arch_opt=arch_opt, sample=sample)})
+    neu_clevr.update({'filter_size': FilterSize(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args),
+                      'filter_color': FilterColor(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args),
+                      'filter_material': FilterMaterial(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args),
+                      'filter_shape': FilterShape(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args),
+                      'equal_material': EqualMaterial(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args),
+                      'equal_size': EqualSize(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args),
+                      'equal_shape': EqualShape(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args),
+                      'equal_color': EqualColor(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args),
+                      'query_shape': QueryShape(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args),
+                      'query_size': QuerySize(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args),
+                      'query_material': QueryMaterial(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args),
+                      'query_color': QueryColor(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args),
+                      'same_shape': SameShape(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args),
+                      'same_size': SameSize(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args),
+                      'same_material': SameMaterial(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args),
+                      'same_color': SameColor(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args)})
 
   neuclevr = ModuleDict(neu_clevr)
   refclevr = ref_clevr
@@ -170,5 +183,7 @@ def benchmark_clevr_sketch(share_funcs,
 if __name__ == "__main__":
   opt = asl.opt.handle_args(clevr_args)
   opt = asl.opt.handle_hyper(opt, __file__)
+  if opt.sample:
+    opt = asl.opt.merge(clevr_args_sample(), opt)
   asl.opt.save_opt(opt)
   benchmark_clevr_sketch(**vars(opt))

@@ -32,7 +32,8 @@ class MLPNet(nn.Module):
                    out_sizes,
                    pbatch_norm=0.5,
                    max_layers=5,
-                   pact_same=0.5):
+                   pact_same=0.5,
+                   **kwargs):
     "Sample hyper parameters"
     nin = nelements(in_sizes)
     nout = nelements(out_sizes)
@@ -67,16 +68,26 @@ class MLPNet(nn.Module):
     nmids = [] if nmids is None else nmids
     self.in_sizes = in_sizes
     self.out_sizes = out_sizes
+    self.batch_norm = batch_norm
 
     # Layers
     layers = []
+    bnlayers = []
     l2 = self.nout if nhlayers == 0 else nmids[0]
     layers.append(nn.Linear(self.nin, l2))
+    if batch_norm:
+      bnlayers.append(nn.BatchNorm1d(l2))
+
     if nhlayers > 0:
       layer_lens = nmids + [self.nout]
       self.layer_lens = layer_lens
       for i in range(len(layer_lens) - 1):
         layers.append(nn.Linear(layer_lens[i], layer_lens[i + 1]))
+        if batch_norm:
+          bnlayers.append(nn.BatchNorm1d(layer_lens[i + 1]))
+
+    if batch_norm:
+      self.bnlayers = nn.ModuleList(bnlayers)
 
     self.layers = nn.ModuleList(layers)
     if activations is None:
@@ -91,8 +102,8 @@ class MLPNet(nn.Module):
     x = torch.cat(exp_xs, dim=1)
     for (i, layer) in enumerate(self.layers):
       x = layer(x)
-      # if self.batch_norm:
-      #   x = self.blayers[i](x)
+      if self.batch_norm:
+        x = self.bnlayers[i](x)
       x = self.activations[i](x)
 
     # Uncombine inputs

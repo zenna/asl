@@ -10,13 +10,18 @@ def type_check(xs, types):
 
 
 class Net(nn.Module):
-  def __init__(self, name, module=None, arch=MLPNet, arch_opt=None,
-               sample=False):
+  def __init__(self, name,
+               module=None,
+               arch=MLPNet,
+               arch_opt=None,
+               sample=False,
+               sample_args=None):
     super(Net, self).__init__()
     if module is None:
       arch_opt = {} if arch_opt is None else arch_opt
       if sample:
-        arch_opt = arch.sample_hyper(self.in_sizes(), self.out_sizes())
+        sample_args = {} if sample_args is None else sample_args
+        arch_opt = arch.sample_hyper(self.in_sizes(), self.out_sizes(), **sample_args)
       self.module = arch(self.in_sizes(), self.out_sizes(), **arch_opt)
     else:
       self.module = module
