@@ -104,7 +104,7 @@ def converged(every, print_change=True, change_thres=-0.000005):
 import sys
 # FIXME: This should be a cont not used as callback
 def nancancel(loss, **kwargs):
-  if loss != loss:
+  if (loss != loss)[0]:
     print("Loss is NAN: ", loss, " stopping!")
     sys.exit()
 
