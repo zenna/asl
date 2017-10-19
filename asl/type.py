@@ -2,12 +2,12 @@ class Type(object):
   """A type is a Type"""
   def __init__(self, name, size, dtype, observable=True):
     self.name = name
-    self.size = size
+    self._size = size
     self.dtype = dtype
     self.observable = observable
 
-  def size():
-    return _size
+  def size(self):
+    return self._size
 
 
 class FunctionType(object):
@@ -30,10 +30,10 @@ class Function(object):
     return FunctionType(self.in_types, self.out_types)
 
   def in_sizes(self):
-    return [type.size for type in self.type().in_types]
+    return [type.size() for type in self.type().in_types]
 
   def out_sizes(self):
-    return [type.size for type in self.type().out_types]
+    return [type.size() for type in self.type().out_types]
 
   def n_inputs(self):
     return len(self.type().in_types)

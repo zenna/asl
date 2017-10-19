@@ -1,4 +1,5 @@
 "Packing and Unpacking multiple arguments into one for neural networkp "
+from functools import reduce
 import asl
 import torch
 
@@ -19,6 +20,54 @@ def split_channel(t, sizes, channel_dim=0, slice_dim=1):
       c0 = c
 
   return tuple(outputs)
+
+
+def gcd(a, b):
+    """Return greatest common divisor using Euclid's Algorithm."""
+    while b:
+        a, b = b, a % b
+    return a
+
+
+def lcm(a, b):
+    """Return lowest common multiple."""
+    return a * b // gcd(a, b)
+
+
+def lcmm(*args):
+    """Return lcm of args."""
+    return reduce(lcm, args)
+
+
+def make_img_like(img):
+  if img.dim() == 4:
+    return img
+  elif img.dim() == 3:
+    return img.view(img.size(0), 1, img.size(1), img.size(2))
+  elif img.dim() == 2:
+    return img.view(img.size(0), 1, 1, img.size(1))
+
+
+def lcmimgs(imgs, dim):
+  lcmx = lcmm(*[t.size(dim) for t in imgs])
+  return lcmx
+
+import torch.nn as nn
+
+def resize(img, lcmx, lcmy, mode='bilinear'):
+  scale_factor = (lcmx // img.size(2), lcmy // img.size(3))
+  if scale_factor == (1, 1):
+    return img
+  else:
+    return nn.Upsample(scale_factor=scale_factor, mode=mode)(img)
+
+
+def stackable_imgs(tensors):
+  """Convert tensors tensors into images that can be stacked (same width and height)"""
+  imgs = list(map(make_img_like, tensors))
+  # import pdb; pdb.set_trace()
+  lcmx, lcmy = lcmimgs(imgs, 2), lcmimgs(imgs, 3)
+  return [resize(img, lcmx, lcmy) for img in imgs]
 
 
 def slither(x, target_size):

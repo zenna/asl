@@ -9,6 +9,7 @@ from asl.train import train, max_iters
 from asl.modules.modules import ModuleDict
 from asl.log import log_append, log
 from asl.loss import vec_dist
+from asl.encoding import onehot1d
 from torch import optim
 import argparse
 import numpy as np
@@ -33,8 +34,8 @@ class ClevrSketch(Sketch):
       f = kwargs[fname]
       return f(*inputs)[0]
     def tensor(value):
-      x = value.tensor()
-      return x.expand(1, *x.size())
+      x = onehot1d(value)
+      return x
     for (i, _) in enumerate(objsets):
       res = interpret(progs[i], objsets[i], rels[i], apply=netapply,
                       value_transform=tensor)
@@ -83,7 +84,6 @@ def clevr_args_sample():
                             batch_norm=np.random.rand() > 0.5)
 
 
-
 def benchmark_clevr_sketch(share_funcs,
                            batch_norm,
                            batch_size,
@@ -95,7 +95,6 @@ def benchmark_clevr_sketch(share_funcs,
                            **kwargs):
   arch = MLPNet
   sample_args = {'pbatch_norm': int(batch_norm)}
-
   neu_clevr = {'unique': Unique(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args),
                'relate': Relate(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args),
                'count': Count(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args),

@@ -16,9 +16,14 @@ def onehot(i, onehot_len, batch_size):
 
 
 def onehotmany(i_s, onehot_len):
-  "Createa a matrix of one hot vectors from integers i_s"
+  "Matrix of one hot vectors from integers i_s"
   y = torch.LongTensor(i_s).view(len(i_s), 1)
   y_onehot = torch.FloatTensor(len(i_s), onehot_len)
   y_onehot.zero_()
   y_onehot.scatter_(1, y, 1)
   return y_onehot
+
+
+def onebatch(x):
+  "Make a single batch out of x"
+  return x.expand(1, *x.size())
