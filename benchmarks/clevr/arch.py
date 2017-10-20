@@ -1,24 +1,42 @@
 """Architectures for Clevr Interfaces"""
 
-# Issues, I may want to sample some things in te custom arch, e.g. n hidden layers
-# want to be able to reconstruct thigns
-
-
 def nmidseq(n, nhidden=1):
   "number of hidden layers for Equality function, n: size of type"
   return [2 * n for _ in range(nhidden)]
 
-def custom_arch():
-  eq_arch_opt = {'equal': {'nmids': nmidseq()}
-  eq = Equal(arch=MLPNet, arch_opt=eq_arch_opt, sample=sample, sample_args=sample_args)
+def funcs(arch,
+         arch_opt,
+         Unique,
+         Relate,
+         Count,
+         Exist,
+         Filter,
+         FilterSize,
+         FilterColor,
+         FilterMaterial,
+         FilterShape,
+         Intersect,
+         Union,
+         GreaterThan,
+         LessThan,
+         EqualInteger,
+         Equal,
+         EqualMaterial,
+         EqualSize,
+         EqualShape,
+         EqualColor,
+         QueryShape,
+         QuerySize,
+         QueryMaterial,
+         QueryColor,
+         SameShape,
+         SameSize,
+         SameMaterial,
+         SameColor):
 
-
-
-def arch():
-  if custom:
-  eq_arch_opt = {'nmids': nmidseq()}
-  eq = Equal(arch=MLPNet, arch_opt=eq_arch_opt, sample=sample, sample_args=sample_args)
-
+  # eq_arch_opt = {'nmids': nmidseq()}
+  # eq = Equal(arch=MLPNet, arch_opt=eq_arch_opt, sample=sample, sample_args=sample_args)
+  #
   neu_clevr = {'unique': Unique(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args),
                'relate': Relate(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args),
                'count': Count(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args),

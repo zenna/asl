@@ -1,29 +1,18 @@
 """Clevr Benchmark """
-# FIXME: CLEANUP import hell
-import asl.opt
-from asl.archs.convnet import ConvNet
-from asl.archs.mlp import MLPNet
-from asl.callbacks import every_n, print_loss, converged, save_checkpoint, nancancel
-from asl.util.misc import cuda
-from asl.train import train, max_iters
-from asl.modules.modules import ModuleDict
-from asl.log import log_append, log
-from asl.loss import vec_dist
-from asl.encoding import onehot1d
-from asl.encoding import equal, dist
-from torch import optim
-import argparse
-import numpy as np
-
-
-import torch
 from typing import Any
-from torch import nn
+import argparse
+import asl
+import asl.archs as archs
+from asl.util.misc import cuda
+from asl.modules.modules import ModuleDict
+from torch import optim
+import numpy as np
+import benchmarks
 from benchmarks.clevr.clevr import scenes_iter, data_iter, ref_clevr, interpret, ans_tensor
-from benchmarks.clevr.defns import *
-from asl.sketch import Sketch
+# import benchmarks.clevr as clevr
 
-class ClevrSketch(Sketch):
+
+class ClevrSketch(asl.Sketch):
   "Sketch for copy of list of elements"
 
   def __init__(self, model, ref_model):
@@ -31,12 +20,14 @@ class ClevrSketch(Sketch):
 
   def sketch(self, progs, objsets, rels, **kwargs):
     results = []
+
     def netapply(fname, inputs):
       f = kwargs[fname]
       return f(*inputs)[0]
+
     def tensor(value):
-      x = onehot1d(value)
-      return x
+      return asl.onehot1d(value)
+
     for (i, _) in enumerate(objsets):
       res = interpret(progs[i], objsets[i], rels[i], apply=netapply,
                       value_transform=tensor)
@@ -44,14 +35,14 @@ class ClevrSketch(Sketch):
 
     return results
 
-from asl.encoding import equal
 
 def accuracy(est, target):
   "Find accuracy of estimation for target"
-  eqs = [equal(est[i], target[i]) for i in range(len(est))]
+  eqs = [asl.equal(est[i], target[i]) for i in range(len(est))]
   ncorrect = sum(eqs)
   acc = ncorrect / len(eqs)
   return acc, ncorrect
+
 
 def print_accuracy(every, log_tb=True):
   "Print accuracy per every n"
@@ -84,7 +75,6 @@ def clevr_args_sample():
   return argparse.Namespace(share_funcs=np.random.rand() > 0.5,
                             batch_norm=np.random.rand() > 0.5)
 
-
 def benchmark_clevr_sketch(share_funcs,
                            batch_norm,
                            batch_size,
@@ -94,56 +84,10 @@ def benchmark_clevr_sketch(share_funcs,
                            arch_opt,
                            sample,
                            **kwargs):
-  arch = MLPNet
+  arch = archs.MLPNet
   sample_args = {'pbatch_norm': int(batch_norm)}
-  neu_clevr = {'unique': Unique(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args),
-               'relate': Relate(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args),
-               'count': Count(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args),
-               'exist': Exist(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args),
-               'intersect': Intersect(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args),
-               'union': Union(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args),
-               'greater_than': GreaterThan(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args),
-               'less_than': LessThan(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args),
-               'equal_integer': EqualInteger(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args)}
-  if share_funcs:
-    fil = Filter(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args)
-    eq = Equal(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args)
-    query = Query(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args)
-    same = Same(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args)
-    neu_clevr.update({'filter_size': fil,
-                      'filter_color': fil,
-                      'filter_material': fil,
-                      'filter_shape': fil,
-                      'equal_material': eq,
-                      'equal_size': eq,
-                      'equal_shape': eq,
-                      'equal_color': eq,
-                      'query_shape': query,
-                      'query_size': query,
-                      'query_material': query,
-                      'query_color': query,
-                      'same_shape': same,
-                      'same_size': same,
-                      'same_material': same,
-                      'same_color': same})
-  else:
-    neu_clevr.update({'filter_size': FilterSize(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args),
-                      'filter_color': FilterColor(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args),
-                      'filter_material': FilterMaterial(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args),
-                      'filter_shape': FilterShape(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args),
-                      'equal_material': EqualMaterial(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args),
-                      'equal_size': EqualSize(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args),
-                      'equal_shape': EqualShape(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args),
-                      'equal_color': EqualColor(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args),
-                      'query_shape': QueryShape(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args),
-                      'query_size': QuerySize(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args),
-                      'query_material': QueryMaterial(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args),
-                      'query_color': QueryColor(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args),
-                      'same_shape': SameShape(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args),
-                      'same_size': SameSize(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args),
-                      'same_material': SameMaterial(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args),
-                      'same_color': SameColor(arch=arch, arch_opt=arch_opt, sample=sample, sample_args=sample_args)})
-
+  funs = benchmarks.clevr.genfuns.func_types()
+  neu_clevr = benchmarks.clevr.funcs(arch, arch_opt, **funs)
   neuclevr = ModuleDict(neu_clevr)
   refclevr = ref_clevr
   clevr_sketch = ClevrSketch(neuclevr, refclevr)
@@ -161,30 +105,30 @@ def benchmark_clevr_sketch(share_funcs,
     outputs = clevr_sketch(progs, objsets, rels)
     anstensors = [ans_tensor(ans) for ans in answers]
     acc, ncorrect = accuracy(outputs, anstensors)
-    log("accuracy", acc)
-    log("ncorrect", ncorrect)
-    log("outof", len(answers))
-    deltas = [dist(outputs[i], anstensors[i]) for i in range(len(outputs))]
+    asl.log("accuracy", acc)
+    asl.log("ncorrect", ncorrect)
+    asl.log("outof", len(answers))
+    deltas = [asl.dist(outputs[i], anstensors[i]) for i in range(len(outputs))]
     return sum(deltas) / len(deltas)
 
 
   optimizer = optim.Adam(clevr_sketch.parameters(), lr)
-  train(loss_gen,
-        optimizer,
-        cont=converged(100),
-        callbacks=[print_loss(10),
-                  print_accuracy(10),
-                  nancancel,
-                  #  every_n(plot_sketch, 500),
-                  #  common.plot_empty,
-                  #  common.plot_observes,
-                   save_checkpoint(100, clevr_sketch)],
+  asl.train(loss_gen,
+            optimizer,
+            cont=asl.converged(100),
+            callbacks=[asl.print_loss(10),
+                       print_accuracy(10),
+                       asl.nancancel,
+                       #  every_n(plot_sketch, 500),
+                       #  common.plot_empty,
+                       #  common.plot_observes,
+                       asl.save_checkpoint(100, clevr_sketch)],
         log_dir=log_dir)
 
 if __name__ == "__main__":
-  opt = asl.opt.handle_args(clevr_args)
-  opt = asl.opt.handle_hyper(opt, __file__)
+  opt = asl.handle_args(clevr_args)
+  opt = asl.handle_hyper(opt, __file__)
   if opt.sample:
-    opt = asl.opt.merge(clevr_args_sample(), opt)
-  asl.opt.save_opt(opt)
+    opt = asl.merge(clevr_args_sample(), opt)
+  asl.save_opt(opt)
   benchmark_clevr_sketch(**vars(opt))

@@ -2,6 +2,7 @@ from enum import Enum
 from multipledispatch import dispatch
 import torch.nn as nn
 from torch.autograd import Variable
+import asl.util as util
 from asl.util.misc import cuda
 from asl.util.torch import onehot
 from asl.type import Type
@@ -23,6 +24,15 @@ class OneHot1D(Encoding):
 
 class OneHot2D(Encoding):
   pass
+
+
+def encode(cls, encoding, typesize):
+  class ClsEncoding(cls, encoding):
+    def __init__(self, value, expand_one=True):
+      self.value = util.maybe_expand(ClsEncoding, value, expand_one)
+  ClsEncoding.typesize = typesize
+  ClsEncoding.__name__ = cls.__name__ + encoding.__name__
+  return ClsEncoding
 
 
 @dispatch(OneHot1D, OneHot1D)

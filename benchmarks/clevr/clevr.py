@@ -135,7 +135,6 @@ class ColorOneHot1D(Color, OneHot1D):
     self.value = maybe_expand(ColorOneHot1D, value, expand_one)
 
 
-
 class ColorEnum(Color, Enum):
   red = 0
   green = 1

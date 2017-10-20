@@ -5,6 +5,7 @@ from .net import *
 from .train import *
 from .type import *
 from .log import *
+from .encoding import *
 
 import asl.util
 import asl.structs
