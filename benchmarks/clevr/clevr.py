@@ -7,10 +7,12 @@ from asl.util.io import datadir
 import asl.util.torch
 from asl.util.misc import take
 from asl.util.misc import cuda
-from asl.encoding import OneHot1D, Encoding
+from asl.encoding import OneHot1D, Encoding, OneHot2D
 import torch
 from torch.autograd import Variable
 from asl.util.torch import maybe_expand
+from asl.encoding import onehot1d, onehot2d
+
 
 
 def clevr_iter(clevr_root,
@@ -62,7 +64,7 @@ def data_iter(batch_size, train=True):
 
     yield progs, obj_set_tens, rel_tens, answers
 
-
+# Shape
 class Shape():
   pass
 
@@ -79,6 +81,7 @@ class ShapeEnum(Shape, Enum):
   cylinder = 2
 
 
+# Material
 class Material():
   pass
 
@@ -89,11 +92,17 @@ class MaterialOneHot1D(Material, OneHot1D):
     self.value = maybe_expand(MaterialOneHot1D, value, expand_one)
 
 
+class MaterialOneHot2D(Shape, OneHot2D):
+  typesize = (8,)
+  def __init__(self, value, expand_one=True):
+    self.value = maybe_expand(MaterialOneHot2D, value, expand_one)
+
+
 class MaterialEnum(Material, Enum):
   metal = 0
   rubber = 1
 
-
+# Size
 class Size():
   pass
 
@@ -102,6 +111,13 @@ class SizeOneHot1D(Size, OneHot1D):
   typesize = (8,)
   def __init__(self, value, expand_one=True):
     self.value = maybe_expand(SizeOneHot1D, value, expand_one)
+
+
+
+class SizeOneHot2D(Shape, OneHot2D):
+  typesize = (8, 8)
+  def __init__(self, value, expand_one=True):
+    self.value = maybe_expand(SizeOneHot2, value, expand_one)
 
 
 class SizeEnum(Size, Enum):
@@ -155,6 +171,12 @@ class Boolean():
 
 class BooleanOneHot1D(Boolean, OneHot1D):
   typesize = (2,)
+  def __init__(self, value, expand_one=True):
+    self.value = maybe_expand(BooleanOneHot1D, value, expand_one)
+
+
+class BooleanOneHot2D(Boolean, OneHot2D):
+  typesize = (2, 2)
   def __init__(self, value, expand_one=True):
     self.value = maybe_expand(BooleanOneHot1D, value, expand_one)
 
@@ -394,6 +416,7 @@ def same_material(scene_object_set, object):
 def same_color(scene_object_set, object):
   return rem(filter_color(scene_object_set, query_color(object)), object)
 
+
 def eval_string(func_string, inputs):
   f = eval(func_string)
   return f(*inputs)
@@ -405,13 +428,6 @@ VALUE.update({x.name: x for x in ShapeEnum})
 VALUE.update({x.name: x for x in SizeEnum})
 VALUE.update({x.name: x for x in RelationEnum})
 VALUE.update({x.name: x for x in BooleanEnum})
-
-
-# VALUE.update({'left': 'left',
-#               'right': 'right',
-#               'front': 'front',
-#               'behind': 'behind'})
-#
 
 def interpret(json,
               scene_object_set,
@@ -450,8 +466,6 @@ num_to_string = {'0': 0,
                  '10':10}
 
 
-from asl.encoding import onehot1d
-
 def ans_tensor(ans):
   "Convert the query answer into a tensor"
   if ans in num_to_string:
@@ -460,7 +474,7 @@ def ans_tensor(ans):
   else:
     value = VALUE[ans]
     # PARMATERIZE THIS CHOICE
-    return onehot1d(value)
+    return onehot2d(value)
   return
 
 

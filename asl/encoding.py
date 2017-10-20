@@ -20,6 +20,11 @@ class Encoding():
 class OneHot1D(Encoding):
   pass
 
+
+class OneHot2D(Encoding):
+  pass
+
+
 @dispatch(OneHot1D, OneHot1D)
 def equal(x, y):
   same = torch.max(x.value, 1)[1] == torch.max(y.value, 1)[1]
@@ -42,3 +47,11 @@ def onehot1d(enum, length=None):
   EnumOneHot1D = compound_encoding(enum.__class__.__bases__[0], OneHot1D)
   length = EnumOneHot1D.typesize[0] if length is None else length
   return EnumOneHot1D(Variable(cuda(onehot(enum.value, length, 1))))
+
+
+@dispatch(Enum)
+def onehot2d(enum):
+  EnumOneHot2D = compound_encoding(enum.__class__.__bases__[0], OneHot2D)
+  var = torch.zeros(EnumOneHot2D.typesize)
+  var[enum.value, enum.value] = 1.0
+  return EnumOneHot2D(var)

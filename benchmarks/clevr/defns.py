@@ -4,58 +4,6 @@ from asl.archs.mlp import MLPNet
 from asl.net import Net
 import benchmarks.clevr.clevr as clevr
 from typing import Union
-# class Relations(Type):
-#   "Stack represented as a vector"
-#   size = (4, 10, 10)
-#
-#
-# class Object(Type):
-#   "Object represented as one hot matrix"
-#   size = (4, 8)
-#
-#
-# class ObjectSet(Type):
-#   "Object set represented as one hot matrix"
-#   size = (10, 4, 8)
-
-#
-# class Relation(Type):
-#   "Relation as sparse relation matrix"
-#   size = (8, )
-#
-#
-# class Boolean(Type):
-#   "Boolean"
-#   size = (2,)
-#
-#
-# class Integer(Type):
-#   "Integer"
-#   size = (11,)
-
-
-# class Color(Type):
-#   "Enum, one hot"
-#   size = (8,)
-#
-#
-# class Material(Type):
-#   "Maeterial One hot"
-#   size = (8,)
-#
-#
-# class Shape(Type):
-#   "Shape one hto"
-#   size = (8,)
-#
-#
-# class Size(Type):
-#   "Size one hot"
-#   size = (8,)
-# class Relation(Type):
-#   "Relation as sparse relation matrix"
-#   size = (8, )
-
 
 ObjectSetLatent = clevr.TensorClevrObjectSet
 ObjectLatent = clevr.TensorClevrObject
