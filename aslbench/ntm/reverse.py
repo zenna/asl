@@ -1,6 +1,6 @@
 """Reverse Benchmark - Can a neural network learn to reverse a sequence"""
-from benchmarks.types import vec_stack, bern_seq, matrix_stack
-import benchmarks.common as common
+from aslbench.types import vec_stack, bern_seq, matrix_stack
+import aslbench.common as common
 import asl.opt
 
 from asl.archs.packing import stretch_cat

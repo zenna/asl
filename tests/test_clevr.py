@@ -1,4 +1,4 @@
-from benchmarks.clevr.clevr import questions_iter, scenes_iter, SceneGraph, interpret
+from aslbench.clevr.clevr import questions_iter, scenes_iter, SceneGraph, interpret
 
 def test_interpret():
   qitr = questions_iter()

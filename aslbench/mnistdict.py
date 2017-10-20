@@ -1,5 +1,5 @@
-from benchmarks.types import vec_stack, bern_seq, matrix_stack
-import benchmarks.common as common
+from aslbench.types import vec_stack, bern_seq, matrix_stack
+import aslbench.common as common
 import asl.opt
 
 

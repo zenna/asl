@@ -2,7 +2,7 @@ from asl.type import Function, Type
 import torch.nn as nn
 from asl.archs.mlp import MLPNet
 from asl.net import Net
-import benchmarks.clevr.clevr as clevr
+import aslbench.clevr.clevr as clevr
 from typing import Union
 
 ObjectSetLatent = clevr.TensorClevrObjectSet

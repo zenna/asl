@@ -7,9 +7,9 @@ from asl.util.misc import cuda
 from asl.modules.modules import ModuleDict
 from torch import optim
 import numpy as np
-import benchmarks
-from benchmarks.clevr.clevr import scenes_iter, data_iter, ref_clevr, interpret, ans_tensor
-# import benchmarks.clevr as clevr
+import aslbench
+from aslbench.clevr.clevr import scenes_iter, data_iter, ref_clevr, interpret, ans_tensor
+# import aslbench.clevr as clevr
 
 
 class ClevrSketch(asl.Sketch):
@@ -86,8 +86,8 @@ def benchmark_clevr_sketch(share_funcs,
                            **kwargs):
   arch = archs.MLPNet
   sample_args = {'pbatch_norm': int(batch_norm)}
-  funs = benchmarks.clevr.genfuns.func_types()
-  neu_clevr = benchmarks.clevr.funcs(arch, arch_opt, **funs)
+  funs = aslbench.clevr.genfuns.func_types()
+  neu_clevr = aslbench.clevr.funcs(arch, arch_opt, **funs)
   neuclevr = ModuleDict(neu_clevr)
   refclevr = ref_clevr
   clevr_sketch = ClevrSketch(neuclevr, refclevr)
