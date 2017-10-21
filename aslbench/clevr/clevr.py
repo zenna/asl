@@ -1,18 +1,13 @@
+"Clevr Benchmark"
 import ijson
 import os
 from enum import Enum
 import asl
-from asl.type import Type
-from asl.util.io import datadir
-import asl.util.torch
-from asl.util.misc import take
-from asl.util.misc import cuda
-from asl.encoding import OneHot1D, Encoding, OneHot2D
-import torch
+import asl.util as util
+from asl.util import maybe_expand
+from asl.encoding import OneHot1D, Encoding, OneHot2D, onehot1d, onehot2d
 from torch.autograd import Variable
-from asl.util.torch import maybe_expand
-from asl.encoding import onehot1d, onehot2d
-
+import torch
 
 
 def clevr_iter(clevr_root,
@@ -29,13 +24,13 @@ def clevr_iter(clevr_root,
   return ijson.items(f, "{}.item".format(data_type))
 
 
-def questions_iter(clevr_root=os.path.join(datadir(), "CLEVR_v1.0"),
+def questions_iter(clevr_root=os.path.join(util.datadir(), "CLEVR_v1.0"),
                    train=True):
   "Iterator over question dataset"
   return clevr_iter(clevr_root, "questions", train)
 
 
-def scenes_iter(clevr_root=os.path.join(datadir(), "CLEVR_v1.0"),
+def scenes_iter(clevr_root=os.path.join(util.datadir(), "CLEVR_v1.0"),
                 train=True):
   "Iterator over scenes"
   return clevr_iter(clevr_root, "scenes", train)
@@ -117,7 +112,7 @@ class SizeOneHot1D(Size, OneHot1D):
 class SizeOneHot2D(Shape, OneHot2D):
   typesize = (8, 8)
   def __init__(self, value, expand_one=True):
-    self.value = maybe_expand(SizeOneHot2, value, expand_one)
+    self.value = maybe_expand(SizeOneHot2D, value, expand_one)
 
 
 class SizeEnum(Size, Enum):
@@ -144,7 +139,6 @@ class ColorEnum(Color, Enum):
   cyan = 5
   brown = 6
   purple = 7
-
 
 
 class Relation():
@@ -210,7 +204,7 @@ class ClevrObject():
                        size=SizeEnum[json['size']])
 
   def tensor(self):
-    return Variable(cuda(asl.util.torch.onehotmany([self.color.value,
+    return Variable(util.cuda(util.onehotmany([self.color.value,
                                                     self.size.value,
                                                     self.material.value,
                                                     self.shape.value], 8)))
@@ -236,7 +230,7 @@ class ClevrObjectSet():
     obj_tensors = [t.tensor().expand(1, 4, 8) for t in self.objects]
     ndummies = max_n_objects - len(obj_tensors)
     assert ndummies >= 0
-    dummies = [Variable(cuda(torch.zeros(1, 4, 8))) for i in range(ndummies)]
+    dummies = [Variable(util.cuda(torch.zeros(1, 4, 8))) for i in range(ndummies)]
     return TensorClevrObjectSet(torch.cat(obj_tensors + dummies, 0))
 
 
@@ -274,7 +268,7 @@ class Relations():
         for obj2 in obj1rels:
           rel_ten[i, j, obj2] = 1.0
 
-    return TensorRelations(Variable(cuda(rel_ten)))
+    return TensorRelations(Variable(util.cuda(rel_ten)))
 
 
 class TensorRelations(Encoding):
@@ -452,6 +446,7 @@ def interpret(json,
 
   return fouts[-1]
 
+
 num_to_string = {'0': 0,
                  '1': 1,
                  '2': 2,
@@ -469,9 +464,10 @@ def ans_tensor(ans):
   "Convert the query answer into a tensor"
   if ans in num_to_string:
     value = num_to_string[ans]
-    return IntegerOneHot1D(Variable(cuda(asl.util.torch.onehot(value, 11, 1))))
+    return IntegerOneHot1D(Variable(util.cuda(util.onehot(value, 11, 1))))
   else:
     value = VALUE[ans]
+    # need to pass a mpapign from the python data types to their encoding
     # PARMATERIZE THIS CHOICE
     return onehot2d(value)
   return

@@ -3,12 +3,11 @@ from typing import Any
 import argparse
 import asl
 import asl.archs as archs
-from asl.util.misc import cuda
-from asl.modules.modules import ModuleDict
+import asl.util as util
 from torch import optim
 import numpy as np
 import aslbench
-from aslbench.clevr.clevr import scenes_iter, data_iter, ref_clevr, interpret, ans_tensor
+from aslbench.clevr.clevr import data_iter, ref_clevr, interpret, ans_tensor
 # import aslbench.clevr as clevr
 
 
@@ -87,12 +86,15 @@ def benchmark_clevr_sketch(share_funcs,
   arch = archs.MLPNet
   sample_args = {'pbatch_norm': int(batch_norm)}
   funs = aslbench.clevr.genfuns.func_types()
-  neu_clevr = aslbench.clevr.funcs(arch, arch_opt, **funs)
-  neuclevr = ModuleDict(neu_clevr)
+  neu_clevr = aslbench.clevr.arch.funcs(arch, arch_opt, sample, sample_args, **funs)
+  neuclevr = asl.modules.modules.ModuleDict(neu_clevr)
   refclevr = ref_clevr
   clevr_sketch = ClevrSketch(neuclevr, refclevr)
-  cuda(clevr_sketch)
+  util.cuda(clevr_sketch)
   data_itr = data_iter(batch_size)
+
+  {ColorEnum: onehot1d}
+
 
   def loss_gen():
     nonlocal data_itr
@@ -124,11 +126,3 @@ def benchmark_clevr_sketch(share_funcs,
                        #  common.plot_observes,
                        asl.save_checkpoint(100, clevr_sketch)],
         log_dir=log_dir)
-
-if __name__ == "__main__":
-  opt = asl.handle_args(clevr_args)
-  opt = asl.handle_hyper(opt, __file__)
-  if opt.sample:
-    opt = asl.merge(clevr_args_sample(), opt)
-  asl.save_opt(opt)
-  benchmark_clevr_sketch(**vars(opt))

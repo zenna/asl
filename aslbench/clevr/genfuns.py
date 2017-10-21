@@ -1,8 +1,7 @@
 import random
 from typing import Union
 import asl
-import aslbench.clevr.clevr as clevr
-
+from . import clevr
 
 def func_types():
   ObjectSetLatent = clevr.TensorClevrObjectSet
@@ -19,7 +18,7 @@ def func_types():
 
   BooleanLatent = asl.encode(clevr.Boolean, encoding, (10, 10))
   IntegerLatent = asl.encode(clevr.Integer, encoding, (10, 10))
-  return funss(ObjectSetLatent,
+  return funcs(ObjectSetLatent,
                ObjectLatent,
                RelationsLatent,
                RelationLatent,
@@ -32,7 +31,7 @@ def func_types():
                IntegerLatent)
 
 
-def funss(ObjectSetLatent,
+def funcs(ObjectSetLatent,
           ObjectLatent,
           RelationsLatent,
           RelationLatent,

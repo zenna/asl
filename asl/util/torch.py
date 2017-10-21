@@ -1,7 +1,4 @@
 import torch
-from torch.autograd import Variable
-from asl.util.misc import cuda
-
 
 def onehot(i, onehot_len, batch_size):
   "Create a one hot vector from integer i"
