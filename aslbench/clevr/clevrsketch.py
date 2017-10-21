@@ -7,7 +7,10 @@ import asl.util as util
 from torch import optim
 import numpy as np
 import aslbench
-from aslbench.clevr.clevr import data_iter, ref_clevr, interpret, ans_tensor
+from aslbench.clevr.data import data_iter, parse, convert
+from aslbench.clevr.clevr import ref_clevr
+from aslbench.clevr.interpret import interpret
+import aslbench.clevr.clevr as clevr
 # import aslbench.clevr as clevr
 
 
@@ -68,6 +71,21 @@ def clevr_args(parser):
   parser.add_argument('--batch_norm', action='store_true', default=False,
                       help='Do batch norm')
 
+def std_conversions():
+    "Options sampler"
+    conversions = {}
+    conversions[clevr.ClevrObjectSet] = clevr.TensorRelations.from_relations
+    conversions[clevr.ClevrObject] = clevr.TensorClevrObject.from_clevr_object
+    conversions[clevr.Relations] = clevr.TensorRelations.from_relations
+    conversions[int] = asl.onehot1d
+    conversions[clevr.BooleanEnum] = asl.onehot1d
+    conversions[clevr.ColorEnum] = asl.onehot1d
+    conversions[clevr.ColorEnum] = asl.onehot1d
+    conversions[clevr.MaterialEnum] = asl.onehot1d
+    conversions[clevr.ShapeEnum] = asl.onehot1d
+    conversions[clevr.SizeEnum] = asl.onehot1d
+    return conversions
+
 
 def clevr_args_sample():
   "Options sampler"
@@ -82,6 +100,7 @@ def benchmark_clevr_sketch(share_funcs,
                            lr,
                            arch_opt,
                            sample,
+                           conversions,
                            **kwargs):
   arch = archs.MLPNet
   sample_args = {'pbatch_norm': int(batch_norm)}
@@ -91,21 +110,18 @@ def benchmark_clevr_sketch(share_funcs,
   refclevr = ref_clevr
   clevr_sketch = ClevrSketch(neuclevr, refclevr)
   util.cuda(clevr_sketch)
-  data_itr = data_iter(batch_size)
-
-  {ColorEnum: onehot1d}
-
+  data_itr = data_iter(batch_size, conversions)
 
   def loss_gen():
     nonlocal data_itr
     try:
       progs, objsets, rels, answers = next(data_itr)
     except StopIteration:
-      data_itr = data_iter(batch_size)
+      data_itr = data_iter(batch_size, conversions)
       progs, objsets, rels, answers = next(data_itr)
 
     outputs = clevr_sketch(progs, objsets, rels)
-    anstensors = [ans_tensor(ans) for ans in answers]
+    anstensors = [convert(parse(ans), conversions) for ans in answers]
     acc, ncorrect = accuracy(outputs, anstensors)
     asl.log("accuracy", acc)
     asl.log("ncorrect", ncorrect)

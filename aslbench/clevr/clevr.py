@@ -1,6 +1,4 @@
-"Clevr Benchmark"
-import ijson
-import os
+"Primitive types and functions for Clevr Benchmark"
 from enum import Enum
 import asl
 import asl.util as util
@@ -147,17 +145,13 @@ class ClevrObject():
     self.shape = shape
     self.size = size
 
+  @staticmethod
   def from_json(json):
     return ClevrObject(color=ColorEnum[json['color']],
                        material=MaterialEnum[json['material']],
                        shape=ShapeEnum[json['shape']],
                        size=SizeEnum[json['size']])
 
-  def tensor(self):
-    return Variable(util.cuda(util.onehotmany([self.color.value,
-                                                    self.size.value,
-                                                    self.material.value,
-                                                    self.shape.value], 8)))
 
 class TensorClevrObject(Encoding):
   "An embedding of an object as a tensor"
@@ -166,6 +160,13 @@ class TensorClevrObject(Encoding):
   def __init__(self, value, expand_one=True):
     self.value = maybe_expand(TensorClevrObject, value, expand_one)
 
+  @staticmethod
+  def from_clevr_object(clevr_object):
+    return Variable(util.cuda(util.onehotmany([clevr_object.color.value,
+                                               clevr_object.size.value,
+                                               clevr_object.material.value,
+                                               clevr_object.shape.value], 8)))
+
 
 class ClevrObjectSet():
   def __init__(self, objects):
@@ -173,15 +174,9 @@ class ClevrObjectSet():
     assert len(objects) == 0 or isinstance(objects[0], ClevrObject)
     self.objects = objects
 
+  @staticmethod
   def from_json(objects):
     return ClevrObjectSet(list(map(ClevrObject.from_json, objects)))
-
-  def tensor(self, max_n_objects=10):
-    obj_tensors = [t.tensor().expand(1, 4, 8) for t in self.objects]
-    ndummies = max_n_objects - len(obj_tensors)
-    assert ndummies >= 0
-    dummies = [Variable(util.cuda(torch.zeros(1, 4, 8))) for i in range(ndummies)]
-    return TensorClevrObjectSet(torch.cat(obj_tensors + dummies, 0))
 
 
 class TensorClevrObjectSet(Encoding):
@@ -191,6 +186,14 @@ class TensorClevrObjectSet(Encoding):
   def __init__(self, value, expand_one=True):
     self.value = maybe_expand(TensorClevrObjectSet, value, expand_one)
 
+  @staticmethod
+  def from_clevr_object(clevr_object_set, max_n_objects=10):
+    obj_tensors = [t.tensor().expand(1, 4, 8) for t in clevr_object_set.objects]
+    ndummies = max_n_objects - len(obj_tensors)
+    assert ndummies >= 0
+    dummies = [Variable(util.cuda(torch.zeros(1, 4, 8))) for i in range(ndummies)]
+    return TensorClevrObjectSet(torch.cat(obj_tensors + dummies, 0))
+
 
 class Relations():
   "Python implementation of a relation"
@@ -198,6 +201,7 @@ class Relations():
     self.relations = relations
     self.listform = listform
 
+  @staticmethod
   def from_json(json, object_set):
     relations = {}
     for (i, obj) in enumerate(object_set.objects):
@@ -209,21 +213,23 @@ class Relations():
 
     return Relations(relations, json['relationships'])
 
-  def tensor(self):
+
+class TensorRelations(Encoding):
+  "Relations represented as a matrix"
+  typesize = (4, 10, 10)
+
+  @staticmethod
+  def from_relations(relations):
     nrels = 4
     maxnobjs = 10
     rel_ten = torch.zeros(nrels, maxnobjs, maxnobjs)
     for (i, rel) in enumerate(['behind', 'front', 'left', 'right']):
-      for (j, obj1rels) in enumerate(self.listform[rel]):
+      for (j, obj1rels) in enumerate(relations.listform[rel]):
         for obj2 in obj1rels:
           rel_ten[i, j, obj2] = 1.0
 
     return TensorRelations(Variable(util.cuda(rel_ten)))
 
-
-class TensorRelations(Encoding):
-  "Relations represented as a matrix"
-  typesize = (4, 10, 10)
 
   def __init__(self, value, expand_one=True):
     self.value = maybe_expand(TensorRelations, value, expand_one)
@@ -358,70 +364,6 @@ def same_material(scene_object_set, object):
 
 def same_color(scene_object_set, object):
   return rem(filter_color(scene_object_set, query_color(object)), object)
-
-
-def eval_string(func_string, inputs):
-  f = eval(func_string)
-  return f(*inputs)
-
-VALUE = {}
-VALUE.update({x.name: x for x in ColorEnum})
-VALUE.update({x.name: x for x in MaterialEnum})
-VALUE.update({x.name: x for x in ShapeEnum})
-VALUE.update({x.name: x for x in SizeEnum})
-VALUE.update({x.name: x for x in RelationEnum})
-VALUE.update({x.name: x for x in BooleanEnum})
-
-def interpret(json,
-              scene_object_set,
-              relations,
-              apply=eval_string,
-              value_transform=asl.util.misc.identity):
-  "interpret the json function spec"
-  fouts = [() for i in json]
-  for i, call in enumerate(json):
-    fname = call['function']
-    if fname == "scene":
-      fouts[i] = scene_object_set
-    else:
-      inputs = [fouts[i] for i in call['inputs']]
-      value_inputs = [value_transform(VALUE[val]) for val in call['value_inputs']]
-      all_inputs = inputs + value_inputs
-      if fname in ["same_shape", "same_color", "same_material", "same_size"]:
-        all_inputs = [scene_object_set] + all_inputs
-      if fname == "relate":
-        all_inputs = [relations] + all_inputs
-
-      fouts[i] = apply(fname, all_inputs)
-
-  return fouts[-1]
-
-
-num_to_string = {'0': 0,
-                 '1': 1,
-                 '2': 2,
-                 '3': 3,
-                 '4': 4,
-                 '5': 5,
-                 '6': 6,
-                 '7': 7,
-                 '8': 8,
-                 '9': 9,
-                 '10':10}
-
-
-def ans_tensor(ans):
-  "Convert the query answer into a tensor"
-  if ans in num_to_string:
-    value = num_to_string[ans]
-    return IntegerOneHot1D(Variable(util.cuda(util.onehot(value, 11, 1))))
-  else:
-    value = VALUE[ans]
-    {ColorEnum: }
-    # need to pass a mpapign from the python data types to their encoding
-    # PARMATERIZE THIS CHOICE
-    return onehot2d(value)
-  return
 
 
 def proghasfunc(func, program):
