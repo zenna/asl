@@ -9,56 +9,6 @@ from asl.encoding import OneHot1D, Encoding, OneHot2D, onehot1d, onehot2d
 from torch.autograd import Variable
 import torch
 
-
-def clevr_iter(clevr_root,
-               data_type,
-               train=True):
-  path = os.path.join(clevr_root, data_type)
-  train_val = "train" if train else "val"
-  if train:
-    path = os.path.join(path, "CLEVR_{}_{}.json".format(train_val, data_type))
-  else:
-    path = os.path.join(path, "CLEVR_{}_{}.json".format(train_val, data_type))
-
-  f = open(path, "r")
-  return ijson.items(f, "{}.item".format(data_type))
-
-
-def questions_iter(clevr_root=os.path.join(util.datadir(), "CLEVR_v1.0"),
-                   train=True):
-  "Iterator over question dataset"
-  return clevr_iter(clevr_root, "questions", train)
-
-
-def scenes_iter(clevr_root=os.path.join(util.datadir(), "CLEVR_v1.0"),
-                train=True):
-  "Iterator over scenes"
-  return clevr_iter(clevr_root, "scenes", train)
-
-
-def data_iter(batch_size, train=True):
-  "Iterates paired scene and question data"
-  qitr = questions_iter(train=train)
-  sitr = scenes_iter(train=train)
-
-  while True:
-    rel_tens = []
-    obj_set_tens = []
-    progs = []
-    answers = []
-    for i in range(batch_size):
-      qi = next(qitr)
-      si = next(sitr)
-      scenei = SceneGraph.from_json(si)
-      rel_ten = scenei.relations.tensor()
-      rel_tens.append(rel_ten)
-      obj_ten = scenei.object_set.tensor()
-      obj_set_tens.append(obj_ten)
-      progs.append(qi['program'])
-      answers.append(qi['answer'])
-
-    yield progs, obj_set_tens, rel_tens, answers
-
 # Shape
 class Shape():
   pass
@@ -467,6 +417,7 @@ def ans_tensor(ans):
     return IntegerOneHot1D(Variable(util.cuda(util.onehot(value, 11, 1))))
   else:
     value = VALUE[ans]
+    {ColorEnum: }
     # need to pass a mpapign from the python data types to their encoding
     # PARMATERIZE THIS CHOICE
     return onehot2d(value)
