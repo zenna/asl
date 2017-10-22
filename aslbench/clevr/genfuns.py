@@ -1,7 +1,7 @@
 import random
 from typing import Union
 import asl
-from . import clevr
+import aslbench.clevr.primitive as clevr
 
 def func_types():
   ObjectSetLatent = clevr.TensorClevrObjectSet

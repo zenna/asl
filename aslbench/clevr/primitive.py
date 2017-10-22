@@ -155,17 +155,20 @@ class ClevrObject():
 
 class TensorClevrObject(Encoding):
   "An embedding of an object as a tensor"
-  typesize = (4, 8)
+  max_prop_len = 8
+  typesize = (4, max_prop_len)
 
   def __init__(self, value, expand_one=True):
     self.value = maybe_expand(TensorClevrObject, value, expand_one)
 
   @staticmethod
   def from_clevr_object(clevr_object):
-    return Variable(util.cuda(util.onehotmany([clevr_object.color.value,
-                                               clevr_object.size.value,
-                                               clevr_object.material.value,
-                                               clevr_object.shape.value], 8)))
+    tensor = Variable(util.cuda(util.onehotmany([clevr_object.color.value,
+                                                 clevr_object.size.value,
+                                                 clevr_object.material.value,
+                                                 clevr_object.shape.value],
+                                                 TensorClevrObject.max_prop_len)))
+    return TensorClevrObject(tensor)
 
 
 class ClevrObjectSet():
@@ -181,17 +184,18 @@ class ClevrObjectSet():
 
 class TensorClevrObjectSet(Encoding):
   "An embedding of an object as a tensor"
-  typesize = (10, 4, 8)
+  max_prop_len = 8
+  typesize = (10, 4, max_prop_len)
 
   def __init__(self, value, expand_one=True):
     self.value = maybe_expand(TensorClevrObjectSet, value, expand_one)
 
   @staticmethod
-  def from_clevr_object(clevr_object_set, max_n_objects=10):
-    obj_tensors = [t.tensor().expand(1, 4, 8) for t in clevr_object_set.objects]
+  def from_clevr_object_set(clevr_object_set, max_n_objects=10):
+    obj_tensors = [TensorClevrObject.from_clevr_object(obj).value for obj in clevr_object_set.objects]
     ndummies = max_n_objects - len(obj_tensors)
     assert ndummies >= 0
-    dummies = [Variable(util.cuda(torch.zeros(1, 4, 8))) for i in range(ndummies)]
+    dummies = [Variable(util.cuda(torch.zeros(1, 4, TensorClevrObjectSet.max_prop_len))) for i in range(ndummies)]
     return TensorClevrObjectSet(torch.cat(obj_tensors + dummies, 0))
 
 

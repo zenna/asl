@@ -5,6 +5,7 @@ from asl.util.io import datadir
 import torch
 from torch.autograd import Variable
 
+
 def train_data(data):
   return asl.util.misc.cuda(Variable(data[0]))
 

@@ -3,10 +3,12 @@ from torch.utils.data import Dataset
 from skimage import io
 import asl.util as util
 import ijson
-import aslbench.clevr.clevr as clevr
+import aslbench
+import aslbench.clevr
+import aslbench.clevr.primitive as clevr
 
 
-## Iterators ##
+# Iterators #
 class ClevrImages(Dataset):
   "Clevr Imagaes DataSet"
 

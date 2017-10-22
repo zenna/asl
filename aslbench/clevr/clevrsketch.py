@@ -8,9 +8,12 @@ from torch import optim
 import numpy as np
 import aslbench
 from aslbench.clevr.data import data_iter, parse, convert
-from aslbench.clevr.clevr import ref_clevr
+from aslbench.clevr.primitive import ref_clevr
 from aslbench.clevr.interpret import interpret
-import aslbench.clevr.clevr as clevr
+import aslbench.clevr.primitive as clevr
+import aslbench.clevr.genfuns as genfuns
+import aslbench.clevr.arch as clevrarch
+
 # import aslbench.clevr as clevr
 
 
@@ -74,7 +77,7 @@ def clevr_args(parser):
 def std_conversions():
     "Options sampler"
     conversions = {}
-    conversions[clevr.ClevrObjectSet] = clevr.TensorRelations.from_relations
+    conversions[clevr.ClevrObjectSet] = clevr.TensorClevrObjectSet.from_clevr_object_set
     conversions[clevr.ClevrObject] = clevr.TensorClevrObject.from_clevr_object
     conversions[clevr.Relations] = clevr.TensorRelations.from_relations
     conversions[int] = asl.onehot1d
@@ -100,12 +103,12 @@ def benchmark_clevr_sketch(share_funcs,
                            lr,
                            arch_opt,
                            sample,
-                           conversions,
+                           conversions=std_conversions(),
                            **kwargs):
-  arch = archs.MLPNet
+  all_arch = archs.MLPNet
   sample_args = {'pbatch_norm': int(batch_norm)}
-  funs = aslbench.clevr.genfuns.func_types()
-  neu_clevr = aslbench.clevr.arch.funcs(arch, arch_opt, sample, sample_args, **funs)
+  funs = genfuns.func_types()
+  neu_clevr = clevrarch.funcs(all_arch, arch_opt, sample, sample_args, **funs)
   neuclevr = asl.modules.modules.ModuleDict(neu_clevr)
   refclevr = ref_clevr
   clevr_sketch = ClevrSketch(neuclevr, refclevr)
