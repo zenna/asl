@@ -1,5 +1,6 @@
 """Clevr Benchmark """
-from typing import Any
+import random
+from typing import Any, Union
 import argparse
 import asl
 import asl.archs as archs
@@ -74,13 +75,16 @@ def clevr_args(parser):
   parser.add_argument('--batch_norm', action='store_true', default=False,
                       help='Do batch norm')
 
+
+from torch.autograd import Variable
+
 def std_conversions():
     "Options sampler"
     conversions = {}
     conversions[clevr.ClevrObjectSet] = clevr.TensorClevrObjectSet.from_clevr_object_set
     conversions[clevr.ClevrObject] = clevr.TensorClevrObject.from_clevr_object
     conversions[clevr.Relations] = clevr.TensorRelations.from_relations
-    conversions[int] = asl.onehot1d
+    conversions[int] = lambda x: clevr.IntegerOneHot1D(Variable(util.cuda(util.onehot(x, 11, 1))))
     conversions[clevr.BooleanEnum] = asl.onehot1d
     conversions[clevr.ColorEnum] = asl.onehot1d
     conversions[clevr.ColorEnum] = asl.onehot1d
@@ -88,6 +92,34 @@ def std_conversions():
     conversions[clevr.ShapeEnum] = asl.onehot1d
     conversions[clevr.SizeEnum] = asl.onehot1d
     return conversions
+
+
+def std_types():
+  ObjectSetLatent = clevr.TensorClevrObjectSet
+  ObjectLatent = clevr.TensorClevrObject
+  RelationsLatent = clevr.TensorRelations
+  RelationLatent = clevr.RelationOneHot1D
+
+  encoding = random.choice([asl.OneHot1D, asl.OneHot1D])
+  ColorLatent = asl.encode(clevr.Color, encoding, (8,))
+  MaterialLatent = asl.encode(clevr.Material, encoding, (8,))
+  ShapeLatent = asl.encode(clevr.Shape, encoding, (8,))
+  SizeLatent = asl.encode(clevr.Size, encoding, (8,))
+  PropertyLatent = Union[ColorLatent, MaterialLatent, ShapeLatent, SizeLatent]
+
+  BooleanLatent = asl.encode(clevr.Boolean, encoding, (2, ))
+  IntegerLatent = clevr.IntegerOneHot1D
+  return (ObjectSetLatent,
+          ObjectLatent,
+          RelationsLatent,
+          RelationLatent,
+          ColorLatent,
+          MaterialLatent,
+          ShapeLatent,
+          SizeLatent,
+          PropertyLatent,
+          BooleanLatent,
+          IntegerLatent)
 
 
 def clevr_args_sample():
@@ -107,8 +139,9 @@ def benchmark_clevr_sketch(share_funcs,
                            **kwargs):
   all_arch = archs.MLPNet
   sample_args = {'pbatch_norm': int(batch_norm)}
-  funs = genfuns.func_types()
-  neu_clevr = clevrarch.funcs(all_arch, arch_opt, sample, sample_args, **funs)
+  functypes = genfuns.func_types(*std_types())
+  import pdb; pdb.set_trace()
+  neu_clevr = clevrarch.funcs(all_arch, arch_opt, sample, sample_args, **functypes)
   neuclevr = asl.modules.modules.ModuleDict(neu_clevr)
   refclevr = ref_clevr
   clevr_sketch = ClevrSketch(neuclevr, refclevr)

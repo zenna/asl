@@ -1,24 +1,7 @@
-import random
-from typing import Union
 import asl
 import aslbench.clevr.primitive as clevr
 
-def func_types():
-  ObjectSetLatent = clevr.TensorClevrObjectSet
-  ObjectLatent = clevr.TensorClevrObject
-  RelationsLatent = clevr.TensorRelations
-  RelationLatent = clevr.RelationOneHot1D
-
-  encoding = random.choice([asl.OneHot1D, asl.OneHot2D])
-  ColorLatent = asl.encode(clevr.Color, encoding, (10, 10))
-  MaterialLatent = asl.encode(clevr.Material, encoding, (10, 10))
-  ShapeLatent = asl.encode(clevr.Shape, encoding, (10, 10))
-  SizeLatent = asl.encode(clevr.Size, encoding, (10, 10))
-  PropertyLatent = Union[ColorLatent, MaterialLatent, ShapeLatent, SizeLatent]
-
-  BooleanLatent = asl.encode(clevr.Boolean, encoding, (10, 10))
-  IntegerLatent = asl.encode(clevr.Integer, encoding, (10, 10))
-  return funcs(ObjectSetLatent,
+def func_types(ObjectSetLatent,
                ObjectLatent,
                RelationsLatent,
                RelationLatent,
@@ -28,20 +11,7 @@ def func_types():
                SizeLatent,
                PropertyLatent,
                BooleanLatent,
-               IntegerLatent)
-
-
-def funcs(ObjectSetLatent,
-          ObjectLatent,
-          RelationsLatent,
-          RelationLatent,
-          ColorLatent,
-          MaterialLatent,
-          ShapeLatent,
-          SizeLatent,
-          PropertyLatent,
-          BooleanLatent,
-          IntegerLatent):
+               IntegerLatent):
 
   class Unique(asl.Function, asl.Net):
     def __init__(self="Unique", name="Unique", **kwargs):
