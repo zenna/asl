@@ -38,6 +38,7 @@ install:
   - pip install numpydoc
   - pip install matplotlib
   - pip install tensorboardX
+  - pip install ijson
   - pip install git+git://github.com/PyCQA/astroid
   - pip install git+git://github.com/PyCQA/pylint
   - conda install pytorch torchvision -c soumith

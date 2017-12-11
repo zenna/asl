@@ -3,8 +3,8 @@ from copy import copy
 from asl.structs.nstack import neural_stack, ref_stack
 from asl.type import Type
 from asl.sketch import Sketch, soft_ch
-from asl.util.data import train_data
-from asl.util.misc import trainloader, cuda, iterget
+from asl.util.data import train_data, trainloader
+from asl.util.misc import cuda, iterget
 from asl.log import log_append
 from asl.train import train
 from asl.callbacks import every_n

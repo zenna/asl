@@ -1,4 +1,7 @@
-from aslbench.clevr.primitive import questions_iter, scenes_iter, SceneGraph, interpret
+from aslbench.clevr.primitive import SceneGraph
+from aslbench.clevr.interpret import interpret
+from aslbench.clevr.data import questions_iter, scenes_iter
+from aslbench.clevr import primitive
 
 def test_interpret():
   qitr = questions_iter()
