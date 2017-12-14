@@ -7,10 +7,12 @@ from torch.autograd import Variable
 
 
 def train_data(data):
+  "Extract trainining data from mnist"
   return asl.util.misc.cuda(Variable(data[0]))
 
 
-def trainloader(batch_size, train=True):
+def mnistloader(batch_size, train=True):
+  "Mnist data iterator"
   transform = transforms.Compose(
   [transforms.ToTensor(),
    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])

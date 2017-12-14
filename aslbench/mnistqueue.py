@@ -1,3 +1,4 @@
+"Queue learned from reference"
 from typing import List
 import asl
 from asl.modules.modules import ConstantNet, ModuleDict
@@ -5,7 +6,7 @@ from asl.util.misc import cuda
 from asl.type import Type
 from asl.sketch import Sketch
 from asl.callbacks import print_loss, converged, save_checkpoint, load_checkpoint
-from asl.util.data import trainloader
+from asl.util.data import mnistloader
 from asl.log import log_append
 from asl.train import train
 from asl.structs.nqueue import ref_queue
@@ -54,19 +55,23 @@ def train_queue():
       asl.Function.__init__(self, [MatrixQueue], [MatrixQueue, Mnist])
       asl.Net.__init__(self, " name", **kwargs)
 
-  tl = trainloader(opt.batch_size)
   nqueue = ModuleDict({'enqueue': Enqueue(arch=opt.arch,
                                           arch_opt=opt.arch_opt),
                        'dequeue': Dequeue(arch=opt.arch,
                                           arch_opt=opt.arch_opt),
                        'empty': ConstantNet(MatrixQueue)})
 
-  import pdb; pdb.set_trace()
   queue_sketch = QueueSketch([List[Mnist]], [Mnist], nqueue, ref_queue())
   cuda(queue_sketch)
-  loss_gen = asl.sketch.loss_gen_gen(queue_sketch, tl, asl.util.data.train_data)
-  optimizer = optim.Adam(nqueue.parameters(), lr=opt.lr)
 
+  # Loss
+  mnistiter = mnistloader(opt.batch_size)
+  loss_gen = asl.sketch.loss_gen_gen(queue_sketch,
+                                     mnistiter,
+                                     lambda x: Mnist(asl.util.data.train_data(x)))
+
+  # Optimization details
+  optimizer = optim.Adam(nqueue.parameters(), lr=opt.lr)
   asl.opt.save_opt(opt)
   if opt.resume_path is not None and opt.resume_path != '':
     load_checkpoint(opt.resume_path, nqueue, optimizer)

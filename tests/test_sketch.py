@@ -4,7 +4,7 @@ import asl
 from asl.structs.nstack import neural_stack, ref_stack
 from asl.type import Type
 from asl.sketch import Sketch, soft_ch
-from asl.util.data import train_data, trainloader
+from asl.util.data import train_data, mnistloader
 from asl.util.misc import cuda, iterget
 from asl.log import log_append
 from asl.train import train
@@ -49,7 +49,7 @@ class ReverseSketch(asl.Sketch):
 def test_reverse_sketch():
   "Test Reverse Sketch"
   batch_size = 128
-  tl = trainloader(batch_size)
+  tl = mnistloader(batch_size)
   items_iter = iter(tl)
 
   matrix_stack = Type("Stack", (1, 28, 28), dtype="float32")

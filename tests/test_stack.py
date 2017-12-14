@@ -3,7 +3,7 @@ import asl
 from asl.type import Type, Function
 from asl.callbacks import tb_loss, every_n
 from asl.util.misc import draw, as_img, iterget
-from asl.util.data import train_data, trainloader
+from asl.util.data import train_data, mnistloader
 from asl.log import log_append
 from asl.train import train
 from asl.structs.nstack import neural_stack, ref_stack
@@ -56,7 +56,7 @@ def observe_loss(criterion, obs, refobs, state=None):
 def test_stack():
   options = asl.handle_args()
   print("Using CUDA", options.cuda)
-  tl = trainloader(options.batch_size)
+  tl = mnistloader(options.batch_size)
   items_iter = iter(tl)
   ref_items_iter = iter(tl)
   matrix_stack = Type("Stack", (1, 28, 28), dtype="float32")

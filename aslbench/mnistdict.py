@@ -13,7 +13,7 @@ from asl.util.misc import cuda
 from asl.type import Type
 from asl.sketch import Sketch
 from asl.callbacks import print_loss, converged, save_checkpoint, load_checkpoint, validate, every_n
-from asl.util.data import trainloader
+from asl.util.data import mnistloader
 from asl.log import log_append
 from asl.train import train
 from asl.structs.ndict import ref_dict
@@ -56,7 +56,7 @@ def train_dict():
   class Mnist(Type):
     size = mnist_size
 
-  tl = trainloader(opt.batch_size)
+  tl = mnistloader(opt.batch_size)
   ndict = ModuleDict({'set_item': SetItemNet(MatrixDict, Mnist, Mnist, arch=opt.arch, arch_opt=opt.arch_opt),
                        'get_item': GetItemNet(MatrixDict, Mnist, Mnist, arch=opt.arch, arch_opt=opt.arch_opt),
                        'empty': ConstantNet(MatrixDict)})
@@ -70,7 +70,7 @@ def train_dict():
   if opt.resume_path is not None and opt.resume_path != '':
     load_checkpoint(opt.resume_path, ndict, optimizer)
 
-  tl_test = trainloader(opt.batch_size, False)
+  tl_test = mnistloader(opt.batch_size, False)
   # FIXME Rename Traindata
   test_loss_gen = asl.sketch.loss_gen_gen(dict_sketch, tl_test, asl.util.data.train_data)
   validate_cb = every_n(validate(test_loss_gen), 1000)

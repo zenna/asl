@@ -8,7 +8,7 @@ from asl.util.misc import cuda
 from asl.type import Type
 from asl.sketch import Sketch
 from asl.callbacks import print_loss, converged, save_checkpoint, load_checkpoint
-from asl.util.data import trainloader
+from asl.util.data import mnistloader
 from asl.log import log_append
 from asl.train import train
 from asl.structs.nstack import ref_stack
@@ -60,7 +60,7 @@ def train_stack():
   class Mnist(Type):
     size = mnist_size
 
-  tl = trainloader(opt.batch_size)
+  tl = mnistloader(opt.batch_size)
   nstack = ModuleDict({'push': PushNet(MatrixStack, Mnist, arch=opt.arch, arch_opt=opt.arch_opt),
                        'pop': PopNet(MatrixStack, Mnist, arch=opt.arch, arch_opt=opt.arch_opt),
                        'empty': ConstantNet(MatrixStack)})
