@@ -1,6 +1,6 @@
+import asl
 from asl.archs.mlp import MLPNet
 import torch.nn as nn
-
 
 def type_check(xs, types):
   "Check the types and sizes are consistent"
@@ -12,6 +12,7 @@ def type_check(xs, types):
 
 
 class Net(nn.Module):
+  "A neural network"
   def __init__(self, name,
                module=None,
                arch=MLPNet,
@@ -31,7 +32,7 @@ class Net(nn.Module):
 
   def forward(self, *xs):
     args = type_check(xs, self.in_types)
-    print([type(x) for x in xs])
-    res = self.module.forward(*(arg.value for arg in args))
+    argvals = asl.expand_consts([arg.value for arg in args])
+    res = self.module.forward(*argvals)
     type_check(res, self.out_types)
     return [self.out_types[i](res[i]) for i in range(len(res))]

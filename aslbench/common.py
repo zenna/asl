@@ -4,8 +4,10 @@ from asl.sketch import Mode
 def plot_observes(i, log, writer, batch=0, **kwargs):
   "Show the empty set in tensorboardX"
   for j in range(len(log['observes'])):
-    writer.add_image('comp{}/ref'.format(j), log['ref_observes'][j][batch], i)
-    writer.add_image('comp{}/neural'.format(j), log['observes'][j][batch], i)
+    refimg = log['ref_observes'][j].value
+    neuimg = log['observes'][j].value
+    writer.add_image('comp{}/ref'.format(j), refimg[batch], i)
+    writer.add_image('comp{}/neural'.format(j), neuimg[batch], i)
 
 
 def plot_empty(i, log, writer, **kwargs):

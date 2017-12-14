@@ -10,14 +10,13 @@ from asl.util.data import mnistloader
 from asl.log import log_append
 from asl.train import train
 from asl.structs.nqueue import ref_queue
-from torch import optim
+from torch import optim, nn
 import common
-
+from multipledispatch import dispatch
 
 class QueueSketch(Sketch):
   def sketch(self, items, enqueue, dequeue, empty):
     """Example queue trace"""
-    import pdb; pdb.set_trace()
     log_append("empty", empty)
     queue = empty
     (queue,) = enqueue(queue, next(items))
@@ -33,27 +32,33 @@ def mnist_args(parser):
   parser.add_argument('--nitems', type=int, default=3, metavar='NI',
                       help='number of iteems in trace (default: 3)')
 
+
+mnist_size = (1, 28, 28)
+
+class MatrixQueue(Type):
+  typesize = mnist_size
+
+class Mnist(Type):
+  typesize = mnist_size
+
+@dispatch(Mnist, Mnist)
+def dist(x, y):
+  return nn.MSELoss()(x.value, y.value)
+
 def train_queue():
   # Get options from command line
   opt = asl.opt.handle_args(mnist_args)
   opt = asl.opt.handle_hyper(opt, __file__)
-  mnist_size = (1, 28, 28)
-
-  class MatrixQueue(Type):
-    typesize = mnist_size
-
-  class Mnist(Type):
-    typesize = mnist_size
 
   class Enqueue(asl.Function, asl.Net):
     def __init__(self="Enqueue", name="Enqueue", **kwargs):
       asl.Function.__init__(self, [MatrixQueue, Mnist], [MatrixQueue])
-      asl.Net.__init__(self, " name", **kwargs)
+      asl.Net.__init__(self, name, **kwargs)
 
   class Dequeue(asl.Function, asl.Net):
     def __init__(self="Dequeue", name="Dequeue", **kwargs):
       asl.Function.__init__(self, [MatrixQueue], [MatrixQueue, Mnist])
-      asl.Net.__init__(self, " name", **kwargs)
+      asl.Net.__init__(self, name, **kwargs)
 
   nqueue = ModuleDict({'enqueue': Enqueue(arch=opt.arch,
                                           arch_opt=opt.arch_opt),

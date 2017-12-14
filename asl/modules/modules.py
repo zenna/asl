@@ -50,21 +50,24 @@ class ConstantNet(Constant, nn.Module):
   def forward(self):
     return self.value
 
+def expand_to_batch(x, batch_size):
+  "Expand x to batch_size"
+  if x.size()[1] == batch_size:
+    return x
+  else:
+    expanded_size = (batch_size, ) + x.size()[1:]
+    return x.expand(expanded_size)
 
 def anybatchsize(args, batch_dim=0):
-  for arg in args:
-    if is_tensor_var(arg):
-      return arg.size()[batch_dim]
-  raise ValueError
-
+  "Batch Size of args"
+  batch_sizes = [arg.size()[batch_dim] for arg in args]
+  max_size = max(batch_sizes)
+  if (not all([(sz == 1) or (sz == max_size) for sz in batch_sizes])):
+    raise ValueError
+  else:
+    return max_size
 
 def expand_consts(args):
   batch_size = anybatchsize(args)
-  res = []
-
-  for arg in args:
-    if isinstance(arg, Constant):
-      res.append(arg.expand_to_batch(batch_size))
-    else:
-      res.append(arg)
+  res = [expand_to_batch(arg, batch_size) for arg in args]
   return tuple(res)

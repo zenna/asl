@@ -68,9 +68,7 @@ class ConvNet(nn.Module):
 
   def forward(self, *xs):
     assert len(xs) == len(self.in_sizes), "Wrong # inputs"
-    exp_xs = expand_consts(xs) # TODO: MOVE THIS TO FUNC,
-    # Combine inputs
-    x = self.combine_inputs(exp_xs)
+    x = self.combine_inputs(xs)
     x = self.conv1(x)
 
     # h layers

@@ -84,12 +84,11 @@ class Sketch(Function, nn.Module):
 
 
 def inner_loss_gen(sketch, items_iter, ref_items_iter):
-  import pdb; pdb.set_trace()
   sketch.forward(items_iter)
   sketch.forward_ref(ref_items_iter)
   loss = sketch.observe_loss()
-  asl.log.log("observes", sketch.observes)
-  asl.log.log("ref_observes", sketch.ref_observes)
+  asl.log("observes", sketch.observes)
+  asl.log("ref_observes", sketch.ref_observes)
   sketch.clear_observes()
   return loss
 
