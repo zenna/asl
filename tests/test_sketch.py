@@ -1,5 +1,6 @@
 from typing import List
 from copy import copy
+import asl
 from asl.structs.nstack import neural_stack, ref_stack
 from asl.type import Type
 from asl.sketch import Sketch, soft_ch
@@ -14,7 +15,7 @@ import torch
 from torch.autograd import Variable
 
 
-class ReverseSketch(Sketch):
+class ReverseSketch(asl.Sketch):
   "Sketch for reversal of list of elements"
 
   def __init__(self, element_type, model, ref_model):

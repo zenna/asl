@@ -36,7 +36,7 @@ class ConstantNet(Constant, nn.Module):
   def __init__(self, type, requires_grad=True):
     super(ConstantNet, self).__init__(type)
     nn.Module.__init__(self)
-    self._size = (1, ) + type.size
+    self._size = (1, ) + type.typesize
     self.value = nn.Parameter(torch.rand(*self._size),
                               requires_grad=requires_grad)
 

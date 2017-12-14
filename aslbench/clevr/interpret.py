@@ -1,10 +1,10 @@
 import asl
 from aslbench.clevr.data import parse
+from aslbench.clevr.primitive import *
 
 def eval_string(func_string, inputs):
   f = eval(func_string)
   return f(*inputs)
-
 
 def interpret(json,
               scene_object_set,

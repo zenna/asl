@@ -1,7 +1,5 @@
 from typing import List
 import asl
-from asl.opt import opt_as_string
-from asl.structs.nqueue import EnqueueNet, DequeueNet
 from asl.modules.modules import ConstantNet, ModuleDict
 from asl.util.misc import cuda
 from asl.type import Type
@@ -18,6 +16,7 @@ import common
 class QueueSketch(Sketch):
   def sketch(self, items, enqueue, dequeue, empty):
     """Example queue trace"""
+    import pdb; pdb.set_trace()
     log_append("empty", empty)
     queue = empty
     (queue,) = enqueue(queue, next(items))
@@ -34,22 +33,35 @@ def mnist_args(parser):
                       help='number of iteems in trace (default: 3)')
 
 def train_queue():
+  # Get options from command line
   opt = asl.opt.handle_args(mnist_args)
   opt = asl.opt.handle_hyper(opt, __file__)
-  nitems = 3
   mnist_size = (1, 28, 28)
 
   class MatrixQueue(Type):
-    size = mnist_size
+    typesize = mnist_size
 
   class Mnist(Type):
-    size = mnist_size
+    typesize = mnist_size
+
+  class Enqueue(asl.Function, asl.Net):
+    def __init__(self="Enqueue", name="Enqueue", **kwargs):
+      asl.Function.__init__(self, [MatrixQueue, Mnist], [MatrixQueue])
+      asl.Net.__init__(self, " name", **kwargs)
+
+  class Dequeue(asl.Function, asl.Net):
+    def __init__(self="Dequeue", name="Dequeue", **kwargs):
+      asl.Function.__init__(self, [MatrixQueue], [MatrixQueue, Mnist])
+      asl.Net.__init__(self, " name", **kwargs)
 
   tl = trainloader(opt.batch_size)
-  nqueue = ModuleDict({'enqueue': EnqueueNet(MatrixQueue, Mnist, arch=opt.arch, arch_opt=opt.arch_opt),
-                       'dequeue': DequeueNet(MatrixQueue, Mnist, arch=opt.arch, arch_opt=opt.arch_opt),
+  nqueue = ModuleDict({'enqueue': Enqueue(arch=opt.arch,
+                                          arch_opt=opt.arch_opt),
+                       'dequeue': Dequeue(arch=opt.arch,
+                                          arch_opt=opt.arch_opt),
                        'empty': ConstantNet(MatrixQueue)})
 
+  import pdb; pdb.set_trace()
   queue_sketch = QueueSketch([List[Mnist]], [Mnist], nqueue, ref_queue())
   cuda(queue_sketch)
   loss_gen = asl.sketch.loss_gen_gen(queue_sketch, tl, asl.util.data.train_data)

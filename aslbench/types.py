@@ -17,7 +17,6 @@ def matrix_stack(nchannels, width, height):
     size = (nchannels, width, height)
   return MatrixStack
 
-
 def vec_queue(string_len):
   class VecQueue(Type):
     "Stack represented as a vector"

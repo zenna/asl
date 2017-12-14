@@ -31,6 +31,7 @@ class Net(nn.Module):
 
   def forward(self, *xs):
     args = type_check(xs, self.in_types)
+    print([type(x) for x in xs])
     res = self.module.forward(*(arg.value for arg in args))
     type_check(res, self.out_types)
     return [self.out_types[i](res[i]) for i in range(len(res))]
