@@ -27,40 +27,6 @@ def type_check(xs, types):
     assert same_size
   return xs
 
-class PushNet(Push, nn.Module):
-  def __init__(self, stack_type, item_type, module=None, arch=ConvNet,
-               arch_opt=None):
-    super(PushNet, self).__init__(stack_type, item_type)
-    if module is None:
-      arch_opt = {} if arch_opt is None else arch_opt
-      self.module = arch(self.in_sizes(), self.out_sizes(), **arch_opt)
-    else:
-      self.module = module
-    self.add_module("Push", self.module)
-
-  def forward(self, *xs):
-    args = type_check(xs, self.in_types)
-    res = self.module.forward(*args)
-    return type_check(res, self.out_types)
-
-
-class PopNet(Pop, nn.Module):
-  def __init__(self, stack_type, item_type, module=None, arch=ConvNet,
-               arch_opt=None):
-    super(PopNet, self).__init__(stack_type, item_type)
-    if module is None:
-      arch_opt = {} if arch_opt is None else arch_opt
-      self.module = arch(self.in_sizes(), self.out_sizes(), **arch_opt)
-    else:
-      self.module = module
-    self.add_module("Pop", self.module)
-
-  def forward(self, *xs):
-    args = type_check(xs, self.in_types)
-    res = self.module.forward(*args)
-    return type_check(res, self.out_types)
-
-
 def list_push(stack, element):
   stack = stack.copy()
   stack.append(element)

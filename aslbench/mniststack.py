@@ -1,39 +1,16 @@
-import os
-import asl
+"Stack learned from reference"
 from typing import List
-from asl.opt import opt_as_string
-from asl.structs.nstack import PushNet, PopNet
+import asl
 from asl.modules.modules import ConstantNet, ModuleDict
-from asl.util.misc import cuda
-from asl.type import Type
-from asl.sketch import Sketch
-from asl.callbacks import print_loss, converged, save_checkpoint, load_checkpoint
-from asl.util.data import mnistloader
-from asl.log import log_append
-from asl.train import train
 from asl.structs.nstack import ref_stack
-from numpy.random import choice
-from torch import optim
+from torch import optim, nn
+import common
+from multipledispatch import dispatch
 
-
-def plot_observes(i, log, writer, **kwargs):
-  "Show the empty set in tensorboardX"
-  batch = 0
-  for j in range(len(log['observes'])):
-    writer.add_image('comp{}/ref'.format(j), log['observes'][j][batch], i)
-    writer.add_image('comp{}/neural'.format(j), log['ref_observes'][j][batch], i)
-
-
-def plot_empty(i, log, writer, **kwargs):
-  "Show the empty set in tensorboardX"
-  img = log['empty'][0].value
-  writer.add_image('EmptySet', img, i)
-
-
-class StackSketch(Sketch):
+class StackSketch(asl.Sketch):
   def sketch(self, items, push, pop, empty):
     """Example stack trace"""
-    log_append("empty", empty)
+    asl.log_append("empty", empty)
     stack = empty
     (stack,) = push(stack, next(items))
     (stack,) = push(stack, next(items))
@@ -43,43 +20,64 @@ class StackSketch(Sketch):
     self.observe(pop_item)
     return pop_item
 
-
 def mnist_args(parser):
   parser.add_argument('--nitems', type=int, default=3, metavar='NI',
                       help='number of iteems in trace (default: 3)')
 
+mnist_size = (1, 28, 28)
+
+class MatrixStack(asl.Type):
+  typesize = mnist_size
+
+class Mnist(asl.Type):
+  typesize = mnist_size
+
+@dispatch(Mnist, Mnist)
+def dist(x, y):
+  return nn.MSELoss()(x.value, y.value)
+
 def train_stack():
+  # Get options from command line
   opt = asl.opt.handle_args(mnist_args)
   opt = asl.opt.handle_hyper(opt, __file__)
-  nitems = 3
-  mnist_size = (1, 28, 28)
 
-  class MatrixStack(Type):
-    size = mnist_size
+  class Push(asl.Function, asl.Net):
+    def __init__(self="Push", name="Push", **kwargs):
+      asl.Function.__init__(self, [MatrixStack, Mnist], [MatrixStack])
+      asl.Net.__init__(self, name, **kwargs)
 
-  class Mnist(Type):
-    size = mnist_size
+  class Pop(asl.Function, asl.Net):
+    def __init__(self="Pop", name="Pop", **kwargs):
+      asl.Function.__init__(self, [MatrixStack], [MatrixStack, Mnist])
+      asl.Net.__init__(self, name, **kwargs)
 
-  tl = mnistloader(opt.batch_size)
-  nstack = ModuleDict({'push': PushNet(MatrixStack, Mnist, arch=opt.arch, arch_opt=opt.arch_opt),
-                       'pop': PopNet(MatrixStack, Mnist, arch=opt.arch, arch_opt=opt.arch_opt),
+  nstack = ModuleDict({'push': Push(arch=opt.arch,
+                                    arch_opt=opt.arch_opt),
+                       'pop': Pop(arch=opt.arch,
+                                  arch_opt=opt.arch_opt),
                        'empty': ConstantNet(MatrixStack)})
 
   stack_sketch = StackSketch([List[Mnist]], [Mnist], nstack, ref_stack())
-  cuda(stack_sketch)
-  loss_gen = asl.sketch.loss_gen_gen(stack_sketch, tl, asl.util.data.train_data)
-  optimizer = optim.Adam(nstack.parameters(), lr=opt.lr)
+  asl.cuda(stack_sketch)
 
+  # Loss
+  mnistiter = asl.util.mnistloader(opt.batch_size)
+  loss_gen = asl.sketch.loss_gen_gen(stack_sketch,
+                                     mnistiter,
+                                     lambda x: Mnist(asl.util.data.train_data(x)))
+
+  # Optimization details
+  optimizer = optim.Adam(nstack.parameters(), lr=opt.lr)
   asl.opt.save_opt(opt)
   if opt.resume_path is not None and opt.resume_path != '':
-    load_checkpoint(opt.resume_path, nstack, optimizer)
+    asl.load_checkpoint(opt.resume_path, nstack, optimizer)
 
-  train(loss_gen, optimizer, maxiters=100000,
-        cont=converged(1000),
-        callbacks=[print_loss(100),
-                   plot_empty,
-                   plot_observes,
-                   save_checkpoint(1000, nstack)],
+  asl.train(loss_gen, optimizer, maxiters=100000,
+        cont=asl.converged(1000),
+        callbacks=[asl.print_loss(100),
+                   common.plot_empty,
+                   common.plot_observes,
+                   asl.save_checkpoint(1000, nstack)],
         log_dir=opt.log_dir)
 
 
