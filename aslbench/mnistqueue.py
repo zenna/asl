@@ -2,22 +2,15 @@
 from typing import List
 import asl
 from asl.modules.modules import ConstantNet, ModuleDict
-from asl.util.misc import cuda
-from asl.type import Type
-from asl.sketch import Sketch
-from asl.callbacks import print_loss, converged, save_checkpoint, load_checkpoint
-from asl.util.data import mnistloader
-from asl.log import log_append
-from asl.train import train
 from asl.structs.nqueue import ref_queue
 from torch import optim, nn
 import common
 from multipledispatch import dispatch
 
-class QueueSketch(Sketch):
+class QueueSketch(asl.Sketch):
   def sketch(self, items, enqueue, dequeue, empty):
     """Example queue trace"""
-    log_append("empty", empty)
+    asl.log_append("empty", empty)
     queue = empty
     (queue,) = enqueue(queue, next(items))
     (queue,) = enqueue(queue, next(items))
@@ -32,13 +25,12 @@ def mnist_args(parser):
   parser.add_argument('--nitems', type=int, default=3, metavar='NI',
                       help='number of iteems in trace (default: 3)')
 
-
 mnist_size = (1, 28, 28)
 
-class MatrixQueue(Type):
+class MatrixQueue(asl.Type):
   typesize = mnist_size
 
-class Mnist(Type):
+class Mnist(asl.Type):
   typesize = mnist_size
 
 @dispatch(Mnist, Mnist)
@@ -67,10 +59,10 @@ def train_queue():
                        'empty': ConstantNet(MatrixQueue)})
 
   queue_sketch = QueueSketch([List[Mnist]], [Mnist], nqueue, ref_queue())
-  cuda(queue_sketch)
+  asl.cuda(queue_sketch)
 
   # Loss
-  mnistiter = mnistloader(opt.batch_size)
+  mnistiter = asl.util.mnistloader(opt.batch_size)
   loss_gen = asl.sketch.loss_gen_gen(queue_sketch,
                                      mnistiter,
                                      lambda x: Mnist(asl.util.data.train_data(x)))
@@ -79,14 +71,14 @@ def train_queue():
   optimizer = optim.Adam(nqueue.parameters(), lr=opt.lr)
   asl.opt.save_opt(opt)
   if opt.resume_path is not None and opt.resume_path != '':
-    load_checkpoint(opt.resume_path, nqueue, optimizer)
+    asl.load_checkpoint(opt.resume_path, nqueue, optimizer)
 
-  train(loss_gen, optimizer, maxiters=100000,
-        cont=converged(1000),
-        callbacks=[print_loss(100),
+  asl.train(loss_gen, optimizer, maxiters=100000,
+        cont=asl.converged(1000),
+        callbacks=[asl.print_loss(100),
                    common.plot_empty,
                    common.plot_observes,
-                   save_checkpoint(1000, nqueue)],
+                   asl.save_checkpoint(1000, nqueue)],
         log_dir=opt.log_dir)
 
 
