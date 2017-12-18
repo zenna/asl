@@ -5,8 +5,8 @@ import os
 from distutils.util import strtobool
 import torch
 from torch.autograd import Variable
-import matplotlib.pyplot as plt
-plt.ion()
+# import matplotlib.pyplot as plt
+# plt.ion()
 
 def imap(f, itr):
   "Return an iterator which applies f to output of iterator"
@@ -35,12 +35,12 @@ def as_img(t):
   return t.data.cpu().numpy().squeeze()
 
 
-def draw(t):
-  "Draw a tensor"
-  tnp = as_img(t)
-  plt.imshow(tnp)
-  plt.pause(0.01)
-
+# def draw(t):
+#   "Draw a tensor"
+#   tnp = as_img(t)
+#   plt.imshow(tnp)
+#   plt.pause(0.01)
+#
 
 def identity(x):
   return x
