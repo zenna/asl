@@ -15,10 +15,10 @@ class Net(nn.Module):
   "A neural network"
   def __init__(self, name,
                module=None,
-               arch=MLPNet,
+               arch=MLPNet,       # Architecture to use
                arch_opt=None,
-               sample=False,
-               sample_args=None):
+               sample=False,      # If true will sample hyperparams
+               sample_args=None): # arguments used to sample hyper params
     super(Net, self).__init__()
     if module is None:
       arch_opt = {} if arch_opt is None else arch_opt

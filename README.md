@@ -22,6 +22,8 @@ First we will represent stacks with python list, and so the empty stack is just 
 
 `empty = []`
 
+`push` is then simply:
+
 ```python
 def list_push(stack, element):
   stack = stack.copy()
@@ -29,9 +31,9 @@ def list_push(stack, element):
   return (stack, )
 ```
 
-Noticed we copied that stack data structure otherwise the stack we put in would be modified and `list_push` would not be a pure function.
+Noticed we copied that stack data structure. Otherwise the stack we put in would be modified and `list_push` would not be a (pure) function.
 
-`pop`, the function which removes an element from a stack has a similarly straightfoward definition.
+`pop`, the function which removes an element from a stack has a similarly straightforward definition.
 
 ```python
 def list_pop(stack):
@@ -40,16 +42,30 @@ def list_pop(stack):
   return (stack, item)
 ```
 
-Then we simply bundle these together in a dict
+Then we simply bundle these together in a dictionary
 
 ```
-return {"push": list_push, "pop": list_pop, "empty": []}
+reference_stack = {"push": list_push, "pop": list_pop, "empty": []}
 ```
 
 ## Neural Implementation
 
 Now we can construct a neural implementation.
-First we create a classes corresponding to each function
+First we create types for the Stack and the kinds of items it contains.
+
+In this case, the stack type is called `MatricStack`
+```python
+class MatrixStack(asl.Type):
+  typesize = mnist_size
+```
+
+`typesize` denotes that the internal representation is an array with dimesionaity `typesize`
+
+```python
+class Mnist(asl.Type):
+  typesize = mnist_size
+```
+
 
 ```python
 class Push(Function):
@@ -69,14 +85,14 @@ Then a neural implementation of each
 
 
 ## Training program
-The final part is to write a reference.  The neural data structure will try to emulate the behaviour of the reference data structure in the context of the reference program.
+The final part is to write a program that uses the data structure.
+The neural data structure will try to emulate the behaviour of the reference data structure in the context of the reference program.
 
 
 ```python
 class StackSketch(Sketch):
   def sketch(self, items, push, pop, empty):
     """Example stack trace"""
-    log_append("empty", empty)
     stack = empty
     (stack,) = push(stack, next(items))
     (stack,) = push(stack, next(items))
@@ -90,4 +106,4 @@ class StackSketch(Sketch):
 What do we mean by emulate?  The neural program should attempts to ensure that *observed* values are the same.
 Observed values are ones which are observed with `self.observe`.
 In general, not all types are observable, for instance the Stack type is not observable; it would not be meaningful to compare the python empty stack to our neural implementation.
-The solution is to suggest some types are observable and others not, and strive for equivalent behaviour on observable types.
+The solution is to suggest some types are observable and others not, and strive for equivalent behavior on observable types.

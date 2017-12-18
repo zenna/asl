@@ -13,16 +13,29 @@ class StackSketch(asl.Sketch):
     asl.log_append("empty", empty)
     stack = empty
     (stack,) = push(stack, next(items))
+    asl.log_append("stack1", stack)
+    asl.log_append("{}/internal".format(self.mode.name), stack)
     (stack,) = push(stack, next(items))
+    asl.log_append("{}/internal".format(self.mode.name), stack)
     (pop_stack, pop_item) = pop(stack)
+    asl.log_append("{}/internal".format(self.mode.name), pop_stack)
     self.observe(pop_item)
     (pop_stack, pop_item) = pop(pop_stack)
+    asl.log_append("{}/internal".format(self.mode.name), pop_stack)
     self.observe(pop_item)
     return pop_item
 
-def mnist_args(parser):
+def stack_args(parser):
+  # FIXME: Currently uunusued
   parser.add_argument('--nitems', type=int, default=3, metavar='NI',
                       help='number of iteems in trace (default: 3)')
+  parser.add_argument('--batch_norm', action='store_true', default=True,
+                      help='Do batch norm')
+
+
+def stack_args_sample():
+  "Options sampler"
+  return argparse.Namespace(batch_norm=np.random.rand() > 0.5)
 
 mnist_size = (1, 28, 28)
 
@@ -36,18 +49,17 @@ class Mnist(asl.Type):
 def dist(x, y):
   return nn.MSELoss()(x.value, y.value)
 
-def train_stack():
-  # Get options from command line
-  opt = asl.opt.handle_args(mnist_args)
-  opt = asl.opt.handle_hyper(opt, __file__)
-
+def train_stack(**opt):
+  import pdb; pdb.set_trace()
+  arch = opt["arch"]
+  arch_opt = o
   class Push(asl.Function, asl.Net):
-    def __init__(self="Push", name="Push", **kwargs):
+    def __init__(self, name="Push", **kwargs):
       asl.Function.__init__(self, [MatrixStack, Mnist], [MatrixStack])
       asl.Net.__init__(self, name, **kwargs)
 
   class Pop(asl.Function, asl.Net):
-    def __init__(self="Pop", name="Pop", **kwargs):
+    def __init__(self, name="Pop", **kwargs):
       asl.Function.__init__(self, [MatrixStack], [MatrixStack, Mnist])
       asl.Net.__init__(self, name, **kwargs)
 
@@ -77,9 +89,16 @@ def train_stack():
         callbacks=[asl.print_loss(100),
                    common.plot_empty,
                    common.plot_observes,
-                   asl.save_checkpoint(1000, nstack)],
+                   common.plot_internals,
+                   asl.save_checkpoint(1000, nstack)
+                   ],
         log_dir=opt.log_dir)
 
 
 if __name__ == "__main__":
-  train_stack()
+  opt = asl.handle_args(stack_args)
+  opt = asl.handle_hyper(opt, __file__)
+  if opt.sample:
+    opt = asl.merge(stack_args_sample(), opt)
+  asl.save_opt(opt)
+  train_stack(**vars(opt))
