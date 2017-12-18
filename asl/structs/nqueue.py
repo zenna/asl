@@ -1,4 +1,5 @@
 "Stack Data Structure trained from a reference implementation"
+import asl
 from collections import deque
 from asl.type import Function
 from asl.archs.convnet import ConvNet
@@ -19,63 +20,6 @@ class Dequeue(Function):
 
   def __init__(self, queue_type, item_type):
     super(Dequeue, self).__init__([queue_type], [queue_type, item_type])
-
-
-# class NetFunction(nn.Module):
-#
-#   def __init__(self, name, arch=ConvNet, module=None):
-#     if module is None:
-#       self.module = arch(self.in_sizes(), self.out_sizes())
-#     else:
-#       self.module = module
-#     self.add_module(name, self.module)
-#
-#   def forward(self, *xs):
-#     return self.module(*xs)
-#
-#
-# class EnqueueNet(Enqueue, NetFunction):
-#   def __init__(self, queue_type, item_type, arch, module=None):
-#     Enqueue.__init__(self, queue_type, item_type)
-#     NetFunction.__init__(self, "Enqeue", arch, module)
-#
-#
-# class DequeueNet(Dequeue, NetFunction):
-#   def __init__(self, queue_type, item_type, arch, module=None):
-#     Dequeue.__init__(self, queue_type, item_type)
-#     NetFunction.__init__(self, "Deqeue", arch, module)
-
-
-class EnqueueNet(Enqueue, nn.Module):
-  def __init__(self, stack_type, item_type, module=None, arch=ConvNet,
-               arch_opt=None):
-    super(EnqueueNet, self).__init__(stack_type, item_type)
-    if module is None:
-      arch_opt = {} if arch_opt is None else arch_opt
-      self.module = arch(self.in_sizes(), self.out_sizes(), **arch_opt)
-    else:
-      self.module = module
-    self.add_module("Enqueue", self.module)
-
-  def forward(self, x, y):
-    return self.module.forward(x, y)
-
-
-class DequeueNet(Dequeue, nn.Module):
-  def __init__(self, stack_type, item_type, module=None, arch=ConvNet,
-               arch_opt=None):
-    super(DequeueNet, self).__init__(stack_type, item_type)
-    if module is None:
-      arch_opt = {} if arch_opt is None else arch_opt
-      self.module = arch(self.in_sizes(), self.out_sizes(), **arch_opt)
-    else:
-      self.module = module
-    self.add_module("Dequeue", self.module)
-
-
-  def forward(self, x):
-    return self.module.forward(x)
-
 
 
 def list_enqueue(queue, element):

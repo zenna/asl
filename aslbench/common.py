@@ -1,19 +1,27 @@
 "Utils common for benchmarking"
-from asl.sketch import Mode
+from asl.reference import Mode, get_observes, get_ref_observes
+import asl
 
 def plot_observes(i, log, writer, batch=0, **kwargs):
-  "Show the empty set in tensorboardX"
-  for j in range(len(log['observes'])):
-    refimg = log['ref_observes'][j].value
-    neuimg = log['observes'][j].value
-    writer.add_image('comp{}/ref'.format(j), refimg[batch], i)
-    writer.add_image('comp{}/neural'.format(j), neuimg[batch], i)
+  "Show the observed values in tensorboardX"
+  for k in log['observes'].keys():
+    refimg = log['ref_observes'][k].value
+    neuimg = log['observes'][k].value
+    writer.add_image('observes/{}/ref'.format(k), refimg[batch], i)
+    writer.add_image('observes/{}/neural'.format(k), neuimg[batch], i)
 
 
 def plot_empty(i, log, writer, **kwargs):
   "Show the empty set in tensorboardX"
   img = log['empty'][0].value
   writer.add_image('Empty', img, i)
+
+
+def log_observes(i, log, writer, **kwargs):
+  # import pdb; pdb.set_trace()
+  "Log observed values"
+  asl.log("observes", get_observes())
+  asl.log("ref_observes", get_ref_observes())
 
 
 def plot_internals(i, log, writer, batch=0, **kwargs):

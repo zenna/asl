@@ -13,15 +13,17 @@ class ClevrImages(Dataset):
   "Clevr Imagaes DataSet"
 
   def __init__(self,
-               clevr_root,
+               clevr_root=os.path.join(util.datadir(), "CLEVR_v1.0"),
                train=True,
                transform=None):
-    self.train = "train" if train else "test"
+    self.traintest = "train" if train else "test"
     self.clevr_root = clevr_root
-    datapath = os.path.join(clevr_root, "images", self.train)
-    self.nsamples = len([name for name in os.listdir(datapath) if os.path.isfile(name)])
+    self.datapath = os.path.join(clevr_root, "images", self.traintest)
+    imagepaths = ([os.path.join(self.datapath, path) for path in os.listdir(self.datapath)])
+    self.imagepaths = list(filter(os.path.isfile, imagepaths))
+    self.nsamples = len(imagepaths)
     self.transform = transform
-    self.prefix = os.path.join(datapath, "CLEVR_train_")
+    self.prefix = os.path.join(self.datapath, "CLEVR_{}_".format(self.traintest))
 
   def __len__(self):
     return self.nsamples

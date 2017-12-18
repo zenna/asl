@@ -38,6 +38,8 @@ def list_pop(stack):
   item = stack.pop()
   return (stack, item)
 
+list_empty = []
+
 
 def neural_stack(element_type, stack_type):
   push_img = PushNet(stack_type, element_type)
