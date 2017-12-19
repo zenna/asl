@@ -1,6 +1,6 @@
 import os
 from torch.utils.data import Dataset
-from skimage import io
+# from skimage import io
 import asl.util as util
 import ijson
 import aslbench

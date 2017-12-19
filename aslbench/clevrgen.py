@@ -110,7 +110,7 @@ def train_clevrgen(opt):
     asl.load_checkpoint(opt.resume_path, nclevrgen, optimizer)
 
   asl.train(loss_gen, optimizer, maxiters=100000,
-        cont=asl.converged(1000),
+        # cont=asl.converged(1000),
         callbacks=[asl.print_loss(100),
                   #  common.plot_empty,
                    common.log_observes,
