@@ -7,21 +7,24 @@ from torch import optim, nn
 import common
 from multipledispatch import dispatch
 
-def parametric_sketch(items, push, pop, empty):
+def trace(items, runstate, push, pop, empty):
   """Example stack trace"""
   asl.log_append("empty", empty)
   stack = empty
+
   (stack,) = push(stack, next(items))
-  asl.log_append("stack1", stack)
-  asl.log_append("{}/internal".format(asl.mode().name), stack)
+  asl.log_append("{}/internal".format(runstate['mode']), stack)
+
   (stack,) = push(stack, next(items))
-  asl.log_append("{}/internal".format(asl.mode().name), stack)
+  asl.log_append("{}/internal".format(runstate['mode']), stack)
+
   (pop_stack, pop_item) = pop(stack)
-  asl.log_append("{}/internal".format(asl.mode().name), pop_stack)
-  asl.observe(pop_item, "pop1")
+  asl.observe(pop_item, "pop1", runstate)
+  asl.log_append("{}/internal".format(runstate['mode']), pop_stack)
+
   (pop_stack, pop_item) = pop(pop_stack)
-  asl.log_append("{}/internal".format(asl.mode().name), pop_stack)
-  asl.observe(pop_item, "pop2")
+  asl.observe(pop_item, "pop2", runstate)
+  asl.log_append("{}/internal".format(runstate['mode']), pop_stack)
   return pop_item
 
 
@@ -67,28 +70,34 @@ def train_stack(opt):
   empty = ConstantNet(MatrixStack)
 
   class StackSketch(asl.Sketch):
-    def sketch(self, items):
+    def sketch(self, items, runstate):
       """Example stack trace"""
-      return parametric_sketch(items, push=push, pop=pop, empty=empty)
+      return trace(items, runstate, push=push, pop=pop, empty=empty)
 
+  # CUDA that shit
   stack_sketch = StackSketch([List[Mnist]], [Mnist])
-  asl.cuda(stack_sketch)
-  asl.cuda(push)
-  asl.cuda(pop)
-  asl.cuda(empty)
+  asl.cuda(stack_sketch, opt.nocuda)
+  asl.cuda(push, opt.nocuda)
+  asl.cuda(pop, opt.nocuda)
+  asl.cuda(empty, opt.nocuda)
 
-  def ref_sketch(items):
-    return parametric_sketch(items, push=list_push, pop=list_pop, empty=list_empty)
+  def ref_sketch(items, runstate):
+    return trace(items, runstate, push=list_push, pop=list_pop, empty=list_empty)
+
+  def refresh_mnist(dl):
+    "Extract image data and convert tensor to Mnist data type"
+    return [asl.refresh_iter(dl, lambda x: Mnist(asl.util.image_data(x)))]
 
   # Loss
   mnistiter = asl.util.mnistloader(opt.batch_size)
-  loss_gen = asl.ref_loss_gen(stack_sketch,
-                              ref_sketch,
-                              mnistiter,
-                              lambda x: Mnist(asl.util.data.train_data(x)))
+  loss_gen = asl.single_ref_loss(stack_sketch,
+                                 ref_sketch,
+                                 mnistiter,
+                                 refresh_mnist)
 
   # Optimization details
   parameters = list(push.parameters()) + list(pop.parameters()) + list(empty.parameters())
+  print("LEARNING RATE", opt.lr)
   optimizer = optim.Adam(parameters, lr=opt.lr)
   asl.opt.save_opt(opt)
   if opt.resume_path is not None and opt.resume_path != '':
@@ -98,9 +107,9 @@ def train_stack(opt):
         cont=asl.converged(1000),
         callbacks=[asl.print_loss(100),
                    common.plot_empty,
-                   common.log_observes,
-                   common.plot_observes,
-                   common.plot_internals,
+                   # common.log_observes,
+                   # common.plot_observes,
+                   # common.plot_internals,
                    asl.save_checkpoint(1000, stack_sketch)
                    ],
         log_dir=opt.log_dir)
