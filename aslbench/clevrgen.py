@@ -1,12 +1,13 @@
 "Learn a generative model of and from Clevr images"
 from typing import List
 import asl
-from asl.modules.modules import ConstantNet, ModuleDict
+from asl.modules.modules import ConstantNet, ModuleDict, expand_to_batch
 from torch import optim, nn
 import common
 from multipledispatch import dispatch
 from aslbench.clevr.data import clevr_img_dl
 from torch.autograd import Variable
+import torch
 
 def clevrgen_args(parser):
   parser.add_argument('--batch_norm', action='store_true', default=True,
@@ -67,16 +68,17 @@ def train_clevrgen(opt):
     def sketch(self, noise):
       """Generate clevr image"""
       # Add object 1
-      (object1, ) = nclevrgen.gen_object(next(noise))
+      nnoise = Noise(expand_to_batch(asl.util.misc.cuda(Variable(torch.rand((1,) + HALF_CLEVR_IMG_SIZE)), opt.nocuda), opt.batch_size))
+      (object1, ) = nclevrgen.gen_object(nnoise)
       scene = nclevrgen.empty_scene
       (scene, ) = nclevrgen.add_object(scene, object1)
 
       # Add object 2
-      (object2, ) = nclevrgen.gen_object(next(noise))
+      (object2, ) = nclevrgen.gen_object(nnoise)
       (scene, ) = nclevrgen.add_object(scene, object2)
 
       # Add object 3
-      (object3, ) = nclevrgen.gen_object(next(noise))
+      (object3, ) = nclevrgen.gen_object(nnoise)
       (scene, ) = nclevrgen.add_object(scene, object3)
 
       (img, ) = nclevrgen.render(scene)
