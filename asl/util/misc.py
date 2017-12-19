@@ -22,10 +22,10 @@ def use_gpu(default=True):
     return default
 
 
-def cuda(tensor, use_cuda=None):
+def cuda(tensor, nocuda=False):
   "Put tensor on GPU (maybe)"
-  use_cuda = use_gpu() if use_cuda is None else use_cuda
-  if use_cuda and torch.cuda.is_available():
+  # nocuda = use_gpu() if nocuda is None else nocuda
+  if not nocuda and torch.cuda.is_available():
     return tensor.cuda()
   else:
     return tensor

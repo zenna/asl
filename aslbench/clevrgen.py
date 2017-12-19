@@ -1,29 +1,3 @@
-# TODO
-# 1. Get data in
-# 2. GAN loss
-# 3.
-
-# In a sense I have a reference for this entire sketch
-# But:
-# 1. Reference is not really a function, takes no noise
-# 2. Not quite true, reference can use noise but its kind of implicit in the
-#    minibatch iteraiton\
-# 2. not looking for behaviour equivalecne but distributional through means of
-# verifier
-
-# Option 1, make a reference gen which just samples from the data
-# One problem with the current model is that I want to observe reference
-# On the output of the sketch
-
-# I think there are two orthogonal ideas that should be separated
-# a) construct a composite function out of other functions, maybe using holes
-# in the sketch sense, so it is a sketch
-
-# 2. train with reference
-
-# In this case my reference is just with respect to the sketch as a
-# but sometimse we DO have references for the inner nodes
-
 "Learn a generative model of and from Clevr images"
 from typing import List
 import asl
@@ -31,27 +5,8 @@ from asl.modules.modules import ConstantNet, ModuleDict
 from torch import optim, nn
 import common
 from multipledispatch import dispatch
-
-class ClevrGen(asl.Sketch):
-  def sketch(self, noise, add_object, render, gen_object, empty_scene):
-    """Generate clevr image"""
-    # Add object 1
-    object1 = gen_object(next(noise))
-    scene = empty_scene
-    (scene, ) = add_object(scene, object1)
-
-    # Add object 2
-    object2 = gen_object(next(noise))
-    scene = empty_scene
-    (scene, ) = add_object(scene, object2)
-
-    # Add object 3
-    object3 = gen_object(next(noise))
-    scene = empty_scene
-    (scene, ) = add_object(scene, object3)
-
-    (img, ) = render(scene)
-    return (img, )
+from aslbench.clevr.data import clevr_img_dl
+from torch.autograd import Variable
 
 def clevrgen_args(parser):
   parser.add_argument('--batch_norm', action='store_true', default=True,
@@ -62,29 +17,28 @@ def clevrgen_args_sample():
   "Options sampler"
   return argparse.Namespace(batch_norm=np.random.rand() > 0.5)
 
-mnist_size = (1, 28, 28)
+CLEVR_IMG_SIZE = (4, 320, 480)
+HALF_CLEVR_IMG_SIZE = CLEVR_IMG_SIZE
+# HALF_CLEVR_IMG_SIZEHALF_CLEVR_IMG_SIZE = (240, 160)
 
-class Noise(asl.type):
-  typesize = (10, 10)
+class Noise(asl.Type):
+  typesize = HALF_CLEVR_IMG_SIZE
 
 class Scene(asl.Type):
-  typesize = (10, 10)
+  typesize = HALF_CLEVR_IMG_SIZE
 
 class Object(asl.Type):
-  typesize = (10, 10)
+  typesize = HALF_CLEVR_IMG_SIZE
 
-CLEVR_IMG_SIZE = (480, 320)
 class Image(asl.Type):
   "A rendered image"
-  typesize = CLEVR_IMG_SIZE
+  typesize = HALF_CLEVR_IMG_SIZE
 
 @dispatch(Image, Image)
 def dist(x, y):
   return nn.MSELoss()(x.value, y.value)
 
-def train_clevrgen(**opt):
-  arch = opt["arch"]
-  arch_opt = opt['']
+def train_clevrgen(opt):
   class AddObject(asl.Function, asl.Net):
     def __init__(self, name="AddObject", **kwargs):
       asl.Function.__init__(self, [Scene, Object], [Scene])
@@ -105,21 +59,52 @@ def train_clevrgen(**opt):
                           'render': Render(arch=opt.arch,
                                   arch_opt=opt.arch_opt),
                           'gen_object': Render(arch=opt.arch,
-                                  arch_opt=opt.arch_opt)})
+                                  arch_opt=opt.arch_opt),
+                          'empty_scene': ConstantNet(Scene)})
 
-  clevrgen_sketch = StackSketch([List[Mnist]], [Mnist], nclevrgen, ref_clevrgen())
-  asl.cuda(clevrgen_sketch)
+  asl.cuda(nclevrgen, opt.nocuda)
+  class ClevrGen(asl.Sketch):
+    def sketch(self, noise):
+      """Generate clevr image"""
+      # Add object 1
+      (object1, ) = nclevrgen.gen_object(next(noise))
+      scene = nclevrgen.empty_scene
+      (scene, ) = nclevrgen.add_object(scene, object1)
+
+      # Add object 2
+      (object2, ) = nclevrgen.gen_object(next(noise))
+      (scene, ) = nclevrgen.add_object(scene, object2)
+
+      # Add object 3
+      (object3, ) = nclevrgen.gen_object(next(noise))
+      (scene, ) = nclevrgen.add_object(scene, object3)
+
+      (img, ) = nclevrgen.render(scene)
+      asl.observe(img, 'rendered_img')
+      return (img, )
+
+
+  def ref_img_gen(img):
+    import pdb; pdb.set_trace()
+    asl.observe(img, 'rendered_img')
+    return (img, )
+
+  clevrgen_sketch = ClevrGen([Noise], [Image])
+  asl.cuda(clevrgen_sketch, opt.nocuda)
 
   # Loss
-  clevr_img_iter = aslbench.clevr.data.ClevrImages(opt.batch_size)
-  loss_gen = asl.sketch.loss_gen_gen(clevrgen_sketch,
-                                     clevr_img_iter,
-                                     lambda x: Mnist(asl.util.data.train_data(x)))
+  img_dl = clevr_img_dl(opt.batch_size)
+  loss_gen = asl.ref_loss_gen(clevrgen_sketch,
+                              ref_img_gen,
+                              img_dl,
+                              lambda x: Image(asl.util.misc.cuda(Variable(x), opt.nocuda)))
+
 
   # Optimization details
-  optimizer = optim.Adam(nclevrgen.parameters(), lr=opt.lr)
+  parameters = nclevrgen.parameters()
+  optimizer = optim.Adam(parameters, lr=opt.lr)
   asl.opt.save_opt(opt)
-  if opt.resume_path is   not None and opt.resume_path != '':
+  if opt.resume_path is not None and opt.resume_path != '':
     asl.load_checkpoint(opt.resume_path, nclevrgen, optimizer)
 
   asl.train(loss_gen, optimizer, maxiters=100000,
@@ -139,4 +124,4 @@ if __name__ == "__main__":
   if opt.sample:
     opt = asl.merge(clevrgen_args_sample(), opt)
   asl.save_opt(opt)
-  train_clevrgen(**vars(opt))
+  train_clevrgen(opt)

@@ -59,7 +59,7 @@ def add_std_args(parser):
                       help='Path to store data')
   parser.add_argument('--resume_path', type=str, default='', metavar='R',
                       help='Path to resume parameters from')
-  parser.add_argument('--cuda', action='store_true', default=True,
+  parser.add_argument('--nocuda', action='store_true', default=False,
                       help='disables CUDA training')
   parser.add_argument('--seed', type=int, default=1, metavar='S',
                       help='random seed (default: 1)')
@@ -85,7 +85,7 @@ def handle_log_dir(opt):
 
 
 def handle_cuda(opt):
-  if opt.cuda and not torch.cuda.is_available():
+  if not opt.nocuda and not torch.cuda.is_available():
     print("Chose CUDA but CUDA not available, continuing without CUDA!")
     opt.cuda = False
 

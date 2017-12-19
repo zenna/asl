@@ -59,10 +59,10 @@ def train_dict():
       asl.Net.__init__(self, name, **kwargs)
 
   ndict = ModuleDict({'get_item': GetItem(arch=opt.arch,
-                                    arch_opt=opt.arch_opt),
-                       'set_item': SetItem(arch=opt.arch,
-                                  arch_opt=opt.arch_opt),
-                       'empty': ConstantNet(MatrixDict)})
+                                          arch_opt=opt.arch_opt),
+                      'set_item': SetItem(arch=opt.arch,
+                                          arch_opt=opt.arch_opt),
+                      'empty': ConstantNet(MatrixDict)})
 
   dict_sketch = DictSketch([List[Mnist]], [Mnist], ndict, ref_dict())
   asl.cuda(dict_sketch)

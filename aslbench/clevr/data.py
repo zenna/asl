@@ -6,6 +6,8 @@ import ijson
 import aslbench
 import aslbench.clevr
 import aslbench.clevr.primitive as clevr
+import torch
+import torchvision.transforms as transforms
 
 
 # Iterators #
@@ -15,7 +17,8 @@ class ClevrImages(Dataset):
   def __init__(self,
                clevr_root=os.path.join(util.datadir(), "CLEVR_v1.0"),
                train=True,
-               transform=None):
+               transform=None,
+               monochrome=False):
     self.traintest = "train" if train else "test"
     self.clevr_root = clevr_root
     self.datapath = os.path.join(clevr_root, "images", self.traintest)
@@ -24,17 +27,32 @@ class ClevrImages(Dataset):
     self.nsamples = len(imagepaths)
     self.transform = transform
     self.prefix = os.path.join(self.datapath, "CLEVR_{}_".format(self.traintest))
+    self.monochrome = monochrome
 
   def __len__(self):
     return self.nsamples
 
   def __getitem__(self, idx):
-    img_name = os.path.join(self.prefix + '{0:06d}'.format(idx) + ".png")
+    img_name = self.imagepaths[idx]
+    # img_name = os.path.join(self.prefix + '{0:06d}'.format(idx) + ".png")
     sample = io.imread(img_name)
+    # import pdb; pdb.set_trace()
     if self.transform:
         sample = self.transform(sample)
     return sample
 
+
+def clevr_img_dl(batch_size, train=True, **kwargs):
+  "Clevr data loader"
+  transform = transforms.Compose(
+  [transforms.ToTensor(),
+   transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+  dataset = ClevrImages(train=train, transform=transform, **kwargs)
+  return torch.utils.data.DataLoader(dataset,
+                                     batch_size=batch_size,
+                                     shuffle=False,
+                                     num_workers=1,
+                                     drop_last=True)
 
 def clevr_iter(clevr_root,
                data_type,

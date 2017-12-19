@@ -52,7 +52,7 @@ class ConstantNet(Constant, nn.Module):
 
 def expand_to_batch(x, batch_size):
   "Expand x to batch_size"
-  if x.size()[1] == batch_size:
+  if x.size()[0] == batch_size:
     return x
   else:
     expanded_size = (batch_size, ) + x.size()[1:]
@@ -68,6 +68,7 @@ def anybatchsize(args, batch_dim=0):
     return max_size
 
 def expand_consts(args):
+  # import pdb; pdb.set_trace()
   batch_size = anybatchsize(args)
   res = [expand_to_batch(arg, batch_size) for arg in args]
   return tuple(res)

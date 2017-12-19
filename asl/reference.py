@@ -89,14 +89,14 @@ def inner_loss_gen(model, reference, items_iter, ref_items_iter):
   return loss
 
 
-def ref_loss_gen(model, reference, tl, itr_transform=None, loss=dist):
+def ref_loss_gen(model, reference, dl, itr_transform=None, loss=dist):
   "Function minimizes difference between reference and neural implementation"
   if itr_transform is None:
     itr = iter
   else:
     itr = lambda loader: asl.util.misc.imap(itr_transform, iter(loader))
-  items_iter = itr(tl)
-  ref_items_iter = itr(tl)
+  items_iter = itr(dl)
+  ref_items_iter = itr(dl)
 
   def loss_gen():
     nonlocal items_iter, ref_items_iter
@@ -106,8 +106,8 @@ def ref_loss_gen(model, reference, tl, itr_transform=None, loss=dist):
     except StopIteration:
       print("End of Epoch, restarting iterators")
       clear_observes()
-      items_iter = itr(tl)
-      ref_items_iter = itr(tl)
+      items_iter = itr(dl)
+      ref_items_iter = itr(dl)
       set_mode(Mode.NOMODE)
       loss = inner_loss_gen(model, reference, items_iter, ref_items_iter)
       return loss
