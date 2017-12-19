@@ -17,7 +17,7 @@ def clevrgen_args_sample():
   "Options sampler"
   return argparse.Namespace(batch_norm=np.random.rand() > 0.5)
 
-CLEVR_IMG_SIZE = (4, 320, 480)
+CLEVR_IMG_SIZE = (3, 80, 120)
 HALF_CLEVR_IMG_SIZE = CLEVR_IMG_SIZE
 # HALF_CLEVR_IMG_SIZEHALF_CLEVR_IMG_SIZE = (240, 160)
 
@@ -93,7 +93,7 @@ def train_clevrgen(opt):
   asl.cuda(clevrgen_sketch, opt.nocuda)
 
   # Loss
-  img_dl = clevr_img_dl(opt.batch_size)
+  img_dl = clevr_img_dl(opt.batch_size, normalize=False)
   loss_gen = asl.ref_loss_gen(clevrgen_sketch,
                               ref_img_gen,
                               img_dl,

@@ -8,6 +8,7 @@ import aslbench.clevr
 import aslbench.clevr.primitive as clevr
 import torch
 import torchvision.transforms as transforms
+from PIL import Image
 
 
 # Iterators #
@@ -35,18 +36,26 @@ class ClevrImages(Dataset):
   def __getitem__(self, idx):
     img_name = self.imagepaths[idx]
     # img_name = os.path.join(self.prefix + '{0:06d}'.format(idx) + ".png")
-    sample = io.imread(img_name)
+    # sample = io.imread(img_name)
+    sample = Image.open(img_name)
+    sample.load()
+    background = Image.new("RGB", sample.size, (255, 255, 255))
+    background.paste(sample, mask=sample.split()[3])
     # import pdb; pdb.set_trace()
     if self.transform:
-        sample = self.transform(sample)
-    return sample
+        background = self.transform(background)
+    return background
 
 
-def clevr_img_dl(batch_size, train=True, **kwargs):
+def clevr_img_dl(batch_size, train=True, normalize=True, downscale=True, **kwargs):
   "Clevr data loader"
-  transform = transforms.Compose(
-  [transforms.ToTensor(),
-   transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+  tfs = []
+  if downscale:
+    tfs.append(transforms.Resize((80, 120)))
+  tfs.append(transforms.ToTensor())
+  if normalize:
+    tfs.append(transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)))
+  transform = transforms.Compose(tfs)
   dataset = ClevrImages(train=train, transform=transform, **kwargs)
   return torch.utils.data.DataLoader(dataset,
                                      batch_size=batch_size,
