@@ -84,8 +84,8 @@ def train_clevrgen(opt):
       return (img, )
 
 
-  def ref_img_gen(img):
-    import pdb; pdb.set_trace()
+  def ref_img_gen(img_iter):
+    img = next(img_iter)
     asl.observe(img, 'rendered_img')
     return (img, )
 
@@ -110,9 +110,10 @@ def train_clevrgen(opt):
   asl.train(loss_gen, optimizer, maxiters=100000,
         cont=asl.converged(1000),
         callbacks=[asl.print_loss(100),
-                   common.plot_empty,
+                  #  common.plot_empty,
+                   common.log_observes,
                    common.plot_observes,
-                   common.plot_internals,
+                  #  common.plot_internals,
                    asl.save_checkpoint(1000, nclevrgen)
                    ],
         log_dir=opt.log_dir)

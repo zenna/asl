@@ -39,8 +39,8 @@ class ConvNet(nn.Module):
                out_sizes,
                channel_dim=1,
                batch_norm=False,
-               h_channels=16,
-               nhlayers=24,
+               h_channels=8,
+               nhlayers=4,
                combine_inputs=cat_channels,
                activation=F.elu):
     super(ConvNet, self).__init__()
