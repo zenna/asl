@@ -49,7 +49,7 @@ def add_std_args(parser):
                       help='Do hyper parameter search')
   parser.add_argument('--sample', action='store_true', default=False,
                       help='Sample parameter values')
-  parser.add_argument('--batch_size', type=int, default=64, metavar='N',
+  parser.add_argument('--batch_size', type=int, default=16, metavar='N',
                       help='input batch size for training (default: 64)')
   parser.add_argument('--test_batch_size', type=int, default=1000, metavar='N',
                       help='input batch size for testing (default: 1000)')

@@ -13,7 +13,15 @@ from PIL import Image
 
 # Iterators #
 class ClevrImages(Dataset):
-  "Clevr Imagaes DataSet"
+  """Clevr Imagaes DataSet
+
+  Args:
+    clevr_root (string): Root directory where clevr is installed
+    train (bool): If True, creates dataset from training set, otherwise
+      creates from test set.
+    transform (callable, optional): A function/transform that  takes in an PIL image
+            and returns a transformed version. E.g, ``transforms.RandomCrop``
+    """
 
   def __init__(self,
                clevr_root=os.path.join(util.datadir(), "CLEVR_v1.0"),
