@@ -107,9 +107,9 @@ def train_stack(opt):
         cont=asl.converged(1000),
         callbacks=[asl.print_loss(100),
                    common.plot_empty,
-                   # common.log_observes,
-                   # common.plot_observes,
-                   # common.plot_internals,
+                   common.log_observes,
+                   common.plot_observes,
+                   common.plot_internals,
                    asl.save_checkpoint(1000, stack_sketch)
                    ],
         log_dir=opt.log_dir)
