@@ -3,25 +3,26 @@
 import asl
 
 def plot_observes(i, log, writer, batch=0, **kwargs):
-  "Show the observed values in tensorboardX"
-  for k in log['observes'].keys():
-    refimg = log['ref_observes'][k].value
-    neuimg = log['observes'][k].value
-    writer.add_image('observes/{}/ref'.format(k), refimg[batch], i)
-    writer.add_image('observes/{}/neural'.format(k), neuimg[batch], i)
+  # import pdb; pdb.set_trace()
+  if 'runstate' in log:
+    observes = log['runstate']['observes']
+    for mode in observes.keys():
+      for label in observes[mode].keys():
+        img = observes[mode][label].value[batch]
+        writer.add_image('observes/{}/{}'.format(mode, label), img, i)
+
+  # "Show the observed values in tensorboardX"
+  # for k in observes.keys():
+  #   refimg = log['ref_observes'][k].value
+  #   neuimg = log['observes'][k].value
+  #   writer.add_image('observes/{}/ref'.format(k), refimg[batch], i)
+  #   writer.add_image('observes/{}/neural'.format(k), neuimg[batch], i)
 
 
 def plot_empty(i, log, writer, **kwargs):
   "Show the empty set in tensorboardX"
   img = log['empty'][0].value
   writer.add_image('Empty', img, i)
-
-
-def log_observes(i, log, writer, **kwargs):
-  # import pdb; pdb.set_trace()
-  "Log observed values"
-  asl.log("observes", get_observes())
-  asl.log("ref_observes", get_ref_observes())
 
 
 def plot_internals(i, log, writer, batch=0, **kwargs):

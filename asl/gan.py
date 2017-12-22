@@ -22,7 +22,7 @@ def set_idle(runstate):
   set_mode(runstate, 'idle')
 
 
-def observe(value, label, runstate):
+def observe(value, label, runstate, log=True):
   if isidle(runstate):
     print("cant observe values without choosing mode")
     raise ValueError
@@ -49,7 +49,7 @@ def refresh_iter(dl, itr_transform=None):
   else:
     return asl.util.misc.imap(itr_transform, iter(dl))
 
-def run_observe(functions, inputs, refresh_inputs, modes):
+def run_observe(functions, inputs, refresh_inputs, modes, log=True):
   """Run functions and accumulate observed values
   Args:
     functions
@@ -63,7 +63,10 @@ def run_observe(functions, inputs, refresh_inputs, modes):
   def runobserve():
     nonlocal inp
     try:
-      return callfuncs(functions, inp, modes)
+      runstate = callfuncs(functions, inp, modes)
+      if log:
+        asl.log("runstate", runstate)
+      return runstate
     except StopIteration:
       print("End of Epoch, restarting inputs")
       inp = [refresh_inputs(inp) for inp in inputs]
