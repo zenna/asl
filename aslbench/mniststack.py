@@ -112,9 +112,9 @@ def train_stack(opt):
   if opt["resume_path"] is not None and opt["resume_path"] != '':
     asl.load_checkpoint(opt["resume_path"], nstack, optimizer)
 
-  asl.train(loss_gen, optimizer, maxiters=100000,
+  asl.train(loss_gen, optimizer, maxiters=10,
         # cont=asl.converged(1000),
-        callbacks=[asl.print_loss(100),
+        callbacks=[asl.print_loss(1),
                    common.plot_empty,
                    common.plot_observes,
                    common.plot_internals,

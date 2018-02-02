@@ -32,14 +32,6 @@ def run_sbatch(file_path, options, sbatch_opt = None, bash_run_path=None):
   subprocess.call(run_str)
 
 
-# def run_sbatch_chunk(path, chunk, sbatch_opt, batch_run_path=None):
-#   for job in chunk:
-#     # Save the option file and call sbatch at that location
-    
-#     asl.save_opt(job)
-#     run_sbatch(path, job, sbatc_opt = sbatch_opt,  batch_run_path = batch_run_path)
-
-
 def run_local_batch(file_path, options, blocking=True):
   """Execute process with options"""
   # opts = mergedict(options, {"--"})
@@ -52,10 +44,19 @@ def run_local_batch(file_path, options, blocking=True):
     subprocess.Popen(run_str)
 
 
-def run_local_chunk(runpath, chunk, blocking=True, batch_run_path=None):
+def run_local_chunk(runpath, chunk, blocking=True):
   for job in chunk:
+    job["log_dir"] = asl.util.io.log_dir(group=job["group"], comment=job["name"])
     savefullpath = asl.save_opt(job)
     # Save the option file and call subprocess at that location
     run_local_batch(runpath, {"optfile": savefullpath}, blocking=blocking)
+
+
+def run_sbatch_chunk(path, chunk, sbatch_opt, bash_run_path=None):
+  for job in chunk:
+    job["log_dir"] = asl.util.io.log_dir(group=job["group"], comment=job["name"])
+    savefullpath = asl.save_opt(job)
+    run_sbatch(path, job, sbatch_opt=sbatch_opt, bash_run_path=bash_run_path)
+
 
   # TODO: I might want to block at end of each chunk
