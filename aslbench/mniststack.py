@@ -74,8 +74,8 @@ def train_stack(opt):
       asl.Function.__init__(self, [MatrixStack], [MatrixStack, Mnist])
       asl.Net.__init__(self, name, **kwargs)
 
-  push = Push(arch=opt.arch, arch_opt=opt.arch_opt)
-  pop = Pop(arch=opt.arch, arch_opt=opt.arch_opt)
+  push = Push(arch=opt["arch"], arch_opt=opt["arch_opt"])
+  pop = Pop(arch=opt["arch"], arch_opt=opt["arch_opt"])
   empty = ConstantNet(MatrixStack)
 
   class StackSketch(asl.Sketch):
@@ -85,10 +85,10 @@ def train_stack(opt):
 
   # CUDA that shit
   stack_sketch = StackSketch([List[Mnist]], [Mnist])
-  asl.cuda(stack_sketch, opt.nocuda)
-  asl.cuda(push, opt.nocuda)
-  asl.cuda(pop, opt.nocuda)
-  asl.cuda(empty, opt.nocuda)
+  asl.cuda(stack_sketch, opt["nocuda"])
+  asl.cuda(push, opt["nocuda"])
+  asl.cuda(pop, opt["nocuda"])
+  asl.cuda(empty, opt["nocuda"])
 
   def ref_sketch(items, runstate):
     return trace(items, runstate, push=list_push, pop=list_pop, empty=list_empty)
@@ -98,7 +98,7 @@ def train_stack(opt):
     return [asl.refresh_iter(dl, lambda x: Mnist(asl.util.image_data(x)))]
 
   # Loss
-  mnistiter = asl.util.mnistloader(opt.batch_size)
+  mnistiter = asl.util.mnistloader(opt["batch_size"])
   loss_gen = asl.single_ref_loss(stack_sketch,
                                  ref_sketch,
                                  mnistiter,
@@ -106,11 +106,11 @@ def train_stack(opt):
 
   # Optimization details
   parameters = list(push.parameters()) + list(pop.parameters()) + list(empty.parameters())
-  print("LEARNING RATE", opt.lr)
-  optimizer = optim.Adam(parameters, lr=opt.lr)
+  print("LEARNING RATE", opt["lr"])
+  optimizer = optim.Adam(parameters, lr=opt["lr"])
   asl.opt.save_opt(opt)
-  if opt.resume_path is not None and opt.resume_path != '':
-    asl.load_checkpoint(opt.resume_path, nstack, optimizer)
+  if opt["resume_path"] is not None and opt["resume_path"] != '':
+    asl.load_checkpoint(opt["resume_path"], nstack, optimizer)
 
   asl.train(loss_gen, optimizer, maxiters=100000,
         # cont=asl.converged(1000),
@@ -120,13 +120,31 @@ def train_stack(opt):
                    common.plot_internals,
                    asl.save_checkpoint(1000, stack_sketch)
                    ],
-        log_dir=opt.log_dir)
+        log_dir=opt["log_dir"])
 
+
+def stack_optspace():
+  return {"num_items": [1, 2,],
+          "batch_size": [1, 1]}
 
 if __name__ == "__main__":
-  opt = asl.handle_args(stack_args)
-  opt = asl.handle_hyper(opt, __file__)
-  if opt.sample:
-    opt = asl.merge(stack_args_sample(), opt)
-  asl.save_opt(opt)
-  train_stack(opt)
+  # Add stack-specific parameters to the cmdlargs
+  cmdrunopt, dispatch_opt = asl.handle_args(stack_args)
+  if dispatch_opt["dispatch"]:
+    morerunopts = asl.prodsample(stack_optspace(),
+                                 to_enum=["num_items"],
+                                 to_sample=["batch_size"],
+                                 nsamples=dispatch_opt["nsamples"])
+    # Merge each runopt with command line opts (which take precedence)
+    for opt in morerunopts:
+      # FIXME: merging is wrong
+      opt.update(cmdrunopt)
+
+    asl.dispatch_runs(__file__, dispatch_opt, morerunopts)
+  else:
+    if dispatch_opt["optfile"] is not None:
+      opt = asl.load_opt(dispatch_opt["optfile"])
+      train_stack(opt)
+    else:
+      asl.save_opt(cmdrunopt)
+      train_stack(cmdrunopt)

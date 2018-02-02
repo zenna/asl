@@ -12,6 +12,7 @@ import numpy as np
 
 
 def clevrgen_args(parser):
+  "Commandline arguments for clevrgen"
   parser.add_argument('--batch_norm', action='store_true', default=True,
                       help='Do batch norm')
 
@@ -23,7 +24,6 @@ def clevrgen_args_sample():
 
 CLEVR_IMG_SIZE = (3, 80, 120)
 SMALL_IMG_SIZE = CLEVR_IMG_SIZE
-# SMALL_IMG_SIZESMALL_IMG_SIZE = (240, 160)
 
 
 class Noise(asl.Type):
@@ -136,7 +136,8 @@ def train_clevrgen(opt):
   loss_gen = asl.ref_loss_gen(clevrgen_sketch,
                               ref_img_gen,
                               img_dl,
-                              lambda x: Image(asl.cuda(Variable(x), opt.nocuda)))
+                              lambda ten: Image(asl.cuda(Variable(ten),
+                                                opt.nocuda)))
 
   # Optimization details
   parameters = nclevrgen.parameters()
