@@ -20,7 +20,15 @@ def make_batch_string(options):
 
 # Using Slurm #
 
-def run_sbatch(file_path, options, sbatch_opt = None, bash_run_path=None):
+def maybedryrun(dryrun, run_str, f, *args):
+  if dryrun:
+    print("Dry Running: ", run_str)
+    return None
+  else:
+    print("Real Running: ", run_str)
+    return f(*args)
+
+def run_sbatch(file_path, options, sbatch_opt = None, bash_run_path=None, dryrun=False):
   """Execute sbatch with options"""
   if bash_run_path is None:
     dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -28,35 +36,35 @@ def run_sbatch(file_path, options, sbatch_opt = None, bash_run_path=None):
 
   sbatch_opt = {} if sbatch_opt is None else sbatch_opt
   run_str = ['sbatch'] + make_batch_string(sbatch_opt) + [bash_run_path, file_path] + make_batch_string(options)
-  print(run_str)
-  subprocess.call(run_str)
+  maybedryrun(dryrun, run_str, subprocess.call, run_str)
 
 
-def run_local_batch(file_path, options, blocking=True):
+def run_local_batch(file_path, options, blocking=True, dryrun=False):
   """Execute process with options"""
   # opts = mergedict(options, {"--"})
   run_str = ["python", file_path] + make_batch_string(options)
-  print("Subprocess call:", run_str)
-  # import pdb; pdb.set_trace()
   if blocking:
-    subprocess.call(run_str)
+    maybedryrun(dryrun, run_str, subprocess.call, run_str)
   else:
-    subprocess.Popen(run_str)
+    maybedryrun(dryrun, run_str, subprocess.Popen, run_str)
 
-
-def run_local_chunk(runpath, chunk, blocking=True):
+def run_local_chunk(runpath, chunk, blocking=True, dryrun=False):
   for job in chunk:
     job["log_dir"] = asl.util.io.log_dir(group=job["group"], comment=job["name"])
-    savefullpath = asl.save_opt(job)
+    savefullpath = maybedryrun(dryrun, "Save opts", asl.save_opt, job)
     # Save the option file and call subprocess at that location
-    run_local_batch(runpath, {"optfile": savefullpath}, blocking=blocking)
-
-
-def run_sbatch_chunk(path, chunk, sbatch_opt, bash_run_path=None):
-  for job in chunk:
-    job["log_dir"] = asl.util.io.log_dir(group=job["group"], comment=job["name"])
-    savefullpath = asl.save_opt(job)
-    run_sbatch(path, job, sbatch_opt=sbatch_opt, bash_run_path=bash_run_path)
-
+    run_local_batch(runpath, {"optfile": savefullpath}, blocking=blocking,
+                     dryrun=dryrun)
 
   # TODO: I might want to block at end of each chunk
+
+
+def run_sbatch_chunk(path, chunk, bash_run_path=None, dryrun=False):
+  for job in chunk:
+    job["log_dir"] = asl.util.io.log_dir(group=job["group"], comment=job["name"])
+    # savefullpath = asl.save_opt(job)
+    print(job)
+    savefullpath = maybedryrun(dryrun, "Save opts", asl.save_opt, job)
+    sbatch_opt = {'job-name': job["name"], 'time': 720}
+    run_sbatch(path, {"optfile": savefullpath}, sbatch_opt=sbatch_opt,
+               bash_run_path=bash_run_path, dryrun=dryrun)

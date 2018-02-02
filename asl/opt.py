@@ -6,7 +6,7 @@ from argparse import Namespace
 import pprint
 import asl
 import asl.util.io
-from asl.hyper.search import run_local_batch, run_sbatch, run_local_chunk
+from asl.hyper.search import run_local_batch, run_sbatch, run_local_chunk, run_sbatch_chunk
 from random import choice
 from torch import optim
 import torch
@@ -123,6 +123,8 @@ def add_dispatch_args(parser):
                       help='Is hyper parameter search blocking?')
   parser.add_argument('--slurm', action='store_true', default=False,
                       help='Use the SLURM batching system')
+  parser.add_argument('--dryrun', action='store_true', default=False,
+                    help='Do a dry run, does not call subprocess')
 
 def handle_log_dir(opt):
   # if log_dir was specified, just keep that
@@ -157,7 +159,7 @@ def handle_args(*add_cust_parses):
   handle_cuda(run_opt)
   handle_arch(run_opt)
   # dispatch_opt = run_opt[]
-  dargs = ["dispatch", "sample", "optfile", "jobsinchunk", "hyper", "nsamples", "blocking", "slurm"]
+  dargs = ["dispatch", "dryrun", "sample", "optfile", "jobsinchunk", "hyper", "nsamples", "blocking", "slurm"]
   dispatch_opt = {k : run_opt[k] for k in dargs}
   return run_opt, dispatch_opt
 
@@ -195,9 +197,10 @@ def dispatch_runs(runpath, dispatch_opt, runopts):
   jobchunks = chunks(runopts, dispatch_opt["jobsinchunk"])
   for chunk in jobchunks:
     if dispatch_opt["slurm"]:
-      run_sbatch_chunk(runpath, chunk, sbatch_opt)
+      run_sbatch_chunk(runpath, chunk, dryrun=dispatch_opt["dryrun"])
     else:
-      run_local_chunk(runpath, chunk, blocking=dispatch_opt["blocking"])
+      run_local_chunk(runpath, chunk, blocking=dispatch_opt["blocking"],
+                      dryrun=dispatch_opt["dryrun"])
 
 
 def load_opt(path):

@@ -1,4 +1,5 @@
 "Stack learned from reference"
+import os
 from typing import List
 import asl
 from asl.modules.modules import ConstantNet, ModuleDict
@@ -140,7 +141,8 @@ if __name__ == "__main__":
       # FIXME: merging is wrong
       opt.update(cmdrunopt)
 
-    asl.dispatch_runs(__file__, dispatch_opt, morerunopts)
+    thisfile = os.path.abspath(__file__)
+    asl.dispatch_runs(thisfile, dispatch_opt, morerunopts)
   else:
     if dispatch_opt["optfile"] is not None:
       opt = asl.load_opt(dispatch_opt["optfile"])
