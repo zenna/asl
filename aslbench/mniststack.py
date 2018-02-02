@@ -25,6 +25,15 @@ def trace(items, runstate, push, pop, empty):
   (pop_stack, pop_item) = pop(pop_stack)
   asl.observe(pop_item, "pop2", runstate)
   asl.log_append("{}/internal".format(runstate['mode']), pop_stack)
+
+  # Do one more push pop
+  (stack,) = push(pop_stack, next(items))
+  asl.log_append("{}/internal".format(runstate['mode']), stack)
+
+  (pop_stack, pop_item) = pop(stack)
+  asl.observe(pop_item, "pop3", runstate)
+  asl.log_append("{}/internal".format(runstate['mode']), pop_stack)
+
   return pop_item
 
 
@@ -104,11 +113,11 @@ def train_stack(opt):
     asl.load_checkpoint(opt.resume_path, nstack, optimizer)
 
   asl.train(loss_gen, optimizer, maxiters=100000,
-        cont=asl.converged(1000),
+        # cont=asl.converged(1000),
         callbacks=[asl.print_loss(100),
                    common.plot_empty,
                    common.plot_observes,
-                   # common.plot_internals,
+                   common.plot_internals,
                    asl.save_checkpoint(1000, stack_sketch)
                    ],
         log_dir=opt.log_dir)

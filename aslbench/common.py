@@ -27,6 +27,6 @@ def plot_empty(i, log, writer, **kwargs):
 
 def plot_internals(i, log, writer, batch=0, **kwargs):
   "Show internal structure. Shows anything log[NEURAL/internal]"
-  internals = log["{}/internal".format('reference')]
+  internals = log["{}/internal".format('model')]
   for (j, internal) in enumerate(internals):
     writer.add_image('internals/{}'.format(j), internal.value[batch], i)
