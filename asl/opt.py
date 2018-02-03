@@ -101,7 +101,7 @@ def add_std_args(parser):
                       help='number of epochs to train (default: 10)')
   parser.add_argument('--log_dir', type=str, metavar='D',
                       help='Path to store data')
-  parser.add_argument('--resume_path', type=str, default='', metavar='R',
+  parser.add_argument('--resume_path', type=str, default=None, metavar='R',
                       help='Path to resume parameters from')
   parser.add_argument('--nocuda', action='store_true', default=False,
                       help='disables CUDA training')

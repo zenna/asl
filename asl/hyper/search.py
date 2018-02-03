@@ -13,6 +13,21 @@ def linearizeopt(opt, keys):
   parts = [stringifyfilename(k, opt[k]) for k in keys]
   return "_".join(parts)
 
+def linearizeoptrecur_(opt, keys):
+  parts = []
+  for k, v in opt.items():
+    if k in keys:
+      parts.append(stringifyfilename(k, v))
+    elif asl.opt.isopt(v):
+      parts = parts + linearizeoptrecur_(v, keys)
+
+  return parts
+
+
+def linearizeoptrecur(opt, keys):
+  parts = linearizeoptrecur_(opt, keys)
+  return "_".join([str(part) for part in parts])
+
 
 def stringify(k, v):
   """Turn a key value into command line argument"""

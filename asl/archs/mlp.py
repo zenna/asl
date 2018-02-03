@@ -34,7 +34,8 @@ class MLPNet(nn.Module):
                    max_layers=5,
                    pact_same=0.5,
                    **kwargs):
-    "Sample hyper parameters"
+    "Sample hyper parameters of MLP"
+    print("\n\n\n\nADJHPKAJJPFJAFJ\n\n\n")
     nin = nelements(in_sizes)
     nout = nelements(out_sizes)
     batch_norm = np.random.rand() > pbatch_norm
@@ -53,6 +54,16 @@ class MLPNet(nn.Module):
     return {'batch_norm': batch_norm,
             'activations': activations,
             'nmids': nmids}
+
+  def sample_hyper(in_sizes,
+                   out_sizes,
+                   pbatch_norm=0.5,
+                   max_layers=5,
+                   pact_same=0.5,
+                   **kwargs):
+    "Sample hyper parameters of MLP"
+    batch_norm = np.random.rand() > pbatch_norm
+    return {'batch_norm': batch_norm}
 
 
   def __init__(self,

@@ -11,21 +11,22 @@ from asl.callbacks import every_n
 from multipledispatch import dispatch
 from tensorboardX import SummaryWriter
 
-def tracegen(nitems):
+def tracegen(nitems, nrounds):
   print("Making trace with {} items".format(nitems))
   def trace(items, runstate, push, pop, empty):
     """Example stack trace"""
     asl.log_append("empty", empty)
     stack = empty
-    for i in range(nitems):
-      (stack,) = push(stack, next(items))
-      asl.log_append("{}/internal".format(runstate['mode']), stack)
+    for nr in range(nrounds):
+      for i in range(nitems):
+        (stack,) = push(stack, next(items))
+        asl.log_append("{}/internal".format(runstate['mode']), stack)
 
-    for j in range(nitems):
-      (stack, pop_item) = pop(stack)
-      asl.observe(pop_item, "pop.{}".format(j), runstate)
-      asl.log_append("{}/internal".format(runstate['mode']), stack)
-    
+      for j in range(nitems):
+        (stack, pop_item) = pop(stack)
+        asl.observe(pop_item, "pop.{}.{}".format(nr, j), runstate)
+        asl.log_append("{}/internal".format(runstate['mode']), stack)
+      
     return pop_item
   
   return trace
@@ -54,9 +55,8 @@ def stack_args(parser):
   # FIXME: Currently uunusued
   parser.add_argument('--nitems', type=int, default=3, metavar='NI',
                       help='number of iteems in trace (default: 3)')
-  parser.add_argument('--batch_norm', action='store_true', default=True,
-                      help='Do batch norm')
-
+  parser.add_argument('--nrounds', type=int, default=1, metavar='NR',
+                      help='number of rounds in trace')
 
 def stack_args_sample():
   "Options sampler"
@@ -77,7 +77,7 @@ def dist(x, y):
 def train_stack(opt):
   # arch = opt["arch"]
   # arch_opt = opt['']
-  trace = tracegen(opt["nitems"])
+  trace = tracegen(opt["nitems"], opt["nrounds"])
   class Push(asl.Function, asl.Net):
     def __init__(self, name="Push", **kwargs):
       asl.Function.__init__(self, [MatrixStack, Mnist], [MatrixStack])
@@ -131,14 +131,14 @@ def train_stack(opt):
     asl.load_checkpoint(opt["resume_path"], nstack, optimizer)
 
   tbkeys = ["batch_size", "lr", "name", "nitems", "batch_norm"]
-  optstring = asl.hyper.search.linearizeopt(opt, tbkeys)
+  optstring = asl.hyper.search.linearizeoptrecur(opt, tbkeys)
   if opt["train"]:
     writer = SummaryWriter(os.path.join(opt["log_dir"], optstring))
     update_df, save_df = asl.callbacks.save_update_df(opt)
     asl.train(loss_gen,
               optimizer,
-              maxiters=1000,
-              # cont=asl.converged(1000),
+              # maxiters=10,
+              cont=asl.converged(1000),
               callbacks=[asl.print_loss(1),
                         every_n(common.plot_empty, 10),
                         every_n(common.plot_observes, 10),
@@ -155,7 +155,8 @@ def train_stack(opt):
 def arch_sampler():
   "Options sampler"
   arch = random.choice([asl.archs.convnet.ConvNet,
-                        asl.archs.mlp.MLPNet])
+                        #asl.archs.mlp.MLPNet,
+                        ])
   arch_opt = arch.sample_hyper(None, None)
   opt = {"arch": arch,
          "arch_opt": arch_opt}
@@ -165,7 +166,7 @@ def stack_optspace():
   return {"nrounds": [1, 2],
           "nitems": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 24, 48],
           "batch_size": [8, 16, 32, 64, 128],
-          "arch_opts": arch_sampler,
+          "arch_opt": arch_sampler,
           "lr": [0.01, 0.001, 0.0001, 0.00001]}
 
 if __name__ == "__main__":
@@ -174,8 +175,8 @@ if __name__ == "__main__":
   if dispatch_opt["dispatch"]:
     morerunopts = asl.prodsample(stack_optspace(),
                                  to_enum=[],
-                                 to_sample=["batch_size", "nitems", "lr"],
-                                 to_sample_merge=["arch_opts"],
+                                 to_sample=["batch_size", "nitems", "lr", "nrounds"],
+                                 to_sample_merge=["arch_opt"],
                                  nsamples=dispatch_opt["nsamples"])
     # Merge each runopt with command line opts (which take precedence)
     for opt in morerunopts:
@@ -190,6 +191,8 @@ if __name__ == "__main__":
     if dispatch_opt["optfile"] is not None:
       keys = None if cmdrunopt["resume_path"] is None else ["arch", "lr"] 
       cmdrunopt.update(asl.load_opt(cmdrunopt["optfile"], keys))
+      print("Loaded", cmdrunopt)
+      print("resume_path", cmdrunopt["resume_path"] is None)
       train_stack(cmdrunopt)
     else:
       asl.save_opt(cmdrunopt)
