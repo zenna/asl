@@ -53,6 +53,7 @@ def run_local_chunk(runpath, chunk, blocking=True, dryrun=False):
     job["log_dir"] = asl.util.io.log_dir(group=job["group"], comment=job["name"])
     savefullpath = maybedryrun(dryrun, "Save opts", asl.save_opt, job)
     # Save the option file and call subprocess at that location
+    print(job)
     run_local_batch(runpath, {"optfile": savefullpath}, blocking=blocking,
                      dryrun=dryrun)
 
