@@ -16,13 +16,15 @@ def datadir(default='./data', varname='DATADIR'):
   else:
     return default
 
+def log_dir_from_opt(opt):
+  "Log directory, from run data"
+
+
 
 def log_dir(root=datadir(), group='nogroup', comment=''):
   "Log directory, e.g. ~/datadir/mnist/Oct14_02-43-22_my_comp/"
-  return os.path.join(root,
-                      'runs',
-                      group,
-                      id_gen() + '_' + datetime.now().strftime('%b%d_%H-%M-%S')+'_'+socket.gethostname()+'_'+comment)
+  fname = id_gen() + '_' + datetime.now().strftime('%b%d_%H-%M-%S')+'_'+socket.gethostname()+'_'+comment
+  return os.path.join(root, 'runs', group, fname)
 
 
 def directory_check(path):

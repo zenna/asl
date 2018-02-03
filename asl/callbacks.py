@@ -1,9 +1,11 @@
+import sys
 import shutil
 import torch
 import asl
 import os
 import math
 from asl.train import train, TrainMode
+import pandas as pd
 
 "Callbacks to be passed to optimization"
 def tb_loss(i, writer, loss, **kwargs):
@@ -15,6 +17,29 @@ def print_stats(i, running_loss, **kwargs):
   "Print optimization statistics"
   print('[%5d] loss: %.3f' %
           (i + 1, running_loss / 2000))
+
+
+def save_update_df(opt, dffname="losses.df"):
+  "Create a function which updates"
+  name = opt["name"]
+  savepath = os.path.join(opt["log_dir"], dffname)
+  df = pd.DataFrame({'runname': [],
+                      'iteration': [],
+                      'loss': []})
+
+  def update_df_(i, loss, **kwargs):
+    nonlocal df
+    row = pd.DataFrame({'iteration': [i],
+                        'runname': [name],
+                        'loss': [loss]})
+    df = pd.concat([df, row])
+
+  def save_df(i, loss, **kwargs):
+    print("Saving dataframe")
+    nonlocal df
+    df.to_pickle(savepath)
+
+  return update_df_, save_df
 
 
 def every_n(callback, n):
@@ -42,27 +67,26 @@ def print_loss(every, log_tb=True, key="loss"):
   next(gen)
   return gen
 
-def save_checkpoint(every, model, verbose=True):
+def save_checkpoint(model, verbose=True):
   "Save data every every steps"
   def save_checkpoint_innner(log_dir, i, optimizer, **kwargs):
-    savepath = os.path.join(log_dir, "checkpoint.pth")
-    if (i + 1) % every == 0:
-      if verbose:
-        print("Saving...")
-      torch.save({'i': i + 1,
-                  'state_dict': model.state_dict(),
-                  'optimizer': optimizer.state_dict()},
-                 savepath)
+    savepath = os.path.join(log_dir, "checkpoint.pt")
+    if verbose:
+      print("Saving...")
+    torch.save({'i': i + 1,
+                'state_dict': model.state_dict(),
+                'optimizer': optimizer.state_dict()},
+                savepath)
   return save_checkpoint_innner
 
 
 def load_checkpoint(resume_path, model, optimizer, verbose=True):
   "Load data from checkpoint"
   if verbose:
-    print("Loading...")
-  torch.load(resume_path)
+    print("Loading model / optimizer from checkpoint...")
+  import pdb; pdb.set_trace()
   checkpoint = torch.load(resume_path)
-  # optimizer.load_state_dict(checkpoint['optimizer'])
+  optimizer.load_state_dict(checkpoint['optimizer'])
   model.load_state_dict(checkpoint['state_dict'])
   model.eval()
 
@@ -101,7 +125,6 @@ def converged(every, print_change=True, change_thres=-0.000005):
   return gen
 
 
-import sys
 # FIXME: This should be a cont not used as callback
 def nancancel(loss, **kwargs):
   if (loss != loss):

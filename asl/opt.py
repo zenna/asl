@@ -25,8 +25,12 @@ def sample(x):
 def sample(f):
   return f()
 
-def prodsample(optspace, to_enum, to_sample, nsamples = 1):
+def prodsample(optspace, to_enum=[], to_sample=[], to_sample_merge=[], nsamples = 1):
   """Enumerate product space of `to_enum` sampling from `tosampale`
+  # Arguments
+  to_enum: Will enumerate through cartesian product of all elements of to_enum
+  to_sample: Will sample from and put result in dictionary
+  to_sample_merge: Sampling from should return a subdict to be merged
 
   >>> import random
   >>> optspace = {"names" : [1,2,3,4], "sally" : [2,4,5], "who": random.random}>>> to_enum = 'names'
@@ -47,6 +51,10 @@ def prodsample(optspace, to_enum, to_sample, nsamples = 1):
       subdict = optspace.copy()
       subdict.update(subdict1)
       subdict.update(subdict2)
+
+      for k in to_sample_merge:
+        sd = optspace[k]()
+        subdict.update(sd)
       dicts.append(subdict)
   
   return dicts
@@ -77,11 +85,10 @@ def std_opt_sampler():
   return opt
 
 
-# Want
-# Want to use default logdir but with group name that is taken from cmdline
-
 def add_std_args(parser):
   # Run Args
+  parser.add_argument('--train', action='store_true', default=False,
+                    help='Train the model')
   parser.add_argument('--name', type=str, default='', metavar='JN',
                       help='Name of job')
   parser.add_argument('--group', type=str, default='', metavar='JN',
@@ -100,8 +107,6 @@ def add_std_args(parser):
                       help='disables CUDA training')
   parser.add_argument('--seed', type=int, default=1, metavar='S',
                       help='random seed (default: 1)')
-  parser.add_argument('--log_interval', type=int, default=10, metavar='LI',
-                      help='how many batches to wait before logging training status')
   parser.add_argument('--lr', type=float, default=0.01, metavar='LR',
                       help='learning rate (default: 0.01)')
 
@@ -115,8 +120,6 @@ def add_dispatch_args(parser):
                     help='Specify load file to get options from')
   parser.add_argument('--jobsinchunk', type=int, default=1, metavar='C',
                       help='Jobs to run per machine (default 1)')
-  parser.add_argument('--hyper', action='store_true', default=False,
-                      help='Do hyper parameter search')
   parser.add_argument('--nsamples', type=int, default=1, metavar='NS',
                       help='number of samples for hyperparameters (default: 10)')
   parser.add_argument('--blocking', action='store_true', default=True,
@@ -159,7 +162,7 @@ def handle_args(*add_cust_parses):
   handle_cuda(run_opt)
   handle_arch(run_opt)
   # dispatch_opt = run_opt[]
-  dargs = ["dispatch", "dryrun", "sample", "optfile", "jobsinchunk", "hyper", "nsamples", "blocking", "slurm"]
+  dargs = ["dispatch", "dryrun", "sample", "optfile", "jobsinchunk", "nsamples", "blocking", "slurm"]
   dispatch_opt = {k : run_opt[k] for k in dargs}
   return run_opt, dispatch_opt
 
@@ -198,12 +201,49 @@ def dispatch_runs(runpath, dispatch_opt, runopts):
                       dryrun=dispatch_opt["dryrun"])
 
 
-def load_opt(path):
-  "Load options file from disk"
-  return torch.load(path)
+def invert(d):
+  "Assume d is injective"
+  return dict(zip(d.values(), d.keys()))
+
+import torch.nn.functional as F
+
+
+STRINGTOF = {"elu": F.elu,
+             "relu": F.relu}
+FTOSTRING = invert(STRINGTOF)
+
+def isopt(d):
+  "Is dictionary d an opt"
+  return type(d) is dict and all((type(k) is str for k in d.keys()))
+
+
+def sanitize_opt(opt, conv):
+  "Convert opt into something that can be pickled"
+  newopt = {}
+  for k, v in opt.items():
+    print(k)
+    # import pdb; pdb.set_trace()
+    if isopt(v):
+      newopt[k] = sanitize_opt(v, conv)
+    elif v in list(conv.keys()): # ugh
+      newopt[k] = conv[v]
+    else:
+      newopt[k] = opt[k]
+  return newopt
+
+
+def load_opt(path, keys=None):
+  "Load options file from disk, optionally restrict to keys"
+  opt = torch.load(path)
+  opt = sanitize_opt(opt, STRINGTOF)
+  if keys is None:
+    return opt
+  else:
+    return {k: opt[k] for k in keys}
 
 
 def save_opt(opt, savepath=None):
+  opt = sanitize_opt(opt, FTOSTRING)
   if savepath is None:
     savepath = opt["log_dir"]
 

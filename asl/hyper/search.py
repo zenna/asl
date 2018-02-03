@@ -3,6 +3,17 @@ import subprocess
 import os
 import asl
 
+
+def stringifyfilename(k, v):
+  """Turn a key value into command line argument"""
+  return "__%s_%s" % (k, v)
+
+
+def linearizeopt(opt, keys):
+  parts = [stringifyfilename(k, opt[k]) for k in keys]
+  return "_".join(parts)
+
+
 def stringify(k, v):
   """Turn a key value into command line argument"""
   if v is True:
@@ -66,6 +77,7 @@ def run_sbatch_chunk(path, chunk, bash_run_path=None, dryrun=False):
     # savefullpath = asl.save_opt(job)
     print(job)
     savefullpath = maybedryrun(dryrun, "Save opts", asl.save_opt, job)
-    sbatch_opt = {'job-name': job["name"], 'time': 720}
+    slurmout = os.path.join(job["log_dir"], "slurm.out")
+    sbatch_opt = {'job-name': job["name"], 'time': 720, "output": slurmout}
     run_sbatch(path, {"optfile": savefullpath}, sbatch_opt=sbatch_opt,
                bash_run_path=bash_run_path, dryrun=dryrun)
