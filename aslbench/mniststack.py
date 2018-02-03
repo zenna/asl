@@ -8,34 +8,43 @@ from torch import optim, nn
 import common
 from multipledispatch import dispatch
 
-def trace(items, runstate, push, pop, empty):
-  """Example stack trace"""
-  asl.log_append("empty", empty)
-  stack = empty
+def tracegen(nitems):
+  print("Making trace with {} items".format(nitems))
+  def trace(items, runstate, push, pop, empty):
+    """Example stack trace"""
+    asl.log_append("empty", empty)
+    stack = empty
+    for i in range(nitems):
+      (stack,) = push(stack, next(items))
+      asl.log_append("{}/internal".format(runstate['mode']), stack)
 
-  (stack,) = push(stack, next(items))
-  asl.log_append("{}/internal".format(runstate['mode']), stack)
+    for j in range(nitems):
+      (stack, pop_item) = pop(stack)
+      asl.observe(pop_item, "pop.{}".format(j), runstate)
+      asl.log_append("{}/internal".format(runstate['mode']), stack)
+    
+    return pop_item
+  
+  return trace
 
-  (stack,) = push(stack, next(items))
-  asl.log_append("{}/internal".format(runstate['mode']), stack)
+    # (stack,) = push(stack, next(items))
+    # asl.log_append("{}/internal".format(runstate['mode']), stack)
 
-  (pop_stack, pop_item) = pop(stack)
-  asl.observe(pop_item, "pop1", runstate)
-  asl.log_append("{}/internal".format(runstate['mode']), pop_stack)
+    # (pop_stack, pop_item) = pop(stack)
+    # asl.observe(pop_item, "pop1", runstate)
+    # asl.log_append("{}/internal".format(runstate['mode']), pop_stack)
 
-  (pop_stack, pop_item) = pop(pop_stack)
-  asl.observe(pop_item, "pop2", runstate)
-  asl.log_append("{}/internal".format(runstate['mode']), pop_stack)
+    # (pop_stack, pop_item) = pop(pop_stack)
+    # asl.observe(pop_item, "pop2", runstate)
+    # asl.log_append("{}/internal".format(runstate['mode']), pop_stack)
 
-  # Do one more push pop
-  (stack,) = push(pop_stack, next(items))
-  asl.log_append("{}/internal".format(runstate['mode']), stack)
+    # # Do one more push pop
+    # (stack,) = push(pop_stack, next(items))
+    # asl.log_append("{}/internal".format(runstate['mode']), stack)
 
-  (pop_stack, pop_item) = pop(stack)
-  asl.observe(pop_item, "pop3", runstate)
-  asl.log_append("{}/internal".format(runstate['mode']), pop_stack)
-
-  return pop_item
+    # (pop_stack, pop_item) = pop(stack)
+    # asl.observe(pop_item, "pop3", runstate)
+    # asl.log_append("{}/internal".format(runstate['mode']), pop_stack)
 
 
 def stack_args(parser):
@@ -65,6 +74,7 @@ def dist(x, y):
 def train_stack(opt):
   # arch = opt["arch"]
   # arch_opt = opt['']
+  trace = tracegen(opt["nitems"])
   class Push(asl.Function, asl.Net):
     def __init__(self, name="Push", **kwargs):
       asl.Function.__init__(self, [MatrixStack, Mnist], [MatrixStack])
@@ -113,7 +123,7 @@ def train_stack(opt):
   if opt["resume_path"] is not None and opt["resume_path"] != '':
     asl.load_checkpoint(opt["resume_path"], nstack, optimizer)
 
-  asl.train(loss_gen, optimizer, maxiters=10,
+  asl.train(loss_gen, optimizer, maxiters=10000,
         # cont=asl.converged(1000),
         callbacks=[asl.print_loss(1),
                    common.plot_empty,
@@ -125,21 +135,23 @@ def train_stack(opt):
 
 
 def stack_optspace():
-  return {"num_items": [1, 2,],
-          "batch_size": [1, 1]}
+  return {"nitems": [1, 2, 3, 4],
+          "batch_size": [1, 100]}
 
 if __name__ == "__main__":
   # Add stack-specific parameters to the cmdlargs
   cmdrunopt, dispatch_opt = asl.handle_args(stack_args)
   if dispatch_opt["dispatch"]:
     morerunopts = asl.prodsample(stack_optspace(),
-                                 to_enum=["num_items"],
-                                 to_sample=["batch_size"],
+                                 to_enum=[],
+                                 to_sample=["batch_size", "nitems"],
                                  nsamples=dispatch_opt["nsamples"])
     # Merge each runopt with command line opts (which take precedence)
     for opt in morerunopts:
-      # FIXME: merging is wrong
-      opt.update(cmdrunopt)
+      for k, v in cmdrunopt.items():
+        if k not in opt:
+          opt[k] = v
+      # opt.update(cmdrunopt)
 
     thisfile = os.path.abspath(__file__)
     asl.dispatch_runs(thisfile, dispatch_opt, morerunopts)

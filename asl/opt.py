@@ -117,7 +117,7 @@ def add_dispatch_args(parser):
                       help='Jobs to run per machine (default 1)')
   parser.add_argument('--hyper', action='store_true', default=False,
                       help='Do hyper parameter search')
-  parser.add_argument('--nsamples', type=int, default=10, metavar='NS',
+  parser.add_argument('--nsamples', type=int, default=1, metavar='NS',
                       help='number of samples for hyperparameters (default: 10)')
   parser.add_argument('--blocking', action='store_true', default=True,
                       help='Is hyper parameter search blocking?')
@@ -186,11 +186,6 @@ def chunks(l, n):
     """Yield successive n-sized chunks from l."""
     for i in range(0, len(l), n):
         yield l[i:i + n]
-
-def create_runs(optspace, ):
-  morerunopts = asl.prodsample(optspace,
-                              to_enum=["num_items"],
-                              to_sample=["batch_size"])
 
 def dispatch_runs(runpath, dispatch_opt, runopts):
   # Split up the jobs into sets and dispatch
