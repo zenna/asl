@@ -135,8 +135,9 @@ def train_stack(opt):
 
 
 def stack_optspace():
-  return {"nitems": [1, 2, 3, 4],
-          "batch_size": [1, 100]}
+  return {"nitems": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 24, 48],
+          "batch_size": [8, 16, 32, 64, 128],
+          "lr": [0.01, 0.001, 0.0001, 0.00001]}
 
 if __name__ == "__main__":
   # Add stack-specific parameters to the cmdlargs
@@ -144,7 +145,7 @@ if __name__ == "__main__":
   if dispatch_opt["dispatch"]:
     morerunopts = asl.prodsample(stack_optspace(),
                                  to_enum=[],
-                                 to_sample=["batch_size", "nitems"],
+                                 to_sample=["batch_size", "nitems", "lr"],
                                  nsamples=dispatch_opt["nsamples"])
     # Merge each runopt with command line opts (which take precedence)
     for opt in morerunopts:
