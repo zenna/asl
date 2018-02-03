@@ -76,7 +76,7 @@ def run_local_batch(file_path, options, blocking=True, dryrun=False):
 
 def run_local_chunk(runpath, chunk, blocking=True, dryrun=False):
   for job in chunk:
-    job["log_dir"] = asl.util.io.log_dir(group=job["group"], comment=job["name"])
+    job["log_dir"] = asl.util.io.log_dir(igroup=job["group"], comment=job["name"])
     savefullpath = maybedryrun(dryrun, "Save opts", asl.save_opt, job)
     # Save the option file and call subprocess at that location
     print(job)
@@ -88,11 +88,13 @@ def run_local_chunk(runpath, chunk, blocking=True, dryrun=False):
 
 def run_sbatch_chunk(path, chunk, bash_run_path=None, dryrun=False):
   for job in chunk:
-    job["log_dir"] = asl.util.io.log_dir(group=job["group"], comment=job["name"])
+    id = asl.util.io.id_gen()
+    job["log_dir"] = asl.util.io.log_dir(id=id, group=job["group"], comment=job["name"])
     # savefullpath = asl.save_opt(job)
     print(job)
+    job_name = "{}_{}".format(id, job["name"])
     savefullpath = maybedryrun(dryrun, "Save opts", asl.save_opt, job)
     slurmout = os.path.join(job["log_dir"], "slurm.out")
-    sbatch_opt = {'job-name': job["name"], 'time': 720, "output": slurmout}
+    sbatch_opt = {'job-name': job_name, 'time': 720, "output": slurmout}
     run_sbatch(path, {"optfile": savefullpath}, sbatch_opt=sbatch_opt,
                bash_run_path=bash_run_path, dryrun=dryrun)

@@ -21,9 +21,9 @@ def log_dir_from_opt(opt):
 
 
 
-def log_dir(root=datadir(), group='nogroup', comment=''):
+def log_dir(root=datadir(), group='nogroup', comment='', id=id_gen()):
   "Log directory, e.g. ~/datadir/mnist/Oct14_02-43-22_my_comp/"
-  fname = id_gen() + '_' + datetime.now().strftime('%b%d_%H-%M-%S')+'_'+socket.gethostname()+'_'+comment
+  fname = id + '_' + datetime.now().strftime('%b%d_%H-%M-%S')+'_'+socket.gethostname()+'_'+comment
   return os.path.join(root, 'runs', group, fname)
 
 
