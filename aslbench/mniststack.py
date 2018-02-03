@@ -174,8 +174,8 @@ if __name__ == "__main__":
   cmdrunopt, dispatch_opt = asl.handle_args(stack_args)
   if dispatch_opt["dispatch"]:
     morerunopts = asl.prodsample(stack_optspace(),
-                                 to_enum=[],
-                                 to_sample=["batch_size", "nitems", "lr", "nrounds"],
+                                 to_enum=["nitems"],
+                                 to_sample=["batch_size", "lr", "nrounds"],
                                  to_sample_merge=["arch_opt"],
                                  nsamples=dispatch_opt["nsamples"])
     # Merge each runopt with command line opts (which take precedence)
