@@ -52,13 +52,19 @@ class SetItem(asl.Function, asl.Net):
 ## Dictionary training
 def train_dict(opt):
   trace = dicttracegen(opt["nitems"], opt["nrounds"])
-  get_item = GetItem(arch=opt.arch, arch_opt=opt.arch_opt)
-  set_item = SetItem(arch=opt.arch, arch_opt=opt.arch_opt)
+  get_item = GetItem(arch=opt["arch"], arch_opt=opt["arch_opt"])
+  set_item = SetItem(arch=opt["arch"], arch_opt=opt["arch_opt"])
   empty = ConstantNet(MatrixDict)
   ndict = ModuleDict({"get_item": get_item,
                       "set_item": set_item,
                       "empty": empty})
-  dict_sketch = DictSketch([List[Mnist]], [Mnist], ndict, ref_dict())
+  
+  class DictSketch(asl.Sketch):
+    def sketch(self, items, runstate):
+      """Example stack trace"""
+      return trace(items, runstate, set_item=set_item, get_item=get_item, empty=empty)
+
+  dict_sketch = DictSketch([List[Mnist]], [Mnist])
 
   def ref_sketch(items, runstate):
     return trace(items, runstate, set_item=dict_set_item, get_item=dict_get_item,
@@ -67,11 +73,11 @@ def train_dict(opt):
   asl.cuda(ndict) # CUDA that shit
 
   # Loss
-  mnistiter = asl.util.mnistloader(opt.batch_size)
-  loss_gen = asl.sketch.single_ref_loss(dict_sketch,
-                                        ref_sketch,
-                                        mnistiter,
-                                        refresh_mnist)
+  mnistiter = asl.util.mnistloader(opt["batch_size"])
+  loss_gen = asl.single_ref_loss(dict_sketch,
+                                 ref_sketch,
+                                 mnistiter,
+                                 refresh_mnist)
   return common.trainmodel(opt, ndict, loss_gen)
 
 
@@ -94,7 +100,7 @@ def runoptsgen(nsamples):
   return asl.prodsample(dict_optspace(),
                         to_enum=["nitems"],
                         to_sample=["batch_size", "lr", "nrounds"],
-                        to_sample_merge=["arch_opt"],
+                        to_sample_merge=["arch_opt", "optim_args"],
                         nsamples=nsamples)
 
 if __name__ == "__main__":
