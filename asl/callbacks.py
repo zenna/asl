@@ -140,7 +140,7 @@ def converged(every, print_change=True, change_thres=-0.000005):
   return gen
 
 
-def convergedperc(every, print_change=True, change_thres=-0.0001):
+def convergedperc(every, print_change=True, change_thres=0.00001):
   "Converged when threshold is less than percentage? Use when optimum is zero"
   def converged_gen(every):
     running_loss = 0.0
@@ -161,8 +161,9 @@ def convergedperc(every, print_change=True, change_thres=-0.0001):
             percchange = running_loss / last_running_loss
             print('absolute change (avg over {}) {}'.format(every, abchange))
             print('Percentage change (avg over {}) {}'.format(every, percchange))
-            per_iter = percchange / every
+            per_iter = (1 - percchange) / every
             print('percentage_: {}, per iteration: {}'.format(percchange, per_iter))
+            print("What?", per_iter, change_thres, per_iter < change_thres)
             if per_iter < change_thres:
               print("Percentage change insufficient (< {})".format(change_thres))
               cont = False
