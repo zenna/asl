@@ -220,7 +220,6 @@ def sanitize_opt(opt, conv):
   "Convert opt into something that can be pickled"
   newopt = {}
   for k, v in opt.items():
-    print(k)
     # import pdb; pdb.set_trace()
     if isopt(v):
       newopt[k] = sanitize_opt(v, conv)
