@@ -29,7 +29,7 @@ def ref_loss_gen(model, reference, input, refresh_input):
     return ref_losses(runstate)
   return lossgen
 
-def single_ref_loss(model, reference, input, refresh_input):
+def single_ref_loss(model, reference, input, refresh_input, accum=mean):
   "Function minimizes difference between reference and neural implementation"
   runobserve = asl.run_observe([model, reference],
                                [input, input],
@@ -38,5 +38,5 @@ def single_ref_loss(model, reference, input, refresh_input):
   def lossgen():
     runstate = runobserve()
     losses = ref_losses(runstate)
-    return mean(losses.values())
+    return accum(losses.values())
   return lossgen

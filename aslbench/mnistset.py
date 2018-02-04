@@ -11,6 +11,7 @@ from stdargs import optim_sampler, arch_sampler
 from mnist import mnist_size, Mnist, dist, refresh_mnist
 from asl.callbacks import every_n
 from multipledispatch import dispatch
+from asl.loss import mean
 
 def tracegen(nitems, nrounds):
   print("Making stack trace with {} items and {} rounds".format(nitems, nrounds))
@@ -75,7 +76,8 @@ def train_stack(opt):
   loss_gen = asl.single_ref_loss(stack_sketch,
                                  ref_sketch,
                                  mnistiter,
-                                 refresh_mnist)
+                                 refresh_mnist,
+                                 accum=opt["accum"])
   return common.trainmodel(opt, nstack, loss_gen)
 
 ## Samplers
@@ -90,6 +92,7 @@ def stack_optspace():
   return {"nrounds": [1, 2, 5],
           "nitems": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 30],
           "batch_size": [8, 16, 32, 64, 128, 256, 512],
+          "accum": [sum],
           "arch_opt": arch_sampler,
           "optim_args": optim_sampler}
 
@@ -97,7 +100,7 @@ def runoptsgen(nsamples):
   # Delaying computation of this value because we dont know nsamples yet
   return asl.prodsample(stack_optspace(),
                         to_enum=["nitems", "nrounds"],
-                        to_sample=["batch_size", "lr", "nrounds"],
+                        to_sample=["batch_size", "lr", "nrounds", "accum"],
                         to_sample_merge=["arch_opt", "optim_args"],
                         nsamples=nsamples)
 
