@@ -54,7 +54,7 @@ def compound_encoding(cl, encoding):
 
 @dispatch(Enum)
 def onehot1d(enum, length=None):
-  "Encode a Color as a one hot vector"
+  "Encode an Enum as a one hot vector"
   EnumOneHot1D = compound_encoding(enum.__class__.__bases__[0], OneHot1D)
   length = EnumOneHot1D.typesize[0] if length is None else length
   return EnumOneHot1D(Variable(cuda(onehot(enum.value, length, 1))))

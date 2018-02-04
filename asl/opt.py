@@ -44,7 +44,6 @@ def prodsample(optspace, to_enum=[], to_sample=[], to_sample_merge=[], nsamples 
   iter = itertools.product(*to_enumprod.values())
   dicts = []
   for it in iter:
-    # import pdb; pdb.set_trace()
     subdict1 = dict(zip(to_enumprod.keys(), it))
     for i in range(nsamples):
       subdict2 = {k : sample(optspace[k]) for k in to_sample.keys()}

@@ -5,7 +5,6 @@ from asl.archs.convnet import ConvNet
 from asl.util.misc import cuda
 from torch import nn
 
-
 class SetItem(Function):
   "SetItem Function for Stack"
 
@@ -20,38 +19,6 @@ class GetItem(Function):
   def __init__(self, dict_type, key_type, value_type):
     super(GetItem, self).__init__([dict_type, key_type], [value_type])
 
-
-class SetItemNet(SetItem, nn.Module):
-  def __init__(self, dict_type, key_type, value_type, module=None, arch=ConvNet,
-               arch_opt=None):
-    super(SetItemNet, self).__init__(dict_type, key_type, value_type)
-    if module is None:
-      arch_opt = {} if arch_opt is None else arch_opt
-      self.module = arch(self.in_sizes(), self.out_sizes(), **arch_opt)
-    else:
-      self.module = module
-    self.add_module("SetItem", self.module)
-
-  def forward(self, *xs):
-    return self.module.forward(*xs)
-
-
-class GetItemNet(GetItem, nn.Module):
-  def __init__(self, dict_type, key_type, value_type, module=None, arch=ConvNet,
-               arch_opt=None):
-    super(GetItemNet, self).__init__(dict_type, key_type, value_type)
-    if module is None:
-      arch_opt = {} if arch_opt is None else arch_opt
-      self.module = arch(self.in_sizes(), self.out_sizes(), **arch_opt)
-    else:
-      self.module = module
-    self.add_module("GetItem", self.module)
-
-
-  def forward(self, *xs):
-    return self.module.forward(*xs)
-
-
 def dict_set_item(adict, key, value):
   adict = adict.copy()
   adict[key] = value
@@ -61,6 +28,7 @@ def dict_set_item(adict, key, value):
 def dict_get_item(adict, key):
   return (adict[key], )
 
+dict_empty = {}
 
 def ref_dict():
   return {"set_item": dict_set_item, "get_item": dict_get_item, "empty": {}}

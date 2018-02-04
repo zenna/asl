@@ -31,26 +31,6 @@ def tracegen(nitems, nrounds):
   
   return trace
 
-    # (stack,) = push(stack, next(items))
-    # asl.log_append("{}/internal".format(runstate['mode']), stack)
-
-    # (pop_stack, pop_item) = pop(stack)
-    # asl.observe(pop_item, "pop1", runstate)
-    # asl.log_append("{}/internal".format(runstate['mode']), pop_stack)
-
-    # (pop_stack, pop_item) = pop(pop_stack)
-    # asl.observe(pop_item, "pop2", runstate)
-    # asl.log_append("{}/internal".format(runstate['mode']), pop_stack)
-
-    # # Do one more push pop
-    # (stack,) = push(pop_stack, next(items))
-    # asl.log_append("{}/internal".format(runstate['mode']), stack)
-
-    # (pop_stack, pop_item) = pop(stack)
-    # asl.observe(pop_item, "pop3", runstate)
-    # asl.log_append("{}/internal".format(runstate['mode']), pop_stack)
-
-
 def stack_args(parser):
   # FIXME: Currently uunusued
   parser.add_argument('--nitems', type=int, default=3, metavar='NI',
