@@ -89,7 +89,10 @@ def stack_args(parser):
 
 def optim_sampler():
   lr = random.choice([0.01, 0.001, 0.0001, 0.00001])
-  optimizer = random.choice([lambda params: optim.Adam(params, lr=lr)])
+  def gen_adam(params):
+    return optim.Adam(params, lr=lr)
+
+  optimizer = random.choice([gen_adam])
   return {"optimizer": optimizer,
           "lr": lr}
 
