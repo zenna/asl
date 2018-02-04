@@ -35,7 +35,6 @@ def dist(x, y):
   import pdb; pdb.set_trace()
   return nn.MSELoss()(x.value, y.value)
 
-
 word_size = 4   # Size of word
 nwords = 10     # Number of terminals in alphabet
 nimages = 2     # NUmber of images in set
@@ -90,14 +89,15 @@ def train_clevrlang(opt):
   asl.cuda(describe, opt.nocuda)
   asl.cuda(which_image, opt.nocuda)
 
-  # Loss
-  # CLEVR img generator
+  # Generators CLEVR img generator
   img_dl = clevr_img_dl(opt.batch_size, normalize=False)
+  chooseimage = infinitesamples[asl.onehot(3, 4, 20)]
 
   def refresh_clevr(dl):
     "Extract image data and convert tensor to Mnist data type"
     return [asl.refresh_iter(dl, lambda x: Image(x))]
 
+  # Loss
   loss_gen = asl.ref_loss_gen(permute_test,
                               target_score_gen,
                               img_dl,
