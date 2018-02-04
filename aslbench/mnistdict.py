@@ -100,15 +100,15 @@ def dict_args(parser):
 
 def dict_optspace():
   return {"nrounds": [1, 2],
-          "nitems": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 24, 48],
-          "batch_size": [8, 16, 32, 64, 128],
+          # "nitems": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 24, 48],
+          "batch_size": [16, 32, 64, 128, 256, 512],
           "arch_opt": arch_sampler,
           "optim_args": optim_sampler}
 
 def runoptsgen(nsamples):
   # Delaying computation of this value because we dont know nsamples yet
   return asl.prodsample(dict_optspace(),
-                        to_enum=["nitems"],
+                        to_enum=[],
                         to_sample=["batch_size", "lr", "nrounds"],
                         to_sample_merge=["arch_opt", "optim_args"],
                         nsamples=nsamples)
