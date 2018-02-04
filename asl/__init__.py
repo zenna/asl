@@ -7,7 +7,7 @@ from .type import *
 from .log import *
 from .encoding import *
 from .reference import *
-from .gan import *
+from .run import *
 
 import asl.util
 import asl.structs

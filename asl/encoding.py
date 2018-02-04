@@ -27,6 +27,7 @@ class OneHot2D(Encoding):
 
 
 def encode(cls, encoding, typesize):
+  "This was something clever, but I can't remember what!"
   class ClsEncoding(cls, encoding):
     def __init__(self, value, expand_one=True):
       self.value = util.maybe_expand(ClsEncoding, value, expand_one)
