@@ -60,16 +60,16 @@ def trainloadsave(fname, train_fun, morerunoptsgen, custom_args):
       asl.save_opt(cmdrunopt)
       return train_fun(cmdrunopt)
 
-def trainmodel(opt, model, loss_gen, **trainkwargs):
+def trainmodel(opt, model, loss_gen, parameters = None, **trainkwargs):
   "The model"
   # Setup optimizer
-  parameters = model.parameters()
+  parameters = model.parameters() if parameters is None else parameters
   optimizer = opt["optimizer"](parameters, opt["lr"])
   asl.opt.save_opt(opt)
   if opt["resume_path"] is not None and opt["resume_path"] != '':
     asl.load_checkpoint(opt["resume_path"], model, optimizer)
 
-  tbkeys = ["batch_size", "lr", "name", "nitems", "batch_norm", "nrounds"]
+  tbkeys = ["batch_size", "lr", "name", "nitems", "batch_norm", "nrounds", "init"]
   optstring = asl.hyper.search.linearizeoptrecur(opt, tbkeys)
   if opt["train"]:
     writer = SummaryWriter(os.path.join(opt["log_dir"], optstring))
@@ -77,13 +77,13 @@ def trainmodel(opt, model, loss_gen, **trainkwargs):
     asl.train(loss_gen,
               optimizer,
               # maxiters=10,
-              cont=asl.converged(1000),
+              cont=asl.convergedperc(500),
               callbacks=[asl.print_loss(1),
-                        every_n(common.plot_empty, 100),
-                        every_n(common.plot_observes, 100),
-                        every_n(common.plot_internals, 100),
+                        every_n(common.plot_empty, 200),
+                        every_n(common.plot_observes, 200),
+                        every_n(common.plot_internals, 200),
                         every_n(asl.save_checkpoint(model), 1000),
-                        every_n(save_df, 100),
+                        every_n(save_df, 200),
                         update_df],
               post_callbacks=[save_df],
               log_dir=opt["log_dir"],

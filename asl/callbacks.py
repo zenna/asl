@@ -59,7 +59,7 @@ def print_loss(every, log_tb=True, key="loss"):
       running_loss += data.loss
       if (data.i + 1) % every == 0:
         loss_per_sample = running_loss / every
-        print('%s per sample (avg over %s) : %.3f' % (key, every, loss_per_sample))
+        print('%s per sample (avg over %s) : %.7f' % (key, every, loss_per_sample))
         if log_tb:
           data.writer.add_scalar(key, loss_per_sample, data.i)
         running_loss = 0.0
@@ -67,16 +67,31 @@ def print_loss(every, log_tb=True, key="loss"):
   next(gen)
   return gen
 
-def save_checkpoint(model, verbose=True):
-  "Save data every every steps"
-  def save_checkpoint_innner(log_dir, i, optimizer, **kwargs):
+import math
+
+def save_checkpoint(model, verbose=True, save_best=True):
+  "Save model data (most recent and best)"
+  best_loss = math.inf
+  def save_checkpoint_innner(loss, log_dir, i, optimizer, **kwargs):
+    nonlocal best_loss
     savepath = os.path.join(log_dir, "checkpoint.pt")
     if verbose:
-      print("Saving...")
+      print("Saving checkpoint...")
     torch.save({'i': i + 1,
                 'state_dict': model.state_dict(),
                 'optimizer': optimizer.state_dict()},
                 savepath)
+    if save_best:
+      if loss < best_loss:
+        if verbose:
+          print("Saving best checkpoint...")
+        best_loss = loss
+        bestsavepath = os.path.join(log_dir, "best_checkpoint.pt")
+        torch.save({'i': i + 1,
+            'state_dict': model.state_dict(),
+            'optimizer': optimizer.state_dict()},
+            bestsavepath)
+
   return save_checkpoint_innner
 
 
@@ -124,6 +139,41 @@ def converged(every, print_change=True, change_thres=-0.000005):
   next(gen)
   return gen
 
+
+def convergedperc(every, print_change=True, change_thres=-0.0001):
+  "Converged when threshold is less than percentage? Use when optimum is zero"
+  def converged_gen(every):
+    running_loss = 0.0
+    last_running_loss = 0.0
+    show_change = False
+    cont = True
+    while True:
+      data = yield cont
+      if data.loss is None:
+        continue
+      running_loss += data.loss
+      if (data.i + 1) % every == 0:
+        if show_change:
+          if running_loss == 0:
+            print("Loss is zero, stopping!")
+          else:
+            abchange = running_loss - last_running_loss
+            percchange = running_loss / last_running_loss
+            print('absolute change (avg over {}) {}'.format(every, abchange))
+            print('Percentage change (avg over {}) {}'.format(every, percchange))
+            per_iter = percchange / every
+            print('percentage_: {}, per iteration: {}'.format(percchange, per_iter))
+            if per_iter < change_thres:
+              print("Percentage change insufficient (< {})".format(change_thres))
+              cont = False
+        else:
+          show_change = True
+        last_running_loss = running_loss
+        running_loss = 0.0
+
+  gen = converged_gen(every)
+  next(gen)
+  return gen
 
 # FIXME: This should be a cont not used as callback
 def nancancel(loss, **kwargs):
