@@ -88,8 +88,8 @@ def stack_args(parser):
 
 def stack_optspace():
   return {"nrounds": [1, 2],
-          "nitems": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 24, 48],
-          "batch_size": [8, 16, 32, 64, 128],
+          "nitems": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 30],
+          "batch_size": [8, 16, 32, 64, 128, 256, 512],
           "arch_opt": arch_sampler,
           "optim_args": optim_sampler}
 
