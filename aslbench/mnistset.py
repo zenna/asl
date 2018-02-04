@@ -87,7 +87,7 @@ def stack_args(parser):
                       help='number of rounds in trace')
 
 def stack_optspace():
-  return {"nrounds": [1, 2],
+  return {"nrounds": [1, 2, 5],
           "nitems": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 30],
           "batch_size": [8, 16, 32, 64, 128, 256, 512],
           "arch_opt": arch_sampler,
@@ -96,7 +96,7 @@ def stack_optspace():
 def runoptsgen(nsamples):
   # Delaying computation of this value because we dont know nsamples yet
   return asl.prodsample(stack_optspace(),
-                        to_enum=["nitems"],
+                        to_enum=["nitems", "nrounds"],
                         to_sample=["batch_size", "lr", "nrounds"],
                         to_sample_merge=["arch_opt", "optim_args"],
                         nsamples=nsamples)
