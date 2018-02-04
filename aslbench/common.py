@@ -2,6 +2,9 @@
 # from asl.reference import get_observes
 import asl
 import os
+from tensorboardX import SummaryWriter
+from asl.callbacks import every_n
+import common
 
 def plot_observes(i, log, writer, batch=0, **kwargs):
   # import pdb; pdb.set_trace()
@@ -32,11 +35,11 @@ def plot_internals(i, log, writer, batch=0, **kwargs):
   for (j, internal) in enumerate(internals):
     writer.add_image('internals/{}'.format(j), internal.value[batch], i)
 
-def trainloadsave(train_fun, morerunoptsgen, custom_args):
+def trainloadsave(fname, train_fun, morerunoptsgen, custom_args):
   # Add stack-specific parameters to the cmdlargs
   cmdrunopt, dispatch_opt = asl.handle_args(custom_args)
   if dispatch_opt["dispatch"]:
-    import pdb; pdb.set_trace()
+    # import pdb; pdb.set_trace()
     morerunopts = morerunoptsgen(dispatch_opt["nsamples"])
     # Merge each runopt with command line opts (which take precedence)
     for opt in morerunopts:
@@ -45,8 +48,7 @@ def trainloadsave(train_fun, morerunoptsgen, custom_args):
           opt[k] = v
       # opt.update(cmdrunopt)
 
-    thisfile = os.path.abspath(__file__)
-    asl.dispatch_runs(thisfile, dispatch_opt, morerunopts)
+    asl.dispatch_runs(fname, dispatch_opt, morerunopts)
   else:
     if dispatch_opt["optfile"] is not None:
       keys = None if cmdrunopt["resume_path"] is None else ["arch", "lr"] 
@@ -62,7 +64,7 @@ def trainmodel(opt, model, loss_gen, **trainkwargs):
   "The model"
   # Setup optimizer
   parameters = model.parameters()
-  optimizer = opt["optimizer"](parameters)
+  optimizer = opt["optimizer"](parameters, opt["lr"])
   asl.opt.save_opt(opt)
   if opt["resume_path"] is not None and opt["resume_path"] != '':
     asl.load_checkpoint(opt["resume_path"], model, optimizer)

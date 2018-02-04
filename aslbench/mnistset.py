@@ -7,10 +7,10 @@ from asl.modules.modules import ConstantNet, ModuleDict
 from asl.structs.nstack import list_push, list_pop, list_empty
 from torch import optim, nn
 import common
+from stdargs import optim_sampler, arch_sampler
 from mnist import mnist_size, Mnist, dist, refresh_mnist
 from asl.callbacks import every_n
 from multipledispatch import dispatch
-from tensorboardX import SummaryWriter
 
 def tracegen(nitems, nrounds):
   print("Making stack trace with {} items and {} rounds".format(nitems, nrounds))
@@ -81,30 +81,10 @@ def train_stack(opt):
 ## Samplers
 
 def stack_args(parser):
-  # FIXME: Currently uunusued
   parser.add_argument('--nitems', type=int, default=3, metavar='NI',
                       help='number of iteems in trace (default: 3)')
   parser.add_argument('--nrounds', type=int, default=1, metavar='NR',
                       help='number of rounds in trace')
-
-def optim_sampler():
-  lr = random.choice([0.01, 0.001, 0.0001, 0.00001])
-  def gen_adam(params):
-    return optim.Adam(params, lr=lr)
-
-  optimizer = random.choice([gen_adam])
-  return {"optimizer": optimizer,
-          "lr": lr}
-
-def arch_sampler():
-  "Options sampler"
-  arch = random.choice([asl.archs.convnet.ConvNet,
-                        #asl.archs.mlp.MLPNet,
-                        ])
-  arch_opt = arch.sample_hyper(None, None)
-  opt = {"arch": arch,
-         "arch_opt": arch_opt}
-  return opt
 
 def stack_optspace():
   return {"nrounds": [1, 2],
@@ -122,4 +102,5 @@ def runoptsgen(nsamples):
                         nsamples=nsamples)
 
 if __name__ == "__main__":
-  res = common.trainloadsave(train_stack, runoptsgen, stack_args)
+  thisfile = os.path.abspath(__file__)
+  res = common.trainloadsave(thisfile, train_stack, runoptsgen, stack_args)

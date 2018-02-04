@@ -1,4 +1,5 @@
 "Stack learned from reference"
+import os
 from typing import List
 import asl
 from asl.modules.modules import ConstantNet, ModuleDict
@@ -8,6 +9,7 @@ import common
 from multipledispatch import dispatch
 from mnist import mnist_size, Mnist, dist, refresh_mnist
 from asl.structs.ndict import dict_empty, dict_get_item, dict_set_item
+from stdargs import optim_sampler, arch_sampler
 
 # class DictSketch(asl.Sketch):
 
@@ -74,29 +76,11 @@ def train_dict(opt):
 
 
 def dict_args(parser):
-  # FIXME: Currently uunusued
   parser.add_argument('--nitems', type=int, default=3, metavar='NI',
                       help='number of iteems in trace (default: 3)')
   parser.add_argument('--nrounds', type=int, default=1, metavar='NR',
                       help='number of rounds in trace')
 
-import random
-
-def optim_sampler():
-  lr = random.choice([0.01, 0.001, 0.0001, 0.00001])
-  optimizer = random.choice([lambda params: optim.Adam(params, lr=lr)])
-  return {"optimizer": optimizer,
-          "lr": lr}
-
-def arch_sampler():
-  "Options sampler"
-  arch = random.choice([asl.archs.convnet.ConvNet,
-                        #asl.archs.mlp.MLPNet,
-                        ])
-  arch_opt = arch.sample_hyper(None, None)
-  opt = {"arch": arch,
-         "arch_opt": arch_opt}
-  return opt
 
 def dict_optspace():
   return {"nrounds": [1, 2],
@@ -114,4 +98,5 @@ def runoptsgen(nsamples):
                         nsamples=nsamples)
 
 if __name__ == "__main__":
-  model, loss_gen = common.trainloadsave(train_dict, runoptsgen, dict_args)
+  thisfile = os.path.abspath(__file__)
+  res = common.trainloadsave(thisfile, train_dict, runoptsgen, dict_args)
