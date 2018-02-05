@@ -32,6 +32,7 @@ class ConvNet(nn.Module):
     act = random.choice([F.relu, F.elu])
     last_act = random.choice([F.relu, F.elu])
     ks = random.choice([3, 5, 7])
+    conv_init = random.choice([nn.init.xavier_uniform])
     return {'batch_norm': batch_norm,
             'h_channels': h_channels,
             'nhlayers': nlayers,
@@ -39,7 +40,8 @@ class ConvNet(nn.Module):
             'ks': ks,
             'last_activation': last_act,
             'learn_batch_norm': learn_batch_norm,
-            'padding': (ks - 1)//2}
+            'padding': (ks - 1)//2,
+            'conv_init': conv_init}
 
   def __init__(self,
                in_sizes,
@@ -53,7 +55,8 @@ class ConvNet(nn.Module):
                activation=F.elu,
                last_activation=F.elu,
                learn_batch_norm=True,
-               padding=2):
+               padding=2,
+               conv_init=nn.init.xavier_uniform):
     super(ConvNet, self).__init__()
     # Assumes batch not in size and all in/out same size except channel
     self.in_sizes = in_sizes
@@ -84,6 +87,10 @@ class ConvNet(nn.Module):
         self.allblayers.eval() # Turn to eval mode to not learn parameters
 
     self.conv2 = nn.Conv2d(h_channels, out_channels, ks, padding=padding)
+
+    # Init
+    for convlayer in [self.conv1, self.conv2] + hlayers:
+      conv_init(convlayer.weight)
 
   def forward(self, *xs):
     assert len(xs) == len(self.in_sizes), "Wrong # inputs"
