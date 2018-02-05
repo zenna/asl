@@ -11,6 +11,6 @@ class OmniGlot(asl.Type):
 def dist(x, y):
   return nn.MSELoss()(x.value, y.value)
 
-def refresh_mnist(dl):
+def refresh_omniglot(dl, nocuda=False): #SWITCHME FIXME
   "Extract image data and convert tensor to Mnist data type"
-  return [asl.refresh_iter(dl, lambda x: OmniGlot(asl.util.image_data(x)))]
+  return [asl.refresh_iter(dl, lambda x: OmniGlot(asl.util.image_data(x, nocuda=nocuda)))]

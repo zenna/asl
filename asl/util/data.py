@@ -7,9 +7,9 @@ import torch
 from torch.autograd import Variable
 
 
-def image_data(data):
+def image_data(data, nocuda=False):
   "Extract image data from mnist (and not classification)"
-  return asl.cuda(Variable(data[0]))
+  return asl.cuda(Variable(data[0]), nocuda)
 
 
 def mnistloader(batch_size, train=True):
