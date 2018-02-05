@@ -15,6 +15,8 @@ from asl.callbacks import every_n
 from multipledispatch import dispatch
 from asl.loss import mean
 
+## Traces
+## ======
 def tracegen(nitems, nrounds):
   print("Making set trace with {} items and {} rounds".format(nitems, nrounds))
   def trace(items, r, runstate, add, card, empty):
@@ -59,9 +61,10 @@ def tracegen2(nitems, nrounds):
   
   return trace
 
+## Data structures and functions
+## =============================
 ItemType = Mnist
 
-## Data structures and functions
 class Bool(asl.Type):
   type = mnist_size
 
@@ -86,6 +89,7 @@ def bridge(mi):
   return mi
 
 ## Training
+## ========
 def train_set(opt):
   trace = tracegen2(opt["nitems"], opt["nrounds"])
   add = Add(MatrixSet, Mnist, arch=opt["arch"], arch_opt=opt["arch_opt"])

@@ -98,7 +98,9 @@ def stack_args(parser):
 
 def stack_optspace():
   return {"nrounds": [1, 2],
-          "nitems": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 20],
+          # "nitems": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 20],
+          # "batch_size": [32, 64, 128, 256, 512],
+          "nitems": [3],
           "batch_size": [32, 64, 128, 256, 512],
           "learn_constants": [True, False],
           "accum": [mean],
