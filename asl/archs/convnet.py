@@ -52,6 +52,8 @@ class ConvNet(nn.Module):
     self.combine_inputs = combine_inputs
     in_channels = channels(in_sizes)
     out_channels = channels(out_sizes)
+    # import pdb; pdb.set_trace()
+    batch_norm = True
 
     # Layers
     self.conv1 = nn.Conv2d(in_channels, h_channels, 3, padding=1)
