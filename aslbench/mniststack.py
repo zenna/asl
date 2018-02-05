@@ -104,6 +104,7 @@ def train_stack(opt):
                                  refresh_mnist,
                                  accum=opt["accum"])
   if opt["learn_constants"]:
+    import pdb; pdb.set_trace()
     parameters = nstack.parameters()
   else:
     parameters = torch.nn.ModuleList([push, pop]).parameters()
