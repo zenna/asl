@@ -119,6 +119,69 @@ def stack_args(parser):
   parser.add_argument('--nrounds', type=int, default=1, metavar='NR',
                       help='number of rounds in trace')
 
+
+def train_stack2(opt):
+  # arch = opt["arch"]
+  # arch_opt = opt['']
+  class Push(asl.Function, asl.Net):
+    def __init__(self, name="Push", **kwargs):
+      asl.Function.__init__(self, [MatrixStack, Mnist], [MatrixStack])
+      asl.Net.__init__(self, name, **kwargs)
+
+  class Pop(asl.Function, asl.Net):
+    def __init__(self, name="Pop", **kwargs):
+      asl.Function.__init__(self, [MatrixStack], [MatrixStack, Mnist])
+      asl.Net.__init__(self, name, **kwargs)
+
+  push = Push(arch=opt["arch"], arch_opt=opt["arch_opt"])
+  pop = Pop(arch=opt["arch"], arch_opt=opt["arch_opt"])
+  empty = ConstantNet(MatrixStack)
+
+  class StackSketch(asl.Sketch):
+    def sketch(self, items, runstate):
+      """Example stack trace"""
+      return trace(items, runstate, push=push, pop=pop, empty=empty)
+
+  # CUDA that shit
+  stack_sketch = StackSketch([List[Mnist]], [Mnist])
+  asl.cuda(stack_sketch, opt["nocuda"])
+  asl.cuda(push, opt["nocuda"])
+  asl.cuda(pop, opt["nocuda"])
+  asl.cuda(empty, opt["nocuda"])
+
+  def ref_sketch(items, runstate):
+    return trace(items, runstate, push=list_push, pop=list_pop, empty=list_empty)
+
+  def refresh_mnist(dl):
+    "Extract image data and convert tensor to Mnist data type"
+    return [asl.refresh_iter(dl, lambda x: Mnist(asl.util.image_data(x)))]
+
+  # Loss
+  mnistiter = asl.util.mnistloader(opt["batch_size"])
+  loss_gen = asl.single_ref_loss(stack_sketch,
+                                 ref_sketch,
+                                 mnistiter,
+                                 refresh_mnist)
+
+  # Optimization details
+  parameters = list(push.parameters()) + list(pop.parameters()) + list(empty.parameters())
+  print("LEARNING RATE", opt["lr"])
+  optimizer = optim.Adam(parameters, lr=opt["lr"])
+  # asl.opt["save_opt"](opt)
+  # if opt.resume_path is not None and opt.resume_path != '':
+  #   asl.load_checkpoint(opt.resume_path, nstack, optimizer)
+
+  asl.train(loss_gen, optimizer, maxiters=100000,
+        cont=asl.converged(1000),
+        callbacks=[asl.print_loss(100),
+                   common.plot_empty,
+                   common.plot_observes,
+                   # common.plot_internals,
+                  #  asl.save_checkpoint(1000, stack_sketch)
+                   ],
+        log_dir=opt["log_dir"])
+
+
 def stack_optspace():
   return {"nrounds": [2],
           # "nitems": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 20],
@@ -148,4 +211,4 @@ def runoptsgen(nsamples):
 
 if __name__ == "__main__":
   thisfile = os.path.abspath(__file__)
-  res = common.trainloadsave(thisfile, train_stack, runoptsgen, stack_args)
+  res = common.trainloadsave(thisfile, train_stack2, runoptsgen, stack_args)
