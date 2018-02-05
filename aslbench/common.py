@@ -55,7 +55,7 @@ def trainloadsave(fname, train_fun, morerunoptsgen, custom_args):
       return train_fun(cmdrunopt)
     else:
       # import pdb; pdb.set_trace()
-      cmdrunopt = morerunopts[1]
+      cmdrunopt = morerunopts[0]
       asl.save_opt(cmdrunopt)
       return train_fun(cmdrunopt)
 
