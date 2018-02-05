@@ -31,14 +31,15 @@ class ConvNet(nn.Module):
     h_channels = random.choice([12, 16, 24, 32])
     act = random.choice([F.relu, F.elu])
     last_act = random.choice([F.relu, F.elu])
-    ks = random.choice([3])
+    ks = random.choice([3, 5, 7])
     return {'batch_norm': batch_norm,
             'h_channels': h_channels,
             'nhlayers': nlayers,
             'activation': act,
             'ks': ks,
             'last_activation': last_act,
-            'learn_batch_norm': learn_batch_norm}
+            'learn_batch_norm': learn_batch_norm,
+            'padding': (ks - 1)//2}
 
   def __init__(self,
                in_sizes,
@@ -51,7 +52,8 @@ class ConvNet(nn.Module):
                combine_inputs=cat_channels,
                activation=F.elu,
                last_activation=F.elu,
-               learn_batch_norm=True):
+               learn_batch_norm=True,
+               padding=2):
     super(ConvNet, self).__init__()
     # Assumes batch not in size and all in/out same size except channel
     self.in_sizes = in_sizes
@@ -63,12 +65,10 @@ class ConvNet(nn.Module):
     self.batch_norm = batch_norm
     in_channels = channels(in_sizes)
     out_channels = channels(out_sizes)
-
     # Layers
-    hlayers = [nn.Conv2d(h_channels, h_channels, ks, padding=1) for i in range(nhlayers)]
+    hlayers = [nn.Conv2d(h_channels, h_channels, ks, padding=padding) for i in range(nhlayers)]
     self.hlayers = nn.ModuleList(hlayers)
-
-    self.conv1 = nn.Conv2d(in_channels, h_channels, ks, padding=1)
+    self.conv1 = nn.Conv2d(in_channels, h_channels, ks, padding=padding)
 
     # Batch norm
     if batch_norm:
@@ -83,7 +83,7 @@ class ConvNet(nn.Module):
       if not learn_batch_norm:
         self.allblayers.eval() # Turn to eval mode to not learn parameters
 
-    self.conv2 = nn.Conv2d(h_channels, out_channels, ks, padding=1)
+    self.conv2 = nn.Conv2d(h_channels, out_channels, ks, padding=padding)
 
   def forward(self, *xs):
     assert len(xs) == len(self.in_sizes), "Wrong # inputs"
