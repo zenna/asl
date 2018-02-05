@@ -33,15 +33,21 @@ class ModuleDict(nn.Module):
 class ConstantNet(Constant, nn.Module):
   "Typed Constant"
 
-  def __init__(self, type, requires_grad=True, init=torch.nn.init.uniform):
+  # def __init__(self, type, requires_grad=True, init=torch.nn.init.uniform):
+  #   super(ConstantNet, self).__init__(type)
+  #   nn.Module.__init__(self)
+  #   self._size = (1, ) + type.typesize
+  #   c = torch.Tensor(*self._size)
+  #   cinit  = init(c)
+  #   self.value = nn.Parameter(cinit,
+  #                             requires_grad=requires_grad)
+
+  def __init__(self, type, requires_grad=True,  init=torch.nn.init.uniform):
     super(ConstantNet, self).__init__(type)
     nn.Module.__init__(self)
     self._size = (1, ) + type.typesize
-    c = torch.Tensor(*self._size)
-    cinit  = init(c)
-    self.value = nn.Parameter(cinit,
+    self.value = nn.Parameter(torch.rand(*self._size),
                               requires_grad=requires_grad)
-
   def size(self):
     return self._size
 

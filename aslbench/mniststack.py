@@ -34,6 +34,28 @@ def tracegen(nitems, nrounds):
   
   return trace
 
+
+def trace(items, runstate, push, pop, empty):
+  """Example stack trace"""
+  asl.log_append("empty", empty)
+  stack = empty
+
+  (stack,) = push(stack, next(items))
+  asl.log_append("{}/internal".format(runstate['mode']), stack)
+
+  (stack,) = push(stack, next(items))
+  asl.log_append("{}/internal".format(runstate['mode']), stack)
+
+  (pop_stack, pop_item) = pop(stack)
+  asl.observe(pop_item, "pop1", runstate)
+  asl.log_append("{}/internal".format(runstate['mode']), pop_stack)
+
+  (pop_stack, pop_item) = pop(pop_stack)
+  asl.observe(pop_item, "pop2", runstate)
+  asl.log_append("{}/internal".format(runstate['mode']), pop_stack)
+  return pop_item
+
+
 ## Data structures and functions
 class MatrixStack(asl.Type):
   typesize = mnist_size
@@ -50,7 +72,7 @@ class Pop(asl.Function, asl.Net):
 
 ## Training
 def train_stack(opt):
-  trace = tracegen(opt["nitems"], opt["nrounds"])
+  # trace = tracegen(opt["nitems"], opt["nrounds"])
   push = Push(arch=opt["arch"], arch_opt=opt["arch_opt"])
   pop = Pop(arch=opt["arch"], arch_opt=opt["arch_opt"])
   empty = ConstantNet(MatrixStack,
@@ -97,12 +119,12 @@ def stack_args(parser):
                       help='number of rounds in trace')
 
 def stack_optspace():
-  return {"nrounds": [1, 2],
+  return {"nrounds": [2],
           # "nitems": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 20],
           # "batch_size": [32, 64, 128, 256, 512],
-          "nitems": [3],
-          "batch_size": [32, 64, 128, 256, 512],
-          "learn_constants": [True, False],
+          "nitems": [2],
+          "batch_size": [16],
+          "learn_constants": [True],
           "accum": [mean],
           "init": [torch.nn.init.uniform,
                    torch.nn.init.normal,

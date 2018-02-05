@@ -3,7 +3,7 @@ from torch import optim
 import asl
 
 def optim_sampler():
-  lr = random.choice([0.01, 0.001, 0.0001, 0.00001])
+  lr = random.choice([0.001])
 
   optimizer = random.choice([optim.Adam])
   return {"optimizer": optimizer,

@@ -26,20 +26,13 @@ class ConvNet(nn.Module):
   def sample_hyper(in_sizes, out_sizes, pbatch_norm=0.5, max_layers=5):
     "Sample hyper parameters"
     batch_norm = np.random.rand() > pbatch_norm
-    learn_batch_norm = np.random.rand() > 0.5
-    nlayers = np.random.randint(0, max_layers)
-    h_channels = random.choice([12, 16, 24, 32])
-    act = random.choice([F.relu, F.elu])
-    last_act = random.choice([F.relu, F.elu])
-    ks = random.choice([3, 5, 7])
+    nlayers = np.random.randint(1, max_layers)
+    h_channels = random.choice([12, 16, 24])
+    act = np.random.choice([F.relu, F.elu])
     return {'batch_norm': batch_norm,
             'h_channels': h_channels,
             'nhlayers': nlayers,
-            'activation': act,
-            'ks': ks,
-            'last_activation': last_act,
-            'learn_batch_norm': learn_batch_norm,
-            'padding': (ks - 1)//2}
+            'activation': act}
 
   def __init__(self,
                in_sizes,
@@ -48,61 +41,50 @@ class ConvNet(nn.Module):
                batch_norm=False,
                h_channels=8,
                nhlayers=4,
-               ks=3,
                combine_inputs=cat_channels,
-               activation=F.elu,
-               last_activation=F.elu,
-               learn_batch_norm=True,
-               padding=2):
+               activation=F.elu):
     super(ConvNet, self).__init__()
     # Assumes batch not in size and all in/out same size except channel
     self.in_sizes = in_sizes
     self.out_sizes = out_sizes
     self.channel_dim = channel_dim
     self.activation = activation
-    self.last_activation = last_activation
     self.combine_inputs = combine_inputs
-    self.batch_norm = batch_norm
     in_channels = channels(in_sizes)
     out_channels = channels(out_sizes)
+    # import pdb; pdb.set_trace()
+    h_channels=8
+    nhlayers=4
+    activation=F.elu
+
+    batch_norm = False
+
     # Layers
-    hlayers = [nn.Conv2d(h_channels, h_channels, ks, padding=padding) for i in range(nhlayers)]
+    self.conv1 = nn.Conv2d(in_channels, h_channels, 3, padding=1)
+    hlayers = [nn.Conv2d(h_channels, h_channels, 3, padding=1) for i in range(nhlayers)]
     self.hlayers = nn.ModuleList(hlayers)
-    self.conv1 = nn.Conv2d(in_channels, h_channels, ks, padding=padding)
 
     # Batch norm
+    self.batch_norm = batch_norm
     if batch_norm:
-      firstblayer = nn.BatchNorm2d(h_channels, affine=False)
-      lastblayer = nn.BatchNorm2d(out_channels, affine=False)
-      hblayers = [nn.BatchNorm2d(h_channels, affine=False) for i in range(nhlayers)]
-      self.firstblayer = firstblayer
-      self.lastblayer = lastblayer
-      self.hblayers = hblayers
-      allblayers = [firstblayer] + hblayers + [lastblayer]
-      self.allblayers = nn.ModuleList(allblayers)
-      if not learn_batch_norm:
-        self.allblayers.eval() # Turn to eval mode to not learn parameters
+      blayers = [nn.BatchNorm2d(h_channels, affine=False) for i in range(nhlayers)]
+      self.blayers = nn.ModuleList(blayers)
 
-    self.conv2 = nn.Conv2d(h_channels, out_channels, ks, padding=padding)
+    self.conv2 = nn.Conv2d(h_channels, out_channels, 3, padding=1)
 
   def forward(self, *xs):
     assert len(xs) == len(self.in_sizes), "Wrong # inputs"
     x = self.combine_inputs(xs)
     x = self.conv1(x)
-    if self.batch_norm:
-      x = self.firstblayer(x)
-    x = self.activation(x)
 
     # h layers
     for (i, layer) in enumerate(self.hlayers):
       x = layer(x)
       if self.batch_norm:
-        x = self.hblayers[i](x)
+        x = self.blayers[i](x)
       x = self.activation(x)
 
     x = self.conv2(x)
-    if self.batch_norm:
-      x = self.lastblayer(x)
     x = self.activation(x)
 
     # Uncombine
