@@ -9,8 +9,13 @@ def onehot(i, onehot_len, batch_size):
   # In your for loop
   y_onehot.zero_()
   # FIXME: Hacked to return just one element
-  return y_onehot.scatter_(1, y, 1)[0]
+  return y_onehot.scatter_(1, y, 1)
 
+def onehot2d(i, onehot_len, height, batch_size):
+  "2D one hot vector"
+  onehot1d = onehot(i, onehot_len, batch_size)
+  unsqueezed = onehot1d.view(batch_size, 1, onehot_len, 1)
+  return unsqueezed.expand(batch_size, 1, onehot_len, height)
 
 def onehotmany(i_s, onehot_len):
   "Matrix of one hot vectors from integers i_s"

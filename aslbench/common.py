@@ -38,16 +38,13 @@ def plot_internals(i, log, writer, batch=0, **kwargs):
 def trainloadsave(fname, train_fun, morerunoptsgen, custom_args):
   # Add stack-specific parameters to the cmdlargs
   cmdrunopt, dispatch_opt = asl.handle_args(custom_args)
+  morerunopts = morerunoptsgen(dispatch_opt["nsamples"])
+  # Merge each runopt with command line opts (which take precedence)
+  for opt in morerunopts:
+    for k, v in cmdrunopt.items():
+      if k not in opt:
+        opt[k] = v
   if dispatch_opt["dispatch"]:
-    # import pdb; pdb.set_trace()
-    morerunopts = morerunoptsgen(dispatch_opt["nsamples"])
-    # Merge each runopt with command line opts (which take precedence)
-    for opt in morerunopts:
-      for k, v in cmdrunopt.items():
-        if k not in opt:
-          opt[k] = v
-      # opt.update(cmdrunopt)
-
     asl.dispatch_runs(fname, dispatch_opt, morerunopts)
   else:
     if dispatch_opt["optfile"] is not None:
@@ -57,6 +54,8 @@ def trainloadsave(fname, train_fun, morerunoptsgen, custom_args):
       print("resume_path", cmdrunopt["resume_path"] is None)
       return train_fun(cmdrunopt)
     else:
+      # import pdb; pdb.set_trace()
+      cmdrunopt = morerunopts[1]
       asl.save_opt(cmdrunopt)
       return train_fun(cmdrunopt)
 

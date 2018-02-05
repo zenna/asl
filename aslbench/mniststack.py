@@ -1,4 +1,5 @@
 "Stack learned from reference"
+import torch
 import random
 import os
 from typing import List
@@ -11,6 +12,7 @@ from stdargs import optim_sampler, arch_sampler
 from mnist import mnist_size, Mnist, dist, refresh_mnist
 from asl.callbacks import every_n
 from multipledispatch import dispatch
+from asl.loss import mean
 
 def tracegen(nitems, nrounds):
   print("Making stack trace with {} items and {} rounds".format(nitems, nrounds))
@@ -51,7 +53,9 @@ def train_stack(opt):
   trace = tracegen(opt["nitems"], opt["nrounds"])
   push = Push(arch=opt["arch"], arch_opt=opt["arch_opt"])
   pop = Pop(arch=opt["arch"], arch_opt=opt["arch_opt"])
-  empty = ConstantNet(MatrixStack)
+  empty = ConstantNet(MatrixStack,
+                      requires_grad=opt["learn_constants"],
+                      init=opt["init"])
 
   def ref_sketch(items, runstate):
     return trace(items, runstate, push=list_push, pop=list_pop, empty=list_empty)
@@ -75,8 +79,14 @@ def train_stack(opt):
   loss_gen = asl.single_ref_loss(stack_sketch,
                                  ref_sketch,
                                  mnistiter,
-                                 refresh_mnist)
-  return common.trainmodel(opt, nstack, loss_gen)
+                                 refresh_mnist,
+                                 accum=opt["accum"])
+  if opt["learn_constants"]:
+    parameters = nstack.parameters()
+  else:
+    parameters = torch.nn.ModuleList([push, pop]).parameters()
+
+  return common.trainmodel(opt, nstack, loss_gen, parameters)
 
 ## Samplers
 
@@ -88,16 +98,26 @@ def stack_args(parser):
 
 def stack_optspace():
   return {"nrounds": [1, 2],
-          "nitems": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 24, 48],
-          "batch_size": [8, 16, 32, 64, 128],
+          "nitems": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 20],
+          "batch_size": [32, 64, 128, 256, 512],
+          "learn_constants": [True, False],
+          "accum": [mean],
+          "init": [torch.nn.init.uniform,
+                   torch.nn.init.normal,
+                   torch.nn.init.xavier_normal,
+                   torch.nn.init.xavier_uniform,
+                   torch.nn.init.kaiming_normal,
+                   torch.nn.init.kaiming_uniform,
+                   torch.ones_like,
+                   torch.zeros_like],
           "arch_opt": arch_sampler,
           "optim_args": optim_sampler}
 
 def runoptsgen(nsamples):
   # Delaying computation of this value because we dont know nsamples yet
   return asl.prodsample(stack_optspace(),
-                        to_enum=["nitems"],
-                        to_sample=["batch_size", "lr", "nrounds"],
+                        to_enum=["nitems", "nrounds"],
+                        to_sample=["init", "batch_size", "lr", "accum", "learn_constants"],
                         to_sample_merge=["arch_opt", "optim_args"],
                         nsamples=nsamples)
 

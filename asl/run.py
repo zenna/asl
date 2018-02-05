@@ -52,8 +52,9 @@ def refresh_iter(dl, itr_transform=None):
 def run_observe(functions, inputs, refresh_inputs, modes, log=True):
   """Run functions and accumulate observed values
   Args:
-    functions
-    inputs
+    functions: list of functions to call under different modes
+    refresh_inputs[i](inputs[i]) should return list of inputs for functions[i]
+    use refresh_inputs to restart iterators for example
   Returns:
     A function of no arguments that produces a ``runstate``, which accumulates
     information from running all the functions in ``functions``
