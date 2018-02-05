@@ -12,3 +12,4 @@ from .run import *
 import asl.util
 import asl.structs
 import asl.archs
+import asl.datasets

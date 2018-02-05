@@ -1,3 +1,4 @@
+import os
 import torchvision
 import torchvision.transforms as transforms
 import asl
@@ -23,3 +24,17 @@ def mnistloader(batch_size, train=True):
                                      shuffle=False,
                                      num_workers=1,
                                      drop_last=True)
+
+def omniglotloader(batch_size, background=True):
+  "Omni-Glot data iterator"
+  transform = transforms.ToTensor()
+  path = os.path.join(datadir(), "omniglot")
+  dataset = asl.datasets.omniglot.Omniglot(path,
+                                           download=True,
+                                           transform=transform,
+                                           background=background)
+  return torch.utils.data.DataLoader(dataset,
+                                    batch_size=batch_size,
+                                    shuffle=False,
+                                    num_workers=1,
+                                    drop_last=True)
