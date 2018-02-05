@@ -119,7 +119,7 @@ def runoptsgen(nsamples):
   # Delaying computation of this value because we dont know nsamples yet
   return asl.prodsample(stack_optspace(),
                         to_enum=["nitems"],
-                        to_sample=["init", "batch_size", "lr", "accum", "learn_constants"],
+                        to_sample=["init", "nrounds", "batch_size", "lr", "accum", "learn_constants"],
                         to_sample_merge=["arch_opt", "optim_args"],
                         nsamples=nsamples)
 
