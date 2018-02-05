@@ -101,7 +101,7 @@ def stack_optspace():
           # "nitems": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 20],
           # "batch_size": [32, 64, 128, 256, 512],
           "nitems": [3],
-          "batch_size": [32, 64, 128, 256, 512],
+          "batch_size": [256, 512],
           "learn_constants": [True, False],
           "accum": [mean],
           "init": [torch.nn.init.uniform,
