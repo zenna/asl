@@ -13,6 +13,9 @@ def plot_observes(i, log, writer, batch=0, **kwargs):
     for mode in observes.keys():
       for label in observes[mode].keys():
         img = observes[mode][label].value[batch]
+        nchannels = img.size(0)
+        if nchannels > 3:
+          img = img[0:3, :, :]
         writer.add_image('observes/{}/{}'.format(mode, label), img, i)
 
   # "Show the observed values in tensorboardX"
@@ -26,6 +29,9 @@ def plot_observes(i, log, writer, batch=0, **kwargs):
 def plot_empty(i, log, writer, **kwargs):
   "Show the empty set in tensorboardX"
   img = log['empty'][0].value
+  nchannels = img.size(1)
+  if nchannels > 3:
+    img = img[:,0:3, :, :]
   writer.add_image('Empty', img, i)
 
 
@@ -33,7 +39,11 @@ def plot_internals(i, log, writer, batch=0, **kwargs):
   "Show internal structure. Shows anything log[NEURAL/internal]"
   internals = log["{}/internal".format('model')]
   for (j, internal) in enumerate(internals):
-    writer.add_image('internals/{}'.format(j), internal.value[batch], i)
+    img = internal.value[batch]
+    nchannels = img.size(0)
+    if nchannels > 3:
+      img = img[0:3, :, :]
+    writer.add_image('internals/{}'.format(j), img, i)
 
 def trainloadsave(fname, train_fun, morerunoptsgen, custom_args):
   # Add stack-specific parameters to the cmdlargs
@@ -68,8 +78,8 @@ def trainmodel(opt, model, loss_gen, parameters = None, **trainkwargs):
   if opt["resume_path"] is not None and opt["resume_path"] != '':
     asl.load_checkpoint(opt["resume_path"], model, optimizer)
 
-  tbkeys = ["activation", "batch_size", "batch_norm",  "conv_init", "init", "ks",
-            "learn_batch_norm", "lr", "name", "nitems", "nrounds"]
+  tbkeys = ["activation", "batch_size", "batch_norm",  "dataset", "init", "ks",
+            "learn_batch_norm", "lr", "name", "nchannels"]
   tbkeys = ["activation", "nrounds"]
   optstring = asl.hyper.search.linearizeoptrecur(opt, tbkeys)
   if opt["train"]:

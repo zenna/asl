@@ -58,16 +58,26 @@ def dicttracegen(nitems):
 
   return dicttrace
 
+def repl(tpl, index, newval):
+  """functional update: tpl[index] = newval
+  In [3]: repl((1,2,3), 1, 3)
+  Out[3]: (1, 3, 3)
+  """
+  tpllist = [*tpl]
+  tpllist[index] = newval
+  return tuple(tpllist)
+
+
 ## Dictionary training
 def train_dict(opt):
   if opt["dataset"] == "omniglot":
-    dict_size = mnist_size
+    dict_size = repl(mnist_size, 0, opt["nchannels"])
     KeyType = OmniGlot
     ValueType = OmniGlot
     dataloader = asl.util.omniglotloader
     refresh_data = refresh_omniglot
   else:
-    dict_size = mnist_size
+    dict_size = repl(mnist_size, 0, opt["nchannels"])
     KeyType = Mnist
     ValueType = Mnist
     dataloader = asl.util.mnistloader
@@ -116,6 +126,7 @@ def dict_optspace():
           "arch_opt": arch_sampler,
           "optim_args": optim_sampler,
           "dataset": ["omniglot", "mnist"],
+          "nchannels" : [4, 3, 2, 1],
           "init": [torch.nn.init.uniform,
                    torch.nn.init.normal,
                    torch.ones_like,
@@ -125,7 +136,7 @@ def dict_optspace():
 def runoptsgen(nsamples):
   # Delaying computation of this value because we dont know nsamples yet
   return asl.prodsample(dict_optspace(),
-                        to_enum=[],
+                        to_enum=["nchannels", "dataset"],
                         to_sample=["batch_size", "init", "lr", "dataset"],
                         to_sample_merge=["arch_opt", "optim_args"],
                         nsamples=nsamples)
