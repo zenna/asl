@@ -123,7 +123,7 @@ def stack_optspace():
 def runoptsgen(nsamples):
   # Delaying computation of this value because we dont know nsamples yet
   return asl.prodsample(stack_optspace(),
-                        to_enum=["nitems"],
+                        to_enum=["nitems", "dataset"],
                         to_sample=["init",
                                    "nrounds",
                                    "batch_size",
