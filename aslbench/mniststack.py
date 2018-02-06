@@ -15,13 +15,6 @@ from asl.callbacks import every_n
 from multipledispatch import dispatch
 from asl.loss import mean
 
-# Comment out
-# OmniGlot = Mnist
-# omniglot_size = mnist_size
-# refresh_omniglot = refresh_mnist
-# dataloader = asl.util.mnistloader
-dataloader = asl.util.omniglotloader
-
 def tracegen(nitems, nrounds):
   print("Making stack trace with {} items and {} rounds".format(nitems, nrounds))
   def trace(items, runstate, push, pop, empty):
@@ -45,15 +38,26 @@ def tracegen(nitems, nrounds):
   
   return trace
 
-## Data structures and functions
-class MatrixStack(asl.Type):
-  typesize = omniglot_size
-
 ## Training
 def train_stack(opt):
+  if opt["dataset"] == "omniglot":
+    stack_size = asl.util.repl(mnist_size, 0, opt["nchannels"])
+    ItemType = OmniGlot
+    dataloader = asl.util.omniglotloader
+    refresh_data = refresh_omniglot
+  else:
+    stack_size = asl.util.repl(mnist_size, 0, opt["nchannels"])
+    ItemType = Mnist
+    dataloader = asl.util.mnistloader
+    refresh_data = refresh_mnist
+
+  ## Data structures and functions
+  class MatrixStack(asl.Type):
+    typesize = stack_size
+
   trace = tracegen(opt["nitems"], opt["nrounds"])
-  push = Push(MatrixStack, OmniGlot, arch=opt["arch"], arch_opt=opt["arch_opt"])
-  pop = Pop(MatrixStack, OmniGlot, arch=opt["arch"], arch_opt=opt["arch_opt"])
+  push = Push(MatrixStack, ItemType, arch=opt["arch"], arch_opt=opt["arch_opt"])
+  pop = Pop(MatrixStack, ItemType, arch=opt["arch"], arch_opt=opt["arch_opt"])
   empty = ConstantNet(MatrixStack,
                       requires_grad=opt["learn_constants"],
                       init=opt["init"])
@@ -76,11 +80,11 @@ def train_stack(opt):
   asl.cuda(nstack, opt["nocuda"])
 
   # Loss
-  omniglotiter = dataloader(opt["batch_size"])
+  it = dataloader(opt["batch_size"], normalize=opt["normalize"])
   loss_gen = asl.single_ref_loss(stack_sketch,
                                  ref_sketch,
-                                 omniglotiter,
-                                 refresh_omniglot,
+                                 it,
+                                 refresh_data,
                                  accum=opt["accum"])
   if opt["learn_constants"]:
     parameters = nstack.parameters()
@@ -101,18 +105,17 @@ def stack_optspace():
   return {"nrounds": [1, 2],
           # "nitems": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 20],
           # "batch_size": [32, 64, 128, 256, 512],
+          "dataset": ["mnist", "omniglot"],
+          "nchannels": 1,
           "nitems": [3],
-          "batch_size": [16],
+          "normalize": [False],
+          "batch_size": [16, 32, 64]  ,
           "learn_constants": [True],
           "accum": [mean],
-          "init": [#torch.nn.init.uniform,
+          "init": [torch.nn.init.uniform,
                    torch.nn.init.normal,
-                  #  torch.nn.init.xavier_normal,
-                  #  torch.nn.init.xavier_uniform,
-                  #  torch.nn.init.kaiming_normal,
-                  #  torch.nn.init.kaiming_uniform,
                    torch.ones_like,
-                  #  torch.zeros_like
+                   torch.zeros_like
                    ],
           "arch_opt": arch_sampler,
           "optim_args": optim_sampler}
@@ -121,7 +124,13 @@ def runoptsgen(nsamples):
   # Delaying computation of this value because we dont know nsamples yet
   return asl.prodsample(stack_optspace(),
                         to_enum=["nitems"],
-                        to_sample=["init", "nrounds", "batch_size", "lr", "accum", "learn_constants"],
+                        to_sample=["init",
+                                   "nrounds",
+                                   "batch_size",
+                                   "lr",
+                                   "accum",
+                                   "learn_constants",
+                                   "normalize"],
                         to_sample_merge=["arch_opt", "optim_args"],
                         nsamples=nsamples)
 

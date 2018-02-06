@@ -13,18 +13,6 @@ from asl.structs.ndict import dict_empty, dict_get_item, dict_set_item
 from stdargs import optim_sampler, arch_sampler
 import torch
 
-# dict_size = omniglot_size
-# KeyType = OmniGlot
-# ValueType = OmniGlot
-# dataloader = asl.util.omniglotloader
-# refresh_data = refresh_mnist
-
-# dict_size = mnist_size
-# KeyType = Mnist
-# ValueType = Mnist
-# dataloader = asl.util.mnistloader
-# refresh_data = refresh_mnist
-
 def dicttracegen(nitems):
   print("Making dict trace with {} items".format(nitems))
   def dicttrace(items, runstate, set_item, get_item, empty):
@@ -58,26 +46,16 @@ def dicttracegen(nitems):
 
   return dicttrace
 
-def repl(tpl, index, newval):
-  """functional update: tpl[index] = newval
-  In [3]: repl((1,2,3), 1, 3)
-  Out[3]: (1, 3, 3)
-  """
-  tpllist = [*tpl]
-  tpllist[index] = newval
-  return tuple(tpllist)
-
-
 ## Dictionary training
 def train_dict(opt):
   if opt["dataset"] == "omniglot":
-    dict_size = repl(mnist_size, 0, opt["nchannels"])
+    dict_size = asl.util.repl(mnist_size, 0, opt["nchannels"])
     KeyType = OmniGlot
     ValueType = OmniGlot
     dataloader = asl.util.omniglotloader
     refresh_data = refresh_omniglot
   else:
-    dict_size = repl(mnist_size, 0, opt["nchannels"])
+    dict_size = asl.util.repl(mnist_size, 0, opt["nchannels"])
     KeyType = Mnist
     ValueType = Mnist
     dataloader = asl.util.mnistloader

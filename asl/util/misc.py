@@ -8,6 +8,16 @@ from torch.autograd import Variable
 # import matplotlib.pyplot as plt
 # plt.ion()
 
+def repl(tpl, index, newval):
+  """functional update: tpl[index] = newval
+  In [3]: repl((1,2,3), 1, 3)
+  Out[3]: (1, 3, 3)
+  """
+  tpllist = [*tpl]
+  tpllist[index] = newval
+  return tuple(tpllist)
+
+
 def imap(f, itr):
   "Return an iterator which applies f to output of iterator"
   while True:
