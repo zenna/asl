@@ -28,7 +28,7 @@ def update_ret_df(opt, dfs, dffname="losses.df"):
                         'runname': [name],
                         'loss': [loss]})
     dfs[0] = df.append(row)
-    print(dfs)
+    # print(dfs)
   
   return update_df_
 

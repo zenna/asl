@@ -95,7 +95,7 @@ def data(path):
 ## Figure 1.a)
 def optima_per_nitems(nm_to_df_, nm_to_opt_):
   optima = []
-  for nitems in range(1, 10):
+  for nitems in range(1, 11):
     dfs = dfs_where_opt(lambda opt: opt['nitems'] == nitems, nm_to_df_, nm_to_opt_)
     min_losses = [min(df['loss']) for df in dfs]
     print(min_losses)
@@ -106,7 +106,7 @@ def optima_per_nitems(nm_to_df_, nm_to_opt_):
 def fig1():
   nitems_vs_loss = optima_per_nitems(nm_to_df_, nm_to_opt_)
 
-  plt.bar(np.arange(1, 10),
+  plt.bar(np.arange(1, 11),
           nitems_vs_loss)
   plt.xlabel("Number of items")
   plt.ylabel("Mean square error")
@@ -139,13 +139,17 @@ def optim_opt_df(nm_to_df_, nm_to_opt_, nitems):
   return optim_opt, optim_df
 
 def matrix_plot(nm_to_df_, nm_to_opt_):
-  nitems = 1
-  optim_opt, optim_df = optim_opt_df(nm_to_df_, nm_to_opt_, nitems)
-  res = record_data(optim_opt["log_dir"], {"nitems":1})
-  return res
+  mat = np.zeros((10, 10))
+  for i in range(1, 11):
+    for j in range(1, 11):          
+      optim_opt, optim_df = optim_opt_df(nm_to_df_, nm_to_opt_, i)
+      res = record_data(optim_opt["log_dir"], {"nitems": j, "batch_size": 64})
+      loss = res[2][0]["loss"].mean()
+      mat[i - 1, j - 1] = loss
+  return mat
   # res = record_data("/home/zenna/sshfs/omdata/runs/mnistsetsun/bsev_Feb04_18-37-19_node038_presuperbowl")
 
 if __name__ == "__main__":
-  path = "/home/zenna/sshfs/omdata/runs/mnistsetsun"
+  path = "/data/zenna/omruns/mnistsetsun"
   nm_to_df_, nm_to_opt_ = data(path)
   res = matrix_plot(nm_to_df_, nm_to_opt_)

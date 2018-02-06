@@ -86,7 +86,7 @@ def trainmodel(opt, model, loss_gen, parameters = None, **trainkwargs):
     update_df, save_df, df = asl.callbacks.save_update_df(opt)
     asl.train(loss_gen,
               optimizer,
-              maxiters=100,
+              maxiters=2,
               # cont=asl.convergedperc(500),
               callbacks=[asl.print_loss(1),
                         every_n(common.plot_empty, 200),
