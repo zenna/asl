@@ -68,7 +68,7 @@ def trainmodel(opt, model, loss_gen, parameters = None, **trainkwargs):
   if opt["resume_path"] is not None and opt["resume_path"] != '':
     asl.load_checkpoint(opt["resume_path"], model, optimizer)
 
-  tbkeys = ["activation", "batch_size", "batch_norm",  "conv_init", "init", "ks", "learn_constants", 
+  tbkeys = ["activation", "batch_size", "batch_norm",  "conv_init", "init", "ks",
             "learn_batch_norm", "lr", "name", "nitems", "nrounds"]
   tbkeys = ["activation", "nrounds"]
   optstring = asl.hyper.search.linearizeoptrecur(opt, tbkeys)
@@ -78,11 +78,11 @@ def trainmodel(opt, model, loss_gen, parameters = None, **trainkwargs):
     asl.train(loss_gen,
               optimizer,
               # maxiters=10,
-              cont=asl.convergedperc(500),
-              callbacks=[asl.print_loss(100),
-                        every_n(common.plot_empty, 500),
-                        every_n(common.plot_observes, 500),
-                        every_n(common.plot_internals, 500),
+              cont=asl.convergedperc(1000),
+              callbacks=[asl.print_loss(50),
+                        every_n(common.plot_empty, 400),
+                        every_n(common.plot_observes, 400),
+                        every_n(common.plot_internals, 400),
                         every_n(asl.save_checkpoint(model), 1000),
                         every_n(save_df, 500),
                         update_df],
