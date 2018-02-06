@@ -5,7 +5,7 @@ import pandas as pd
 import os
 import stdargs
 import numpy as np
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
 
 def extension(path):
@@ -141,11 +141,11 @@ def optim_opt_df(nm_to_df_, nm_to_opt_, nitems):
 def matrix_plot(nm_to_df_, nm_to_opt_):
   nitems = 1
   optim_opt, optim_df = optim_opt_df(nm_to_df_, nm_to_opt_, nitems)
-  res = record_data(optim_opt["log_dir"], {"nitems":1})
+  res = record_data(optim_opt["log_dir"], {"nitems":1, "nocuda":True})
   return res
   # res = record_data("/home/zenna/sshfs/omdata/runs/mnistsetsun/bsev_Feb04_18-37-19_node038_presuperbowl")
 
 if __name__ == "__main__":
-  path = "/home/zenna/sshfs/omdata/runs/mnistsetsun"
+  path = "/home/zenna/data/runs/mnistsetsun"
   nm_to_df_, nm_to_opt_ = data(path)
   res = matrix_plot(nm_to_df_, nm_to_opt_)
