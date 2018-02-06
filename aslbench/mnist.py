@@ -11,6 +11,6 @@ class Mnist(asl.Type):
 def dist(x, y):
   return nn.MSELoss()(x.value, y.value)
 
-def refresh_mnist(dl):
+def refresh_mnist(dl, nocuda=False):
   "Extract image data and convert tensor to Mnist data type"
-  return [asl.refresh_iter(dl, lambda x: Mnist(asl.util.image_data(x)))]
+  return [asl.refresh_iter(dl, lambda x: Mnist(asl.util.image_data(x, nocuda=nocuda)))]
