@@ -2,7 +2,8 @@ import asl
 from multipledispatch import dispatch
 from torch import optim, nn
 
-omniglot_size = (1, 105, 105)
+# omniglot_size = (1, 105, 105)
+omniglot_size = (1, 28, 28)
 
 class OmniGlot(asl.Type):
   typesize = omniglot_size

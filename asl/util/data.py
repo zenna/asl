@@ -27,7 +27,8 @@ def mnistloader(batch_size, train=True):
 
 def omniglotloader(batch_size, background=True):
   "Omni-Glot data iterator"
-  transform = transforms.ToTensor()
+  fs = [torchvision.transforms.Resize((28, 28)), transforms.ToTensor()]
+  transform = transforms.Compose(fs)
   path = os.path.join(datadir(), "omniglot")
   dataset = asl.datasets.omniglot.Omniglot(path,
                                            download=True,

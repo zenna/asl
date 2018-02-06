@@ -29,39 +29,16 @@ def normal_trunc(x):
 class ConvNet(nn.Module):
   "ConvNet which takes variable inputs and variable outputs"
 
-  # def sample_hyper(in_sizes, out_sizes, pbatch_norm=0.5, max_layers=5):
-  #   "Sample hyper parameters"
-  #   batch_norm = np.random.rand() > pbatch_norm
-  #   learn_batch_norm = np.random.rand() > 0.5
-  #   nlayers = np.random.randint(0, max_layers)
-  #   h_channels = random.choice([12, 16, 24, 32])
-  #   act = random.choice([F.relu, F.elu])
-  #   last_act = random.choice([F.relu, F.elu])
-  #   ks = random.choice([3, 5, 7])
-  #   conv_init = random.choice([nn.init.xavier_uniform])
-  #   return {'batch_norm': batch_norm,
-  #           'h_channels': h_channels,
-  #           'nhlayers': nlayers,
-  #           'activation': act,
-  #           'ks': ks,
-  #           'last_activation': last_act,
-  #           'learn_batch_norm': learn_batch_norm,
-  #           'padding': (ks - 1)//2,
-  #           'conv_init': conv_init}
-
-  def sample_hyper(in_sizes, out_sizes, pbatch_norm=0.5, max_layers=5):
+  def sample_hyper(in_sizes, out_sizes, pbatch_norm=0.5, max_layers=8):
     "Sample hyper parameters"
     batch_norm = np.random.rand() > pbatch_norm
-    batch_norm = False
     learn_batch_norm = np.random.rand() > 0.5
-    # nlayers = np.random.randint(0, max_layers)
-    nlayers = 4
-    h_channels = random.choice([8])
+    nlayers = np.random.randint(0, max_layers)
+    h_channels = random.choice([4, 8, 12, 16, 24])
     act = random.choice([F.elu])
     last_act = random.choice([F.elu])
-    ks = random.choice([3])
-    conv_init = normal_trunc
-    # bias_init = constant_test
+    ks = random.choice([3, 5])
+    conv_init = random.choice([nn.init.xavier_uniform])
     return {'batch_norm': batch_norm,
             'h_channels': h_channels,
             'nhlayers': nlayers,
@@ -71,6 +48,29 @@ class ConvNet(nn.Module):
             'learn_batch_norm': learn_batch_norm,
             'padding': (ks - 1)//2,
             'conv_init': conv_init}
+
+  # def sample_hyper(in_sizes, out_sizes, pbatch_norm=0.5, max_layers=5):
+  #   "Sample hyper parameters"
+  #   batch_norm = np.random.rand() > pbatch_norm
+  #   batch_norm = False
+  #   learn_batch_norm = np.random.rand() > 0.5
+  #   # nlayers = np.random.randint(0, max_layers)
+  #   nlayers = 4
+  #   h_channels = random.choice([8])
+  #   act = random.choice([F.elu])
+  #   last_act = random.choice([F.elu])
+  #   ks = random.choice([3])
+  #   conv_init = normal_trunc
+  #   # bias_init = constant_test
+  #   return {'batch_norm': batch_norm,
+  #           'h_channels': h_channels,
+  #           'nhlayers': nlayers,
+  #           'activation': act,
+  #           'ks': ks,
+  #           'last_activation': last_act,
+  #           'learn_batch_norm': learn_batch_norm,
+  #           'padding': (ks - 1)//2,
+  #           'conv_init': conv_init}
 
   def __init__(self,
                in_sizes,

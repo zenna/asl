@@ -3,18 +3,30 @@ import os
 from typing import List
 import asl
 from asl.modules.modules import ConstantNet, ModuleDict
-from asl.structs.ndict import ref_dict
+from asl.structs.ndict import GetItem, SetItem
 from torch import optim, nn
 import common
 from multipledispatch import dispatch
 from mnist import mnist_size, Mnist, dist, refresh_mnist
+from omniglot import omniglot_size, OmniGlot, dist, refresh_omniglot
 from asl.structs.ndict import dict_empty, dict_get_item, dict_set_item
 from stdargs import optim_sampler, arch_sampler
+import torch
 
-# class DictSketch(asl.Sketch):
+# dict_size = omniglot_size
+# KeyType = OmniGlot
+# ValueType = OmniGlot
+# dataloader = asl.util.omniglotloader
+# refresh_data = refresh_mnist
 
-def dicttracegen(nitems, nrounds):
-  print("Making dict trace with {} items and {} rounds".format(nitems, nrounds))
+# dict_size = mnist_size
+# KeyType = Mnist
+# ValueType = Mnist
+# dataloader = asl.util.mnistloader
+# refresh_data = refresh_mnist
+
+def dicttracegen(nitems):
+  print("Making dict trace with {} items".format(nitems))
   def dicttrace(items, runstate, set_item, get_item, empty):
     """Example dict trace"""
     asl.log_append("empty", empty)
@@ -46,25 +58,28 @@ def dicttracegen(nitems, nrounds):
 
   return dicttrace
 
-class MatrixDict(asl.Type):
-  typesize = mnist_size
-
-class GetItem(asl.Function, asl.Net):
-  def __init__(self="GetItem", name="GetItem", **kwargs):
-    asl.Function.__init__(self, [MatrixDict, Mnist], [Mnist])
-    asl.Net.__init__(self, name, **kwargs)
-
-class SetItem(asl.Function, asl.Net):
-  def __init__(self="SetItem", name="SetItem", **kwargs):
-    asl.Function.__init__(self, [MatrixDict, Mnist, Mnist], [MatrixDict])
-    asl.Net.__init__(self, name, **kwargs)
-
 ## Dictionary training
 def train_dict(opt):
-  trace = dicttracegen(opt["nitems"], opt["nrounds"])
-  get_item = GetItem(arch=opt["arch"], arch_opt=opt["arch_opt"])
-  set_item = SetItem(arch=opt["arch"], arch_opt=opt["arch_opt"])
-  empty = ConstantNet(MatrixDict)
+  if opt["dataset"] == "omniglot":
+    dict_size = mnist_size
+    KeyType = OmniGlot
+    ValueType = OmniGlot
+    dataloader = asl.util.omniglotloader
+    refresh_data = refresh_omniglot
+  else:
+    dict_size = mnist_size
+    KeyType = Mnist
+    ValueType = Mnist
+    dataloader = asl.util.mnistloader
+    refresh_data = refresh_mnist
+
+  class MatrixDict(asl.Type):
+    typesize = dict_size
+
+  trace = dicttracegen(opt["nitems"])
+  get_item = GetItem(MatrixDict, KeyType, ValueType, arch=opt["arch"], arch_opt=opt["arch_opt"])
+  set_item = SetItem(MatrixDict, KeyType, ValueType, arch=opt["arch"], arch_opt=opt["arch_opt"])
+  empty = ConstantNet(MatrixDict, init=opt["init"])
   ndict = ModuleDict({"get_item": get_item,
                       "set_item": set_item,
                       "empty": empty})
@@ -83,33 +98,35 @@ def train_dict(opt):
   asl.cuda(ndict) # CUDA that shit
 
   # Loss
-  mnistiter = asl.util.mnistloader(opt["batch_size"])
+  dataiter = dataloader(opt["batch_size"])
   loss_gen = asl.single_ref_loss(dict_sketch,
                                  ref_sketch,
-                                 mnistiter,
-                                 refresh_mnist)
+                                 dataiter,
+                                 refresh_data)
   return common.trainmodel(opt, ndict, loss_gen)
 
 
 def dict_args(parser):
   parser.add_argument('--nitems', type=int, default=3, metavar='NI',
                       help='number of iteems in trace (default: 3)')
-  parser.add_argument('--nrounds', type=int, default=1, metavar='NR',
-                      help='number of rounds in trace')
-
 
 def dict_optspace():
-  return {"nrounds": [1, 2],
-          # "nitems": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 24, 48],
-          "batch_size": [16, 32, 64, 128, 256, 512],
+  return {# "nitems": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 24, 48],
+          "batch_size": [16, 32, 64],
           "arch_opt": arch_sampler,
-          "optim_args": optim_sampler}
+          "optim_args": optim_sampler,
+          "dataset": ["omniglot", "mnist"],
+          "init": [torch.nn.init.uniform,
+                   torch.nn.init.normal,
+                   torch.ones_like,
+                   torch.zeros_like],
+          }
 
 def runoptsgen(nsamples):
   # Delaying computation of this value because we dont know nsamples yet
   return asl.prodsample(dict_optspace(),
                         to_enum=[],
-                        to_sample=["batch_size", "lr", "nrounds"],
+                        to_sample=["batch_size", "init", "lr", "dataset"],
                         to_sample_merge=["arch_opt", "optim_args"],
                         nsamples=nsamples)
 

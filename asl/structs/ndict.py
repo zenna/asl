@@ -3,21 +3,17 @@ from asl.type import Function
 from asl.modules.modules import ConstantNet, ModuleDict
 from asl.archs.convnet import ConvNet
 from asl.util.misc import cuda
-from torch import nn
+import asl
 
-class SetItem(Function):
-  "SetItem Function for Stack"
+class GetItem(asl.Function, asl.Net):
+  def __init__(self, DictType, KeyType, ValueType, name="GetItem", **kwargs):
+    asl.Function.__init__(self, [DictType, KeyType], [ValueType])
+    asl.Net.__init__(self, name, **kwargs)
 
-  def __init__(self, dict_type, key_type, value_type):
-    super(SetItem, self).__init__([dict_type, key_type, value_type],
-                                  [dict_type])
-
-
-class GetItem(Function):
-  "GetItem Function for Stack"
-
-  def __init__(self, dict_type, key_type, value_type):
-    super(GetItem, self).__init__([dict_type, key_type], [value_type])
+class SetItem(asl.Function, asl.Net):
+  def __init__(self, DictType, KeyType, ValueType, name="SetItem", **kwargs):
+    asl.Function.__init__(self, [DictType, KeyType, ValueType], [DictType])
+    asl.Net.__init__(self, name, **kwargs)
 
 def dict_set_item(adict, key, value):
   adict = adict.copy()
@@ -29,6 +25,3 @@ def dict_get_item(adict, key):
   return (adict[key], )
 
 dict_empty = {}
-
-def ref_dict():
-  return {"set_item": dict_set_item, "get_item": dict_get_item, "empty": {}}
