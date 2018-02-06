@@ -65,6 +65,7 @@ def train(loss_gen,
     optimize: optimize? (compute grads/change weights)
     start_i: what index is this starting at (used by callbacks)
   """
+  # import pdb; pdb.set_trace()
   cont = partial(max_iters, maxiters=maxiters) if cont is None else cont
   pre_callbacks = [] if pre_callbacks is None else pre_callbacks
   post_callbacks = [] if post_callbacks is None else post_callbacks

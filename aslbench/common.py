@@ -50,9 +50,10 @@ def trainloadsave(fname, train_fun, morerunoptsgen, custom_args):
 
     asl.dispatch_runs(fname, dispatch_opt, morerunopts)
   else:
-    import pdb; pdb.set_trace()
     if dispatch_opt["optfile"] is not None:
-      keys = None if cmdrunopt["resume_path"] is None else ["arch", "arch_opt", "lr", "learn_constants", "init", "accum", "optimizer"] 
+      totake = ["arch", "arch_opt", "lr", "learn_constants", "init", "accum",
+                "optimizer", "batch_size", "nrounds"]
+      keys = None if cmdrunopt["resume_path"] is None else totake
       cmdrunopt.update(asl.load_opt(cmdrunopt["optfile"], keys))
       print("Loaded", cmdrunopt)
       print("resume_path", cmdrunopt["resume_path"] is None)
@@ -61,6 +62,7 @@ def trainloadsave(fname, train_fun, morerunoptsgen, custom_args):
       asl.save_opt(cmdrunopt)
       return train_fun(cmdrunopt)
 
+import pandas as pd
 def trainmodel(opt, model, loss_gen, parameters = None, **trainkwargs):
   "The model"
   # Setup optimizer
@@ -74,20 +76,29 @@ def trainmodel(opt, model, loss_gen, parameters = None, **trainkwargs):
   optstring = asl.hyper.search.linearizeoptrecur(opt, tbkeys)
   if opt["train"]:
     writer = SummaryWriter(os.path.join(opt["log_dir"], optstring))
-    update_df, save_df = asl.callbacks.save_update_df(opt)
+    traindf = pd.DataFrame({'runname': [],
+                            'iteration': [],
+                            'loss': []})
+    mydfs = [traindf]
+    dfcb = asl.callbacks.update_ret_df(opt, mydfs)
+
+
+    update_df, save_df, df = asl.callbacks.save_update_df(opt)
     asl.train(loss_gen,
               optimizer,
-              # maxiters=10,
-              cont=asl.convergedperc(500),
+              maxiters=100,
+              # cont=asl.convergedperc(500),
               callbacks=[asl.print_loss(1),
                         every_n(common.plot_empty, 200),
                         every_n(common.plot_observes, 200),
                         every_n(common.plot_internals, 200),
                         every_n(asl.save_checkpoint(model), 1000),
                         every_n(save_df, 200),
-                        update_df],
+                        update_df,
+                        dfcb],
               post_callbacks=[save_df],
               log_dir=opt["log_dir"],
               writer = writer,
               **trainkwargs)
-  return model, loss_gen
+  print("DF OS", df)
+  return model, loss_gen, mydfs

@@ -51,7 +51,7 @@ class Pop(asl.Function, asl.Net):
 ## Training
 def train_stack(opt):
   trace = tracegen(opt["nitems"], opt["nrounds"])
-  import pdb; pdb.set_trace()
+  # import pdb; pdb.set_trace()
   push = Push(arch=opt["arch"], arch_opt=opt["arch_opt"])
   pop = Pop(arch=opt["arch"], arch_opt=opt["arch_opt"])
   empty = ConstantNet(MatrixStack,
@@ -87,7 +87,7 @@ def train_stack(opt):
   else:
     parameters = torch.nn.ModuleList([push, pop]).parameters()
 
-  return common.trainmodel(opt, nstack, loss_gen, parameters)
+  return common.trainmodel(opt, nstack, loss_gen, parameters, optimize=False)
 
 ## Samplers
 
@@ -99,8 +99,8 @@ def stack_args(parser):
 
 def stack_optspace():
   return {"nrounds": [1, 2],
-          "nitems": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 20],
-          "batch_size": [32, 64, 128, 256, 512],
+          "nitems": [1],
+          "batch_size": [64],
           "learn_constants": [True, False],
           "accum": [mean],
           "init": [torch.nn.init.uniform,
@@ -122,6 +122,17 @@ def runoptsgen(nsamples):
                         to_sample_merge=["arch_opt", "optim_args"],
                         nsamples=nsamples)
 
+def record_data(path, opt_update=None):
+  opt_update = {} if opt_update is None else opt_update
+  optfile = os.path.join(path, "opt.pkl")
+  best_checkpoint = os.path.join(path, "best_checkpoint.pt")
+  opt = asl.load_opt(optfile)
+  opt["resume_path"] = best_checkpoint
+  opt["log_dir"] = "/tmp/.{}".format(opt["name"])
+  opt.update(opt_update)
+  return train_stack(opt)
+
 if __name__ == "__main__":
   thisfile = os.path.abspath(__file__)
   res = common.trainloadsave(thisfile, train_stack, runoptsgen, stack_args)
+  

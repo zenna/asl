@@ -19,6 +19,20 @@ def print_stats(i, running_loss, **kwargs):
           (i + 1, running_loss / 2000))
 
 
+def update_ret_df(opt, dfs, dffname="losses.df"):
+  "Create a function which updates"
+  def update_df_(i, loss, **kwargs):
+    name = opt["name"]
+    df = dfs[0]
+    row = pd.DataFrame({'iteration': [i],
+                        'runname': [name],
+                        'loss': [loss]})
+    dfs[0] = df.append(row)
+    print(dfs)
+  
+  return update_df_
+
+
 def save_update_df(opt, dffname="losses.df"):
   "Create a function which updates"
   name = opt["name"]
@@ -29,17 +43,18 @@ def save_update_df(opt, dffname="losses.df"):
 
   def update_df_(i, loss, **kwargs):
     nonlocal df
+    # print(df)
     row = pd.DataFrame({'iteration': [i],
                         'runname': [name],
                         'loss': [loss]})
-    df = pd.concat([df, row])
+    df.append(row)
 
   def save_df(i, loss, **kwargs):
     print("Saving dataframe")
     nonlocal df
     df.to_pickle(savepath)
 
-  return update_df_, save_df
+  return update_df_, save_df, df
 
 
 def every_n(callback, n):
@@ -99,11 +114,10 @@ def load_checkpoint(resume_path, model, optimizer, verbose=True):
   "Load data from checkpoint"
   if verbose:
     print("Loading model / optimizer from checkpoint...")
-  import pdb; pdb.set_trace()
   checkpoint = torch.load(resume_path)
   optimizer.load_state_dict(checkpoint['optimizer'])
   model.load_state_dict(checkpoint['state_dict'])
-  model.eval()
+  # model.eval()
 
 
 def converged(every, print_change=True, change_thres=-0.000005):
