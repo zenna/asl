@@ -50,8 +50,9 @@ def trainloadsave(fname, train_fun, morerunoptsgen, custom_args):
 
     asl.dispatch_runs(fname, dispatch_opt, morerunopts)
   else:
+    import pdb; pdb.set_trace()
     if dispatch_opt["optfile"] is not None:
-      keys = None if cmdrunopt["resume_path"] is None else ["arch", "lr"] 
+      keys = None if cmdrunopt["resume_path"] is None else ["arch", "arch_opt", "lr", "learn_constants", "init", "accum", "optimizer"] 
       cmdrunopt.update(asl.load_opt(cmdrunopt["optfile"], keys))
       print("Loaded", cmdrunopt)
       print("resume_path", cmdrunopt["resume_path"] is None)

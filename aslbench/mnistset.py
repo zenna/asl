@@ -51,6 +51,7 @@ class Pop(asl.Function, asl.Net):
 ## Training
 def train_stack(opt):
   trace = tracegen(opt["nitems"], opt["nrounds"])
+  import pdb; pdb.set_trace()
   push = Push(arch=opt["arch"], arch_opt=opt["arch_opt"])
   pop = Pop(arch=opt["arch"], arch_opt=opt["arch_opt"])
   empty = ConstantNet(MatrixStack,
