@@ -44,12 +44,12 @@ def train_stack(opt):
     stack_size = asl.util.repl(mnist_size, 0, opt["nchannels"])
     ItemType = OmniGlot
     dataloader = asl.util.omniglotloader
-    refresh_data = refresh_omniglot
+    refresh_data = lambda dl: refresh_omniglot(dl, nocuda=opt["nocuda"])
   else:
     stack_size = asl.util.repl(mnist_size, 0, opt["nchannels"])
     ItemType = Mnist
     dataloader = asl.util.mnistloader
-    refresh_data = refresh_mnist
+    refresh_data = lambda dl: refresh_mnist(dl, nocuda=opt["nocuda"])
 
   ## Data structures and functions
   class MatrixStack(asl.Type):
