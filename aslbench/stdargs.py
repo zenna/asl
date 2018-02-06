@@ -6,7 +6,7 @@ def optim_sampler():
   # lr = random.choice([0.01, 0.001, 0.0001, 0.00001])
   lr = random.choice([0.001, 0.0001])
 
-  optimizer = random.choice([optim.RMSprop])
+  optimizer = random.choice([optim.Adam])
   return {"optimizer": optimizer,
           "lr": lr}
 

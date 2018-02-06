@@ -52,13 +52,14 @@ class ConvNet(nn.Module):
   def sample_hyper(in_sizes, out_sizes, pbatch_norm=0.5, max_layers=5):
     "Sample hyper parameters"
     batch_norm = np.random.rand() > pbatch_norm
+    batch_norm = False
     learn_batch_norm = np.random.rand() > 0.5
     # nlayers = np.random.randint(0, max_layers)
-    nlayers = 1
-    h_channels = random.choice([24])
+    nlayers = 4
+    h_channels = random.choice([8])
     act = random.choice([F.elu])
     last_act = random.choice([F.elu])
-    ks = random.choice([5])
+    ks = random.choice([3])
     conv_init = normal_trunc
     # bias_init = constant_test
     return {'batch_norm': batch_norm,
@@ -117,9 +118,9 @@ class ConvNet(nn.Module):
     self.conv2 = nn.Conv2d(h_channels, out_channels, ks, padding=padding)
 
     # Init
-    for convlayer in [self.conv1, self.conv2] + hlayers:
-      normal_trunc(convlayer.weight)
-      constant_test(convlayer.bias)
+    # for convlayer in [self.conv1, self.conv2] + hlayers:
+    #   normal_trunc(convlayer.weight)
+    #   constant_test(convlayer.bias)
 
   def forward(self, *xs):
     assert len(xs) == len(self.in_sizes), "Wrong # inputs"
@@ -127,7 +128,7 @@ class ConvNet(nn.Module):
     x = self.conv1(x)
     if self.batch_norm:
       x = self.firstblayer(x)
-    x = self.activation(x)
+    # x = self.activation(x)
 
     # h layers
     for (i, layer) in enumerate(self.hlayers):

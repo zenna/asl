@@ -1,23 +1,19 @@
 "Stack Data Structure trained from a reference implementation"
+import asl
 from asl.type import Function
 from asl.modules.modules import ConstantNet, ModuleDict
 from asl.archs.convnet import ConvNet
 from asl.util.misc import cuda
-from torch import nn
 
-class Push(Function):
-  "Push Function for Stack"
+class Push(asl.Function, asl.Net):
+  def __init__(self,  StackType, ItemType, name="Push", **kwargs):
+    asl.Function.__init__(self, [StackType, ItemType], [StackType])
+    asl.Net.__init__(self, name, **kwargs)
 
-  def __init__(self, stack_type, item_type):
-    super(Push, self).__init__([stack_type, item_type], [stack_type])
-
-
-class Pop(Function):
-  "Pop Function for Stack"
-
-  def __init__(self, stack_type, item_type):
-    super(Pop, self).__init__([stack_type], [stack_type, item_type])
-
+class Pop(asl.Function, asl.Net):
+  def __init__(self, StackType, ItemType, name="Pop", **kwargs):
+    asl.Function.__init__(self, [StackType], [StackType, ItemType])
+    asl.Net.__init__(self, name, **kwargs)
 
 def list_push(stack, element):
   stack = stack.copy()

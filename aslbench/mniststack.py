@@ -5,15 +5,22 @@ import os
 from typing import List
 import asl
 from asl.modules.modules import ConstantNet, ModuleDict
-from asl.structs.nstack import list_push, list_pop, list_empty
+from asl.structs.nstack import list_push, list_pop, list_empty, Push, Pop
 from torch import optim, nn
 import common
 from stdargs import optim_sampler, arch_sampler
-# from omniglot import omniglot_size, OmniGlot, dist, refresh_omniglot
+from mnist import mnist_size, Mnist, dist, refresh_mnist
 from omniglot import omniglot_size, OmniGlot, dist, refresh_omniglot
 from asl.callbacks import every_n
 from multipledispatch import dispatch
 from asl.loss import mean
+
+# Comment out
+# OmniGlot = Mnist
+# omniglot_size = mnist_size
+# refresh_omniglot = refresh_mnist
+# dataloader = asl.util.mnistloader
+dataloader = asl.util.omniglotloader
 
 def tracegen(nitems, nrounds):
   print("Making stack trace with {} items and {} rounds".format(nitems, nrounds))
@@ -42,21 +49,11 @@ def tracegen(nitems, nrounds):
 class MatrixStack(asl.Type):
   typesize = omniglot_size
 
-class Push(asl.Function, asl.Net):
-  def __init__(self, name="Push", **kwargs):
-    asl.Function.__init__(self, [MatrixStack, OmniGlot], [MatrixStack])
-    asl.Net.__init__(self, name, **kwargs)
-
-class Pop(asl.Function, asl.Net):
-  def __init__(self, name="Pop", **kwargs):
-    asl.Function.__init__(self, [MatrixStack], [MatrixStack, OmniGlot])
-    asl.Net.__init__(self, name, **kwargs)
-
 ## Training
 def train_stack(opt):
   trace = tracegen(opt["nitems"], opt["nrounds"])
-  push = Push(arch=opt["arch"], arch_opt=opt["arch_opt"])
-  pop = Pop(arch=opt["arch"], arch_opt=opt["arch_opt"])
+  push = Push(MatrixStack, OmniGlot, arch=opt["arch"], arch_opt=opt["arch_opt"])
+  pop = Pop(MatrixStack, OmniGlot, arch=opt["arch"], arch_opt=opt["arch_opt"])
   empty = ConstantNet(MatrixStack,
                       requires_grad=opt["learn_constants"],
                       init=opt["init"])
@@ -79,7 +76,7 @@ def train_stack(opt):
   asl.cuda(nstack, opt["nocuda"])
 
   # Loss
-  omniglotiter = asl.util.omniglotloader(opt["batch_size"])
+  omniglotiter = dataloader(opt["batch_size"])
   loss_gen = asl.single_ref_loss(stack_sketch,
                                  ref_sketch,
                                  omniglotiter,
@@ -105,17 +102,18 @@ def stack_optspace():
           # "nitems": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 20],
           # "batch_size": [32, 64, 128, 256, 512],
           "nitems": [3],
-          "batch_size": [256, 512],
-          "learn_constants": [True, False],
+          "batch_size": [16],
+          "learn_constants": [True],
           "accum": [mean],
           "init": [torch.nn.init.uniform,
-                   torch.nn.init.normal,
-                   torch.nn.init.xavier_normal,
-                   torch.nn.init.xavier_uniform,
-                   torch.nn.init.kaiming_normal,
-                   torch.nn.init.kaiming_uniform,
-                   torch.ones_like,
-                   torch.zeros_like],
+                  #  torch.nn.init.normal,
+                  #  torch.nn.init.xavier_normal,
+                  #  torch.nn.init.xavier_uniform,
+                  #  torch.nn.init.kaiming_normal,
+                  #  torch.nn.init.kaiming_uniform,
+                  #  torch.ones_like,
+                  #  torch.zeros_like
+                   ],
           "arch_opt": arch_sampler,
           "optim_args": optim_sampler}
 

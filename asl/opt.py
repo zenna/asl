@@ -13,6 +13,7 @@ import torch
 import itertools
 from typing import Callable, Any, Iterable
 from multipledispatch import dispatch
+import subprocess
 
 
 # Options = Dict{Symbol, Any} # FIXME: reprecate in place of rundata
@@ -146,6 +147,11 @@ def handle_arch(opt):
   opt["arch_opt"] = {}
 
 
+def add_git_info(opt):
+  label = subprocess.check_output(["git", "describe", "--always"]).strip()
+  opt["git_commit"] = label
+
+
 def handle_args(*add_cust_parses):
   "Handle command liner arguments"
   # add_cust_parses modifies the parses to add custom arguments
@@ -160,6 +166,7 @@ def handle_args(*add_cust_parses):
   handle_log_dir(run_opt)
   handle_cuda(run_opt)
   handle_arch(run_opt)
+  add_git_info(run_opt)
   # dispatch_opt = run_opt[]
   dargs = ["dispatch", "dryrun", "sample", "optfile", "jobsinchunk", "nsamples", "blocking", "slurm"]
   dispatch_opt = {k : run_opt[k] for k in dargs}
