@@ -5,9 +5,24 @@ import os
 from tensorboardX import SummaryWriter
 from asl.callbacks import every_n
 import common
+import numpy as np
+import imageio
+
+def save_img(path):
+  x = 3
+
+def write_img(img_batch, batch, prefix, logdir, i):
+  img = img_batch[batch]
+  nchannels = img.size(1)
+  if nchannels > 3:
+    img = img[0:3, :, :]
+  fn = "{}_{}".format(prefix, i)  
+  fn = os.path.join(logdir, fn)
+  npimg = asl.util.as_img(img)
+  np.save(fn, npimg)
+  imageio.imwrite('{}.png'.format(fn), npimg)
 
 def plot_observes(i, log, writer, batch=0, **kwargs):
-  # import pdb; pdb.set_trace()
   if 'runstate' in log:
     observes = log['runstate']['observes']
     for mode in observes.keys():
@@ -17,13 +32,11 @@ def plot_observes(i, log, writer, batch=0, **kwargs):
         if nchannels > 3:
           img = img[0:3, :, :]
         writer.add_image('observes/{}/{}'.format(mode, label), img, i)
-
-  # "Show the observed values in tensorboardX"
-  # for k in observes.keys():
-  #   refimg = log['ref_observes'][k].value
-  #   neuimg = log['observes'][k].value
-  #   writer.add_image('observes/{}/ref'.format(k), refimg[batch], i)
-  #   writer.add_image('observes/{}/neural'.format(k), neuimg[batch], i)
+        write_img(observes[mode][label].value,
+                  batch,
+                  'observes_{}_{}'.format(mode, label),
+                  kwargs["log_dir"],
+                  i)
 
 
 def plot_empty(i, log, writer, **kwargs):
@@ -33,7 +46,11 @@ def plot_empty(i, log, writer, **kwargs):
   if nchannels > 3:
     img = img[:,0:3, :, :]
   writer.add_image('Empty', img, i)
-
+  write_img(img,
+            0,
+            "Empty",
+            kwargs["log_dir"],
+            i)
 
 def plot_internals(i, log, writer, batch=0, **kwargs):
   "Show internal structure. Shows anything log[NEURAL/internal]"
@@ -44,6 +61,11 @@ def plot_internals(i, log, writer, batch=0, **kwargs):
     if nchannels > 3:
       img = img[0:3, :, :]
     writer.add_image('internals/{}'.format(j), img, i)
+    write_img(internal.value,
+              batch,
+              "internals_{}".format(j),
+              kwargs["log_dir"],
+              i)
 
 def trainloadsave(fname, train_fun, morerunoptsgen, custom_args):
   # Add stack-specific parameters to the cmdlargs
