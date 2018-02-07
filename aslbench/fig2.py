@@ -115,14 +115,17 @@ def fig1():
 def runname(df):
   return df['runname'][0:1][0]
 
-## Figure 2.a) Loss curves
-def loss_curve_for_item(nitems, nm_to_df_, nm_to_opt_):
-  dfs = dfs_where_opt(lambda opt: opt['nitems'] == nitems, nm_to_df_, nm_to_opt_)
-  df = dfs[0]
-  for df2 in dfs[1:]:
-    df = df.join(df2, on='iteration', how='inner', lsuffix=runname(df2))
-  return df
-
+def capacity_trained_vs_tested(mat):
+  plt.imshow(mat)
+  plt.xlabel("Number of Items Trained on")
+  plt.ylabel("Number of Items Tested on")
+  plt.title("Stack Capacity Generalization")
+  xinds = np.arange(1,11)
+  yinds = reversed(xinds)
+  plt.xticks(np.arange(10), xinds)
+  plt.yticks(np.arange(10), yinds)
+  cb = plt.colorbar()
+  cb.set_label("Mean Square Error")
 
 # def optimalloss(searchdir, nitems):
 #   def nitemsisnitems(opt):
@@ -153,3 +156,55 @@ if __name__ == "__main__":
   path = "/data/zenna/omruns/mnistsetsun"
   nm_to_df_, nm_to_opt_ = data(path)
   res = matrix_plot(nm_to_df_, nm_to_opt_)
+
+def capacity_trained_vs_tested_ax(mat, ax):
+  im = ax.imshow(mat)
+  ax.set_xlabel("Number of Items Trained on")
+  ax.set_ylabel("Number of Items Tested on")
+  ax.set_title("Stack Capacity Generalization")
+  xinds = np.arange(1,11)
+  yinds = reversed(xinds)
+  ax.set_xticks(np.arange(10))
+  ax.set_xticklabels(xinds)
+  ax.set_yticks(np.arange(10))
+  ax.set_yticklabels(yinds)
+  return im 
+
+def baseline_losses_ax(nm_to_df_, nm_to_opt_, ax):
+  nitems_vs_loss = optima_per_nitems(nm_to_df_, nm_to_opt_)
+  ax.bar(np.arange(1, 11) - 0.5,
+          nitems_vs_loss,
+          width=1,
+          align="edge")
+  ax.set_xticks(np.arange(10)+1)
+  ax.set_xlim([0.5,10.5])
+  ax.set_xlabel("Number of items")
+  ax.set_ylabel("Mean square error")
+  # ax.set_title('Baseline Training Loss')
+
+
+fig, (ax0, ax1) = plt.subplots(nrows=2, figsize=(7, 9.6))
+im = capacity_trained_vs_tested_ax(mat, ax0)
+baseline_losses_ax(nm_to_df_, nm_to_opt_, ax1)
+plt.show()
+# fig.subplots_adjust(right=0.8)
+# fig.colorbar(im)
+
+  # cb = plt.colorbar()
+  # cb.set_label("Mean Square Error")
+
+
+## Figure 2.a) Loss curves
+def loss_curve_for_item(nitems, nm_to_df_, nm_to_opt_, ax):
+  for i in range(1, nitems + 1):
+    _, optim_df =  optim_opt_df(nm_to_df_, nm_to_opt_, i)
+    xs = optim_df["iteration"]
+    ys = optim_df["loss"]
+    ax.plot(xs, ys)
+  ax.set_title("Training Loss vs Iteration")
+  ax.set_ylabel("Mean Square Error")
+  ax.set_xlabel("Iteration Number")
+
+fig1 = plt.figure()
+ax1 = fig1.add_subplot(111)
+loss_curve_for_item(10, nm_to_df_, nm_to_opt_, ax1)
