@@ -17,7 +17,7 @@ from asl.loss import mean
 
 def tracegen(nitems, nrounds):
   print("Making stack trace with {} items and {} rounds".format(nitems, nrounds))
-  def trace(items, runstate, push, pop, empty):
+  def trace(items, r, runstate, push, pop, empty):
     """Example stack trace"""
     # import pdb; pdb.set_trace()
     asl.log_append("empty", empty)
@@ -55,6 +55,7 @@ def train_stack(opt):
   class MatrixStack(asl.Type):
     typesize = stack_size
 
+  tracegen = opt["tracegen"]
   trace = tracegen(opt["nitems"], opt["nrounds"])
   push = Push(MatrixStack, ItemType, arch=opt["arch"], arch_opt=opt["arch_opt"])
   pop = Pop(MatrixStack, ItemType, arch=opt["arch"], arch_opt=opt["arch_opt"])
@@ -62,13 +63,13 @@ def train_stack(opt):
                       requires_grad=opt["learn_constants"],
                       init=opt["init"])
 
-  def ref_sketch(items, runstate):
-    return trace(items, runstate, push=list_push, pop=list_pop, empty=list_empty)
+  def ref_sketch(items, r, runstate):
+    return trace(items, r, runstate, push=list_push, pop=list_pop, empty=list_empty)
 
   class StackSketch(asl.Sketch):
-    def sketch(self, items, runstate):
+    def sketch(self, items, r, runstate):
       """Example stack trace"""
-      return trace(items, runstate, push=push, pop=pop, empty=empty)
+      return trace(items, r, runstate, push=push, pop=pop, empty=empty)
 
   stack_sketch = StackSketch([List[OmniGlot]], [OmniGlot])
   nstack = ModuleDict({"push": push,
@@ -79,12 +80,18 @@ def train_stack(opt):
   # Cuda that shit
   asl.cuda(nstack, opt["nocuda"])
 
+  # Hack to add random object as input to traces
+  def refresh_with_random(x):
+    # import pdb; pdb.set_trace()
+    refreshed = refresh_data(x)
+    return [refreshed[0], random.Random(0)]
+
   # Loss
   it = dataloader(opt["batch_size"], normalize=opt["normalize"])
   loss_gen = asl.single_ref_loss(stack_sketch,
                                  ref_sketch,
                                  it,
-                                 refresh_data,
+                                 refresh_with_random,
                                  accum=opt["accum"])
   if opt["learn_constants"]:
     parameters = nstack.parameters()
@@ -103,12 +110,13 @@ def stack_args(parser):
 
 def stack_optspace():
   return {"nrounds": [1, 2],
+          "tracegen": tracegen,
           # "nitems": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 20],
           "dataset": ["mnist", "omniglot"],
           "nchannels": 1,
           "nitems": [3],
           "normalize": [True, False],
-          "batch_size": [16, 32, 64]  ,
+          "batch_size": [16, 32, 64],
           "learn_constants": [True],
           "accum": [mean],
           "init": [torch.nn.init.uniform,

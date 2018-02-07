@@ -35,8 +35,8 @@ class ConvNet(nn.Module):
     learn_batch_norm = np.random.rand() > 0.5
     nlayers = np.random.randint(0, max_layers)
     h_channels = random.choice([4, 8, 12, 16, 24])
-    act = random.choice([F.relu])
-    last_act = random.choice([F.relu])
+    act = random.choice([F.elu])
+    last_act = random.choice([F.elu])
     ks = random.choice([3, 5])
     conv_init = random.choice([nn.init.xavier_uniform])
     return {'batch_norm': batch_norm,
@@ -84,7 +84,7 @@ class ConvNet(nn.Module):
                activation=F.elu,
                last_activation=F.elu,
                learn_batch_norm=True,
-               padding=2,
+               padding=1,
                conv_init=nn.init.xavier_uniform):
     super(ConvNet, self).__init__()
     # Assumes batch not in size and all in/out same size except channel
