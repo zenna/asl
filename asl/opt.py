@@ -14,7 +14,7 @@ import itertools
 from typing import Callable, Any, Iterable
 from multipledispatch import dispatch
 import subprocess
-
+import pprint
 
 # Options = Dict{Symbol, Any} # FIXME: reprecate in place of rundata
 
@@ -254,7 +254,8 @@ def save_opt(opt, savepath=None):
 
   "Save an options file to disk, as well as human readable .txt equivalent"
   asl.util.io.directory_check(savepath)
-  print("Saving Options to ", savepath, "\n", opt)
+  print("Saving Options to ", savepath)
+  pprint.PrettyPrinter().pprint(opt)
   savefullpath = os.path.join(savepath, "opt.pkl")
   torch.save(opt, savefullpath)
   torch.save(opt_as_string(opt), os.path.join(savepath, "optstring.txt"))
