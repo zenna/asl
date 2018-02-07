@@ -19,7 +19,7 @@ def optim_sampler():
   return {"optimizer": optimizer,
           "lr": lr}
 
-def conv_hypers(pbatch_norm=0.5, max_layers=8):
+def conv_hypers(pbatch_norm=0.5, max_layers=6):
   "Sample hyper parameters"
   learn_batch_norm = np.random.rand() > 0.5
   nlayers = np.random.randint(2, max_layers)
