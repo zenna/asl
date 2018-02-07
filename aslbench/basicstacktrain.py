@@ -27,6 +27,28 @@ def tracegen1(nitems, nrounds):
   
   return trace1
 
+def tracegenclassic(nitems, nrounds):
+  def trace(items, r, runstate, push, pop, empty):
+    """Example stack trace"""
+    asl.log_append("empty", empty)
+    stack = empty
+
+    (stack,) = push(stack, next(items))
+    asl.log_append("{}/internal".format(runstate['mode']), stack)
+
+    (stack,) = push(stack, next(items))
+    asl.log_append("{}/internal".format(runstate['mode']), stack)
+
+    (pop_stack, pop_item) = pop(stack)
+    asl.observe(pop_item, "pop1", runstate)
+    asl.log_append("{}/internal".format(runstate['mode']), pop_stack)
+
+    (pop_stack, pop_item) = pop(pop_stack)
+    asl.observe(pop_item, "pop2", runstate)
+    asl.log_append("{}/internal".format(runstate['mode']), pop_stack)
+    return pop_item
+
+  return trace
 
 def optim_sampler():
   lr = 0.01
@@ -44,7 +66,7 @@ def stack_optspace():
               'learn_batch_norm': True,
               'padding': 1}
 
-  return {"tracegen": tracegen1,
+  return {"tracegen": tracegenclassic,
           "nrounds": 1,
           "dataset": ["mnist"],
           "nchannels": 1,
