@@ -19,7 +19,7 @@ SHORTNAMES = {F.elu: "elu",
 def stringifyfilename(k, v):
   """Turn a key value into command line argument"""
   k = SHORTNAMES[k] if k in SHORTNAMES else k
-  v = SHORTNAMES[k] if v in SHORTNAMES else v
+  v = SHORTNAMES[v] if v in SHORTNAMES else v
   return "__%s_%s" % (k, v)
 
 
