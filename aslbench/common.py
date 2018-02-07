@@ -101,16 +101,18 @@ def trainmodel(opt, model, loss_gen, parameters = None, **trainkwargs):
     asl.load_checkpoint(opt["resume_path"], model, optimizer)
 
   tbkeys = ["activation",
-          "batch_size",
-          "batch_norm",
-          "dataset",
-          "init",
-          "ks",
-          "learn_batch_norm",
-          "lr",
-          "name",
-          "nchannels",
-          "tracegen"]
+            "nrounds",
+            "nitems",
+            "batch_size",
+            "batch_norm",
+            "dataset",
+            "init",
+            "ks",
+            "learn_batch_norm",
+            "lr",
+            "name",
+            "nchannels",
+            "tracegen"]
   optstring = asl.hyper.search.linearizeoptrecur(opt, tbkeys)
   if opt["train"]:
     writer = SummaryWriter(os.path.join(opt["log_dir"], optstring))
@@ -125,7 +127,7 @@ def trainmodel(opt, model, loss_gen, parameters = None, **trainkwargs):
                         every_n(common.plot_internals, 400),
                         every_n(asl.save_checkpoint(model), 1000),
                         every_n(save_df, 500),
-                        #update_df
+                        update_df
                         ],
               post_callbacks=[save_df],
               log_dir=opt["log_dir"],

@@ -121,6 +121,27 @@ def tracegen5(nitems, nrounds):
   return trace5
 
 
+def tracegen6(nitems, nrounds):
+  def trace6(items, r, runstate, push, pop, empty):
+    """Pushes n items, to create n stacks, pops randnum times, then observe once"""
+    asl.log_append("empty", empty)
+    stack = empty
+    for nr in range(nrounds):
+      stacks = []
+      for i in range(nitems):
+        (stack, ) = push(stack, next(items))
+        asl.log_append("{}/internal".format(runstate['mode']), stack)
+        stacks.append(stack)
+
+      npops = r.randdint(1, nitems)
+      for j in range(npops):
+        (stack, pop_item) = pop(stack)
+        asl.log_append("{}/internal".format(runstate['mode']), stack)
+      
+      asl.observe(pop_item, "pop.nr{}".format(nr), runstate)
+  
+  return trace6
+
 ## Hyper Params
 ## ============
 
