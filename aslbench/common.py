@@ -109,7 +109,8 @@ def trainmodel(opt, model, loss_gen, parameters = None, **trainkwargs):
           "learn_batch_norm",
           "lr",
           "name",
-          "nchannels"]
+          "nchannels",
+          "tracegen"]
   optstring = asl.hyper.search.linearizeoptrecur(opt, tbkeys)
   if opt["train"]:
     writer = SummaryWriter(os.path.join(opt["log_dir"], optstring))

@@ -13,6 +13,7 @@ SHORTNAMES = {F.elu: "elu",
               "mnist": "mn",
               "learn_batch_norm": "lbn",
               "nchannels": "nchan",
+              "tracegen": "tg",
               # asl.archs.convnet.Convnet:"convnet",
              }
 
