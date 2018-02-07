@@ -29,7 +29,7 @@ def tracegen1(nitems, nrounds):
 
 
 def optim_sampler():
-  lr = 0.001
+  lr = 0.01
   optimizer = optim.Adam
   return {"optimizer": optimizer,
           "lr": lr}
@@ -71,4 +71,7 @@ def traces_gen(nsamples):
 
 if __name__ == "__main__":
   thisfile = os.path.abspath(__file__)
-  res = trainloadsave(thisfile, train_stack, traces_gen, stack_args)
+  res = trainloadsave(thisfile,
+                      train_stack,
+                      traces_gen,
+                      stack_args)
