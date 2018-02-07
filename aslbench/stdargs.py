@@ -13,8 +13,8 @@ def optim_sampler():
 
 def arch_sampler():
   "Options sampler"
-  arch = random.choice([asl.archs.convnet.ConvNet,
-                        #asl.archs.mlp.MLPNet,
+  arch = random.choice([#asl.archs.convnet.ConvNet,
+                        asl.archs.mlp.MLPNet,
                         ])
   arch_opt = arch.sample_hyper(None, None)
   opt = {"arch": arch,

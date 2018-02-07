@@ -3,6 +3,16 @@ from functools import reduce
 import asl
 import torch
 
+def nelements(sizes):
+  "Total number for elements from set of sizes"
+  size = [asl.util.misc.mul_product(size) for size in sizes]
+  return sum(size)
+
+def tensor_len(size):
+  "Total number for elements from set of sizes"
+  return asl.util.misc.mul_product(size)
+
+
 # Unstacking
 def split_channel(t, sizes, channel_dim=0, slice_dim=1):
   "Separate t by channel: output[i] takes t[:, 0:sizes[i], :, :] channels"
@@ -20,6 +30,26 @@ def split_channel(t, sizes, channel_dim=0, slice_dim=1):
       c0 = c
 
   return tuple(outputs)
+
+# Unstacking
+def split_tensor(t, nelements_, slice_dim=1):
+  "Split 2D Array t into several different ones of size nelements_i"
+  lb = 0
+  outputs = []
+  for length in nelements_:
+    ub = lb + length
+    slice = t.narrow(slice_dim, lb, length)
+    outputs.append(slice)
+    lb = ub
+
+  return tuple(outputs)
+
+
+def splt_reshape_tensors(t, sizes):
+  nelements_ = [tensor_len(size) for size in sizes]
+  tens = split_tensor(t, nelements_)
+  out = [tens[i].contiguous().view(-1, *size) for i, size in enumerate(sizes)]
+  return tuple(out)
 
 
 def gcd(a, b):

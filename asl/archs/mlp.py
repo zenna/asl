@@ -1,7 +1,6 @@
 import math
 import random
-from asl.archs.packing import split_channel
-from asl.util.misc import mul_product
+from asl.archs.packing import split_channel, nelements, splt_reshape_tensors
 from asl.modules.modules import expand_consts
 import torch
 import torch.nn.functional as F
@@ -17,13 +16,6 @@ def interpolate(a, b, npoints):
     res.append(math.floor(x))
 
   return res
-
-
-def nelements(sizes):
-  "Total number for elements from set of sizes"
-  size = [mul_product(size) for size in sizes]
-  return sum(size)
-
 
 class MLPNet(nn.Module):
   "ConvNet which takes variable inputs and variable outputs"
@@ -73,6 +65,7 @@ class MLPNet(nn.Module):
                nmids=None,
                activations=None):
     super(MLPNet, self).__init__()
+    # import pdb; pdb.set_trace()
     self.nin = nelements(in_sizes)
     self.nout = nelements(out_sizes)
     nmids = [] if nmids is None else nmids
@@ -118,6 +111,6 @@ class MLPNet(nn.Module):
       x = self.activations[i](x)
 
     # Uncombine inputs
-    outxs = split_channel(x, self.out_sizes)
+    outxs = splt_reshape_tensors(x, self.out_sizes)
     res = [x.contiguous().view(x.size(0), *self.out_sizes[i]) for (i, x) in enumerate(outxs)]
     return res
