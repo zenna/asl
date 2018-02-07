@@ -6,6 +6,8 @@ import common
 import os
 from asl.loss import mean
 
+## Traces
+## ======
 
 def tracegen1(nitems, nrounds):
   def trace1(items, r, runstate, push, pop, empty):
@@ -120,22 +122,21 @@ def tracegen5(nitems, nrounds):
   return trace5
 
 
+## Hyper Params
+## ============
+
 def stack_optspace():
-  return {#"tracegen": [tracegen1, tracegen2, tracegen3, tracegen4, tracegen5],
-          "tracegen": [tracegen5],
-          "nrounds": 1,
+  return {"tracegen": [tracegen1, tracegen2, tracegen3, tracegen4, tracegen5],
+          "nrounds": [1, 2],
           "dataset": ["mnist"],
           "nchannels": 1,
           "nitems": 3,
-          "normalize": [True, False],
+          "normalize": [True],
           "batch_size": [16, 32, 64],
           "learn_constants": [True],
           "accum": mean,
           "init": [torch.nn.init.uniform,
-                   torch.nn.init.normal,
-                   torch.ones_like,
-                   torch.zeros_like
-                   ],
+                   torch.nn.init.normal],
           "arch_opt": arch_sampler,
           "optim_args": optim_sampler}
 
@@ -146,7 +147,6 @@ def traces_gen(nsamples):
                         to_sample=["init",
                                    "batch_size",
                                    "lr",
-                                   "learn_constants",
                                    "normalize"],
                         to_sample_merge=["arch_opt", "optim_args"],
                         nsamples=nsamples)

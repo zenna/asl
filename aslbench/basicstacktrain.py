@@ -51,7 +51,7 @@ def tracegenclassic(nitems, nrounds):
   return trace
 
 def optim_sampler():
-  lr = 0.01
+  lr = 0.001
   optimizer = optim.Adam
   return {"optimizer": optimizer,
           "lr": lr}
@@ -68,11 +68,11 @@ def stack_optspace():
 
   return {"tracegen": tracegenclassic,
           "nrounds": 1,
-          "dataset": ["mnist"],
+          "dataset": "omniglot",
           "nchannels": 1,
           "nitems": 2,
           "normalize": [True],
-          "batch_size": [16],
+          "batch_size": [32],
           "learn_constants": [True],
           "accum": mean,
           "init": [torch.nn.init.uniform],
