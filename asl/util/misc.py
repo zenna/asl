@@ -5,8 +5,18 @@ import os
 from distutils.util import strtobool
 import torch
 from torch.autograd import Variable
+import torch.nn.functional as F
+
 # import matplotlib.pyplot as plt
 # plt.ion()
+
+def invert(d):
+  "Assume d is injective"
+  return dict(zip(d.values(), d.keys()))
+
+STRINGTOF = {"elu": F.elu,
+             "relu": F.relu}
+FTOSTRING = invert(STRINGTOF)
 
 def repl(tpl, index, newval):
   """functional update: tpl[index] = newval

@@ -199,24 +199,18 @@ def chunks(l, n):
 def dispatch_runs(runpath, dispatch_opt, runopts):
   # Split up the jobs into sets and dispatch
   jobchunks = chunks(runopts, dispatch_opt["jobsinchunk"])
+  i = 0
   for chunk in jobchunks:
+    i = i + 1
     if dispatch_opt["slurm"]:
       run_sbatch_chunk(runpath, chunk, dryrun=dispatch_opt["dryrun"])
     else:
       run_local_chunk(runpath, chunk, blocking=dispatch_opt["blocking"],
                       dryrun=dispatch_opt["dryrun"])
+    print("Dispatched {} chunks".format(i))
 
 
-def invert(d):
-  "Assume d is injective"
-  return dict(zip(d.values(), d.keys()))
 
-import torch.nn.functional as F
-
-
-STRINGTOF = {"elu": F.elu,
-             "relu": F.relu}
-FTOSTRING = invert(STRINGTOF)
 
 def isopt(d):
   "Is dictionary d an opt"
@@ -240,7 +234,7 @@ def sanitize_opt(opt, conv):
 def load_opt(path, keys=None):
   "Load options file from disk, optionally restrict to keys"
   opt = torch.load(path)
-  opt = sanitize_opt(opt, STRINGTOF)
+  opt = sanitize_opt(opt, asl.util.misc.STRINGTOF)
   if keys is None:
     return opt
   else:
@@ -248,7 +242,7 @@ def load_opt(path, keys=None):
 
 
 def save_opt(opt, savepath=None):
-  opt = sanitize_opt(opt, FTOSTRING)
+  opt = sanitize_opt(opt, asl.util.misc.FTOSTRING)
   if savepath is None:
     savepath = opt["log_dir"]
 

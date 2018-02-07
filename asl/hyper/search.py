@@ -2,10 +2,24 @@
 import subprocess
 import os
 import asl
+import torch.nn.functional as F
 
+SHORTNAMES = {F.elu: "elu",
+              F.relu: "relu",
+              "activation": "act",
+              "batch_size": "bs",
+              "dataset": "data",
+              "omniglot": "om",
+              "mnist": "mn",
+              "learn_batch_norm": "lbn",
+              "nchannels": "nchan",
+              # asl.archs.convnet.Convnet:"convnet",
+             }
 
 def stringifyfilename(k, v):
   """Turn a key value into command line argument"""
+  k = SHORTNAMES[k] if k in SHORTNAMES else k
+  v = SHORTNAMES[k] if v in SHORTNAMES else v
   return "__%s_%s" % (k, v)
 
 
