@@ -176,7 +176,7 @@ def convergedperc(every, print_change=True, change_thres=0.00001):
   next(gen)
   return gen
 
-def convergedmin(every, print_change=True, change_thres=0.00001):
+def convergedmin(every, print_change=True, change_thres=0.000005):
   "Converged when threshold is less than percentage? Use when optimum is zero"
   def converged_gen(every):
     running_loss = math.inf
