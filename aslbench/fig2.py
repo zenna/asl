@@ -204,6 +204,7 @@ def loss_curve_for_item(nitems, nm_to_df_, nm_to_opt_, ax):
   ax.set_title("Training Loss vs Iteration")
   ax.set_ylabel("Mean Square Error")
   ax.set_xlabel("Iteration Number")
+  ax.set_xscale('log')
 
 fig1 = plt.figure()
 ax1 = fig1.add_subplot(111)
