@@ -1,1 +1,4 @@
-from fig2 import *
+from figures import *
+
+path = "/data/zenna/omruns/stacktracesx"
+

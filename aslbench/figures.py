@@ -1,4 +1,4 @@
-from mnistset import record_data
+# from mnistset import record_data
 
 import asl
 import pandas as pd
@@ -7,6 +7,15 @@ import stdargs
 import numpy as np
 # import matplotlib.pyplot as plt
 
+def record_data(train_f, path, opt_update=None):
+  opt_update = {} if opt_update is None else opt_update
+  optfile = os.path.join(path, "opt.pkl")
+  best_checkpoint = os.path.join(path, "best_checkpoint.pt")
+  opt = asl.load_opt(optfile)
+  opt["resume_path"] = best_checkpoint
+  opt["log_dir"] = "/tmp/.{}".format(opt["name"])
+  opt.update(opt_update)
+  return train_f(opt)
 
 def extension(path):
   filename, file_extension = os.path.splitext(path)
