@@ -7,6 +7,7 @@ from asl.callbacks import every_n
 import common
 import numpy as np
 import imageio
+import pandas as pd
 
 def save_img(path):
   x = 3
@@ -116,21 +117,35 @@ def trainmodel(opt, model, loss_gen, parameters = None, **trainkwargs):
   optstring = asl.hyper.search.linearizeoptrecur(opt, tbkeys)
   if opt["train"]:
     writer = SummaryWriter(os.path.join(opt["log_dir"], optstring))
+    
+
+
+
     update_df, save_df = asl.callbacks.save_update_df(opt)
+
+    callbacks = [asl.print_loss(100),
+                 every_n(common.plot_empty, 400),
+                 every_n(common.plot_observes, 400),
+                 every_n(common.plot_internals, 400),
+                 every_n(asl.save_checkpoint(model), 1000),
+                 every_n(save_df, 500),
+                 update_df]
+
+    if "test" in opt and opt["test"]:
+      test_df = pd.DataFrame({'runname': [],
+                              'iteration': [],
+                              'loss': []})
+      test_dfs = [test_df]
+      dfcb = asl.callbacks.update_ret_df(opt, test_dfs)
+      callbacks.append(dfcb)
     asl.train(loss_gen,
               optimizer,
-              # maxiters=10,
-              cont=asl.convergedmin(1000),
-              callbacks=[asl.print_loss(100),
-                        every_n(common.plot_empty, 400),
-                        every_n(common.plot_observes, 400),
-                        every_n(common.plot_internals, 400),
-                        every_n(asl.save_checkpoint(model), 1000),
-                        every_n(save_df, 500),
-                        update_df
-                        ],
+              maxiters=10,
+              # cont=asl.convergedmin(1000),
+              callbacks=callbacks,
               post_callbacks=[save_df],
               log_dir=opt["log_dir"],
               writer = writer,
+              optimize=False,
               **trainkwargs)
-  return model, loss_gen
+  return model, loss_gen, test_dfs

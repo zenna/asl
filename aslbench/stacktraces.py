@@ -101,6 +101,7 @@ def tracegen5(nitems, nrounds):
       elif stack_size == nitems:
         (stack, pop_item) = pop(stack)
         asl.observe(pop_item, "pop.nr{}".format(nr), runstate)
+        asl.log_append("{}/internal".format(runstate['mode']), stack)
         stack_size = stack_size - 1
       else:
         dopush = r.choice([True, False])
@@ -110,6 +111,7 @@ def tracegen5(nitems, nrounds):
         else:
           (stack, pop_item) = pop(stack)
           asl.observe(pop_item, "pop.nr{}".format(nr), runstate)
+          asl.log_append("{}/internal".format(runstate['mode']), stack)
           stack_size = stack_size - 1
 
     # Final pop to make sure we get some data
