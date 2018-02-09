@@ -51,7 +51,7 @@ class ConvActBn(nn.Module):
     return x
 
 class BasicBlock(nn.Module):
-  def __init__(self, block_size, in_channels, out_channels, activation, **kwargs):
+  def __init__(self, block_size, in_channels, out_channels, activation, batch_norm, **kwargs):
     super(BasicBlock, self).__init__()
     self.activation = activation
     channels = interpolate_inc(in_channels, out_channels, block_size - 1)
@@ -62,7 +62,7 @@ class BasicBlock(nn.Module):
       b = channels[i+1]
       act = i < block_size - 1
       conv = ConvActBn(in_channels=a, out_channels=b, act=act,
-                       activation=activation, **kwargs)
+                       activation=activation, batch_norm=act, **kwargs)
       convs.append(conv)
     self.convs = nn.ModuleList(convs)
     self.project_resdiual = in_channels != out_channels
@@ -113,7 +113,6 @@ class ConvResNet(nn.Module):
                nblocks=2,
                conv_init=nn.init.xavier_uniform):
     super(ConvResNet, self).__init__()
-    import pdb; pdb.set_trace()
     # Assumes batch not in size and all in/out same size except channel
     self.in_sizes = in_sizes
     self.out_sizes = out_sizes

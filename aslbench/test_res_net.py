@@ -165,12 +165,12 @@ def conv_hypers(pbatch_norm=0.5, max_layers=6):
   last_act = random.choice([F.elu])
   ks = random.choice([3])
   arch_opt = {'batch_norm': True,
-              'h_channels': h_channels,
-              'activation': act,
+              'h_channels': 2,
+              'activation': F.relu,
               'ks': ks,
-              'nblocks': 5, 
+              'nblocks': 1, 
               'last_activation': last_act,
-              'learn_batch_norm': learn_batch_norm,
+              'learn_batch_norm': False,
               'padding': (ks - 1)//2}
   return {"arch": asl.archs.conv_res_net.ConvResNet,
           "arch_opt": arch_opt}

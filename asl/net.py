@@ -7,7 +7,7 @@ def type_check(xs, types):
   assert len(xs) == len(types)
   for i, x in enumerate(xs):
     same_size = x.size()[1:] == types[i].typesize
-    assert same_size
+    assert same_size, "{} != {}".format(x.size()[1:], types[i].typesize)
   return xs
 
 

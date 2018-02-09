@@ -123,10 +123,10 @@ def trainmodel(opt, model, loss_gen, parameters = None, **trainkwargs):
 
     update_df, save_df = asl.callbacks.save_update_df(opt)
 
-    callbacks = [asl.print_loss(100),
-                 every_n(common.plot_empty, 400),
-                 every_n(common.plot_observes, 400),
-                 every_n(common.plot_internals, 400),
+    callbacks = [asl.print_loss(1000),
+                 every_n(common.plot_empty, 1000),
+                 every_n(common.plot_observes, 1000),
+                 every_n(common.plot_internals, 1000),
                  every_n(asl.save_checkpoint(model), 1000),
                  every_n(save_df, 500),
                  update_df]

@@ -113,6 +113,8 @@ def tracegen5(nitems, nrounds):
           asl.observe(pop_item, "pop.nr{}".format(nr), runstate)
           asl.log_append("{}/internal".format(runstate['mode']), stack)
           stack_size = stack_size - 1
+      asl.log_append("{}/internal".format(runstate['mode']), stack)
+
 
     # Final pop to make sure we get some data
     if stack_size > 0:
@@ -135,7 +137,7 @@ def tracegen6(nitems, nrounds):
         asl.log_append("{}/internal".format(runstate['mode']), stack)
         stacks.append(stack)
 
-      npops = r.randdint(1, nitems)
+      npops = r.randint(1, nitems)
       for j in range(npops):
         (stack, pop_item) = pop(stack)
         asl.log_append("{}/internal".format(runstate['mode']), stack)
@@ -177,12 +179,12 @@ def conv_hypers(pbatch_norm=0.5, max_layers=6):
   return {"arch": asl.archs.convnet.ConvNet,
           "arch_opt": arch_opt}
 
-def stack_optspace():            
-  return {"tracegen": [tracegen1, tracegen2, tracegen3, tracegen4, tracegen5],
+def stack_optspace():
+  return {"tracegen": [tracegen1, tracegen2, tracegen3, tracegen4, tracegen5, tracegen6],
           "nrounds": [2, 1],
-          "dataset": "mnist",
+          "dataset": ["mnist", "omniglot"],
           "nchannels": 1,
-          "nitems": [3, 5],
+          "nitems": [3],
           "normalize": True,
           "batch_size": [16, 32, 64, 128],
           "learn_constants": True,
@@ -195,7 +197,7 @@ def stack_optspace():
 def traces_gen(nsamples):
   # Delaying computation of this value because we dont know nsamples yet
   return asl.prodsample(stack_optspace(),
-                        to_enum=["tracegen", "nrounds", "nitems"],
+                        to_enum=["tracegen", "dataset", "nrounds", "nitems"],
                         to_sample=["init",
                                    "batch_size"],
                         to_sample_merge=["arch_opt", "optim_args"],
