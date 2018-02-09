@@ -1,5 +1,6 @@
 from mnistset import record_data
 
+import itertools
 import asl
 import pandas as pd
 import os
@@ -108,8 +109,8 @@ def fig1():
 
   plt.bar(np.arange(1, 11),
           nitems_vs_loss)
-  plt.xlabel("Number of items")
-  plt.ylabel("Mean square error")
+  plt.xlabel("Number of Items")
+  plt.ylabel("MSE")
   plt.title('Baseline Training Loss')
 
 def runname(df):
@@ -125,7 +126,7 @@ def capacity_trained_vs_tested(mat):
   plt.xticks(np.arange(10), xinds)
   plt.yticks(np.arange(10), yinds)
   cb = plt.colorbar()
-  cb.set_label("Mean Square Error")
+  cb.set_label("MSE")
 
 # def optimalloss(searchdir, nitems):
 #   def nitemsisnitems(opt):
@@ -170,6 +171,18 @@ def capacity_trained_vs_tested_ax(mat, ax):
   ax.set_yticklabels(yinds)
   return im 
 
+def integrals_losses_ax(mat, ax):
+  integrals = np.sum(mat, axis=0)
+  ax.bar(np.arange(1, 11) - 0.5,
+          integrals,
+          width=1,
+          align="edge")
+  ax.set_xticks(np.arange(10)+1)
+  ax.set_xlim([0.5,10.5])
+  ax.set_title("Accumulative Test Loss")
+  ax.set_xlabel("Number of Items")
+  ax.set_ylabel("MSE summed over tests")
+
 def baseline_losses_ax(nm_to_df_, nm_to_opt_, ax):
   nitems_vs_loss = optima_per_nitems(nm_to_df_, nm_to_opt_)
   ax.bar(np.arange(1, 11) - 0.5,
@@ -178,20 +191,16 @@ def baseline_losses_ax(nm_to_df_, nm_to_opt_, ax):
           align="edge")
   ax.set_xticks(np.arange(10)+1)
   ax.set_xlim([0.5,10.5])
-  ax.set_xlabel("Number of items")
-  ax.set_ylabel("Mean square error")
+  ax.set_title("Baseline Training Loss")
+  ax.set_ylabel("Train MSE")
   # ax.set_title('Baseline Training Loss')
 
 
-fig, (ax0, ax1) = plt.subplots(nrows=2, figsize=(7, 9.6))
-im = capacity_trained_vs_tested_ax(mat, ax0)
-baseline_losses_ax(nm_to_df_, nm_to_opt_, ax1)
-plt.show()
 # fig.subplots_adjust(right=0.8)
 # fig.colorbar(im)
 
   # cb = plt.colorbar()
-  # cb.set_label("Mean Square Error")
+  # cb.set_label("MSE")
 
 
 ## Figure 2.a) Loss curves
@@ -202,13 +211,27 @@ def loss_curve_for_item(nitems, nm_to_df_, nm_to_opt_, ax):
     ys = optim_df["loss"]
     ax.plot(xs, ys)
   ax.set_title("Training Loss vs Iteration")
-  ax.set_ylabel("Mean Square Error")
+  ax.set_ylabel("MSE")
   ax.set_xlabel("Iteration Number")
   ax.set_xscale('log')
+  ax.set_xlim(1, 100000)
 
-fig1 = plt.figure()
-ax1 = fig1.add_subplot(111)
-loss_curve_for_item(10, nm_to_df_, nm_to_opt_, ax1)
+from matplotlib import gridspec
+
+def fig1():
+  mat = np.rot90(res)
+  fig, ax = plt.subplots(nrows=2, ncols=2, figsize=(3.1, 4))
+  ax0 = ax[0,0]
+  ax3 = ax[0,1]
+  ax2 = ax[1,0]
+  ax1 = ax[1, 1]
+  integrals_losses_ax(mat, ax2)
+  im = capacity_trained_vs_tested_ax(mat, ax0)
+  baseline_losses_ax(nm_to_df_, nm_to_opt_, ax1)
+  loss_curve_for_item(10, nm_to_df_, nm_to_opt_, ax3)
+  plt.subplots_adjust(hspace=0.8, wspace=0.8)
+  # plt.colorbar(im)
+  plt.show()
 
 
 def optima_per_consts(nm_to_df_, nm_to_opt_, init, lc):
@@ -243,21 +266,23 @@ def ok(vals, ax, shift):
     indx = ind + width
   else:
     indx = ind
-  return ax.bar(indx, vals, width)
+  return ax.bar(indx, vals, width, log=True)
+  
 
 def fig3(t = "min"):
   learn_mins = [resa[2][t] for i, resa in enumerate(results) if i % 2 ==0]
   nolearn_mins = [resa[2][t] for i, resa in enumerate(results) if i % 2 ==1]
 
   fig, ax = plt.subplots()
+  # ax.set_yscale('log')
   rects0 = ok(learn_mins, ax, False)
   rects1 = ok(nolearn_mins, ax, True)
   # ax.set_xlabel()
   ax.set_title("Mean Loss")
   ax.set_xticks([0.2, 1.2, 2.2, 3.2])
   ax.set_xticklabels(["zeros", "ones", "normal", "uniform"])
-  ax.set_ylabel("Mean Square Error")
+  ax.set_ylabel("MSE")
   ax.legend((rects0, rects1), ('Learned', 'Constant'))
   plt.show()
 
-fig3("median")
+fig3("min")
