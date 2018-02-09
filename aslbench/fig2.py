@@ -6,6 +6,7 @@ import pandas as pd
 import os
 import stdargs
 import numpy as np
+import torch
 # import matplotlib.pyplot as plt
 
 
@@ -160,7 +161,7 @@ if __name__ == "__main__":
 
 def capacity_trained_vs_tested_ax(mat, ax):
   im = ax.imshow(mat)
-  ax.set_xlabel("Number of Items Trained on")
+  # ax.set_xlabel("Number of Items Trained on")
   ax.set_ylabel("Number of Items Tested on")
   ax.set_title("Stack Capacity Generalization")
   xinds = np.arange(1,11)
@@ -171,8 +172,8 @@ def capacity_trained_vs_tested_ax(mat, ax):
   ax.set_yticklabels(yinds)
   return im 
 
-def integrals_losses_ax(mat, ax):
-  integrals = np.sum(mat, axis=0)
+def integrals_losses_ax(mat, ax, axis=0):
+  integrals = np.sum(mat, axis=axis)
   ax.bar(np.arange(1, 11) - 0.5,
           integrals,
           width=1,
@@ -180,7 +181,21 @@ def integrals_losses_ax(mat, ax):
   ax.set_xticks(np.arange(10)+1)
   ax.set_xlim([0.5,10.5])
   ax.set_title("Accumulative Test Loss")
-  ax.set_xlabel("Number of Items")
+  # ax.set_xlabel("Number of Items")
+  ax.set_ylabel("MSE summed over tests")
+
+
+def h_integrals_losses_ax(mat, ax, axis=1):
+  integrals = np.sum(mat, axis=axis)
+  integrals = list(reversed(integrals))
+  ax.barh(np.arange(1, 11) - 0.5,
+          integrals,
+          height=1,
+          align="edge")
+  ax.set_yticks(np.arange(10)+1)
+  ax.set_ylim([0.5,10.5])
+  ax.set_title("Accumulative Test Loss")
+  # ax.set_xlabel("Number of Items")
   ax.set_ylabel("MSE summed over tests")
 
 def baseline_losses_ax(nm_to_df_, nm_to_opt_, ax):
@@ -193,6 +208,8 @@ def baseline_losses_ax(nm_to_df_, nm_to_opt_, ax):
   ax.set_xlim([0.5,10.5])
   ax.set_title("Baseline Training Loss")
   ax.set_ylabel("Train MSE")
+  ax.set_xlabel("Number of Items Trained on")
+
   # ax.set_title('Baseline Training Loss')
 
 
@@ -209,10 +226,10 @@ def loss_curve_for_item(nitems, nm_to_df_, nm_to_opt_, ax):
     _, optim_df =  optim_opt_df(nm_to_df_, nm_to_opt_, i)
     xs = optim_df["iteration"]
     ys = optim_df["loss"]
-    ax.plot(xs, ys)
+    ax.plot(xs, ys, linewidth=0.5)
   ax.set_title("Training Loss vs Iteration")
   ax.set_ylabel("MSE")
-  ax.set_xlabel("Iteration Number")
+  # ax.set_xlabel("Iteration Number")
   ax.set_xscale('log')
   ax.set_xlim(1, 100000)
 
@@ -220,17 +237,22 @@ from matplotlib import gridspec
 
 def fig1():
   mat = np.rot90(res)
-  fig, ax = plt.subplots(nrows=2, ncols=2, figsize=(3.1, 4))
-  ax0 = ax[0,0]
-  ax3 = ax[0,1]
-  ax2 = ax[1,0]
-  ax1 = ax[1, 1]
-  integrals_losses_ax(mat, ax2)
-  im = capacity_trained_vs_tested_ax(mat, ax0)
-  baseline_losses_ax(nm_to_df_, nm_to_opt_, ax1)
-  loss_curve_for_item(10, nm_to_df_, nm_to_opt_, ax3)
-  plt.subplots_adjust(hspace=0.8, wspace=0.8)
-  # plt.colorbar(im)
+  fig, ax = plt.subplots(nrows=3, ncols=2, figsize=(2.6, 3),
+                         gridspec_kw={'height_ratios':[1,2,1]})
+  ax00 = ax[0,0]
+  ax01 = ax[0,1]
+  ax10 = ax[1,0]
+  ax11 = ax[1, 1]
+  ax11 = ax[1, 1]
+  ax20 = ax[2, 0]
+  integrals_losses_ax(mat, ax00)
+  h_integrals_losses_ax(mat, ax11, axis=1)
+  im = capacity_trained_vs_tested_ax(mat, ax10)
+  baseline_losses_ax(nm_to_df_, nm_to_opt_, ax20)
+  loss_curve_for_item(10, nm_to_df_, nm_to_opt_, ax01)
+  plt.subplots_adjust(hspace=0.6, wspace=0.3)
+  plt.colorbar(im, ax=ax10)
+  plt.rcParams.update({'font.size': 4})
   plt.show()
 
 
