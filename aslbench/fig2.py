@@ -209,3 +209,55 @@ def loss_curve_for_item(nitems, nm_to_df_, nm_to_opt_, ax):
 fig1 = plt.figure()
 ax1 = fig1.add_subplot(111)
 loss_curve_for_item(10, nm_to_df_, nm_to_opt_, ax1)
+
+
+def optima_per_consts(nm_to_df_, nm_to_opt_, init, lc):
+  def getopt(opt):
+    return opt["learn_constants"] == lc and opt["init"] == init
+
+  dfs = dfs_where_opt(getopt, nm_to_df_, nm_to_opt_)
+  min_losses = [min(df['loss']) for df in dfs]
+  # import pdb; pdb.set_trace()
+  min_min_losses = np.min(min_losses)
+  std_losses = np.std(min_losses)
+  median_losses = np.median(min_losses)
+  mean_losses = np.mean(min_losses)
+  return {"mean": mean_losses,
+          "median": median_losses,
+          "std": std_losses,
+          "min": min_min_losses}
+
+inits = [torch.zeros_like, torch.ones_like, torch.nn.init.normal, torch.nn.init.uniform]
+init_names = ["zeros", "ones", "normal", "uniform"]
+learn_constants = [True, False]
+
+results = []
+for (init, lc) in itertools.product(inits, learn_constants):
+  resa = optima_per_consts(nm_to_df_, nm_to_opt_, init, lc)
+  results.append((init, lc, resa))
+
+def ok(vals, ax, shift):
+  ind = np.arange(len(vals))  # the x locations for the groups
+  width = 0.4       # the width of the bars
+  if shift:
+    indx = ind + width
+  else:
+    indx = ind
+  return ax.bar(indx, vals, width)
+
+def fig3(t = "min"):
+  learn_mins = [resa[2][t] for i, resa in enumerate(results) if i % 2 ==0]
+  nolearn_mins = [resa[2][t] for i, resa in enumerate(results) if i % 2 ==1]
+
+  fig, ax = plt.subplots()
+  rects0 = ok(learn_mins, ax, False)
+  rects1 = ok(nolearn_mins, ax, True)
+  # ax.set_xlabel()
+  ax.set_title("Mean Loss")
+  ax.set_xticks([0.2, 1.2, 2.2, 3.2])
+  ax.set_xticklabels(["zeros", "ones", "normal", "uniform"])
+  ax.set_ylabel("Mean Square Error")
+  ax.legend((rects0, rects1), ('Learned', 'Constant'))
+  plt.show()
+
+fig3("median")
