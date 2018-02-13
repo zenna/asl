@@ -84,6 +84,14 @@ def nm_to_opt(optdata):
 
 # Get all the data frames where the number of items is 1, find the optimal loss
 
+
+# def intersect_df_opt(nm_to_df_, nm_to_opt_):                                                                                                                                                                                                                                     
+#     ...:   keys = set(list(nm_to_df_.keys())).intersection(set(list(nm_to_opt_.keys())))                                                                                                                                                                                                  
+#     ...:   nm_to_df_ = {k:v for k,v in nm_to_df_.items() if k in keys}                                                                                                                                                                                                                    
+#     ...:   nm_to_opt_ = {k:v for k,v in nm_to_opt_.items() if k in keys}
+#     ...:   return nm_to_df_, nm_to_opt_
+
+
 def dfs_where_opt(filter_func, nm_to_df_, nm_to_opt_):
   dfs = []
   for nm, opt in nm_to_opt_.items():

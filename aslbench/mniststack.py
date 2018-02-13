@@ -15,29 +15,6 @@ from asl.callbacks import every_n
 from multipledispatch import dispatch
 from asl.loss import mean
 
-def tracegen(nitems, nrounds):
-  print("Making stack trace with {} items and {} rounds".format(nitems, nrounds))
-  def trace(items, r, runstate, push, pop, empty):
-    """Example stack trace"""
-    # import pdb; pdb.set_trace()
-    asl.log_append("empty", empty)
-    stack = empty
-    for nr in range(nrounds):
-      for i in range(nitems):
-        (stack,) = push(stack, next(items))
-        # print("BLIP!")
-        asl.log_append("{}/internal".format(runstate['mode']), stack)
-
-      for j in range(nitems):
-        (stack, pop_item) = pop(stack)
-        asl.observe(pop_item, "pop.{}.{}".format(nr, j), runstate)
-        # print("BLIP!")
-        asl.log_append("{}/internal".format(runstate['mode']), stack)
-      
-    return pop_item
-  
-  return trace
-
 ## Training
 def train_stack(opt):
   if opt["dataset"] == "omniglot":
@@ -99,48 +76,3 @@ def train_stack(opt):
     parameters = torch.nn.ModuleList([push, pop]).parameters()
 
   return common.trainmodel(opt, nstack, loss_gen, parameters)
-
-## Samplers
-
-def stack_args(parser):
-  parser.add_argument('--nitems', type=int, default=3, metavar='NI',
-                      help='number of iteems in trace (default: 3)')
-  parser.add_argument('--nrounds', type=int, default=1, metavar='NR',
-                      help='number of rounds in trace')
-
-def stack_optspace():
-  return {"nrounds": [1, 2],
-          "tracegen": tracegen,
-          # "nitems": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 20],
-          "dataset": ["mnist", "omniglot"],
-          "nchannels": 1,
-          "nitems": [3],
-          "normalize": [True, False],
-          "batch_size": [16, 32, 64],
-          "learn_constants": [True],
-          "accum": [mean],
-          "init": [torch.nn.init.uniform,
-                   torch.nn.init.normal,
-                   torch.ones_like,
-                   torch.zeros_like
-                   ],
-          "arch_opt": arch_sampler,
-          "optim_args": optim_sampler}
-
-def runoptsgen(nsamples):
-  # Delaying computation of this value because we dont know nsamples yet
-  return asl.prodsample(stack_optspace(),
-                        to_enum=["nitems", "dataset"],
-                        to_sample=["init",
-                                   "nrounds",
-                                   "batch_size",
-                                   "lr",
-                                   "accum",
-                                   "learn_constants",
-                                   "normalize"],
-                        to_sample_merge=["arch_opt", "optim_args"],
-                        nsamples=nsamples)
-
-if __name__ == "__main__":
-  thisfile = os.path.abspath(__file__)
-  res = common.trainloadsave(thisfile, train_stack, runoptsgen, stack_args)
