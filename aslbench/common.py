@@ -117,13 +117,9 @@ def trainmodel(opt, model, loss_gen, parameters = None, **trainkwargs):
   optstring = asl.hyper.search.linearizeoptrecur(opt, tbkeys)
   if opt["train"]:
     writer = SummaryWriter(os.path.join(opt["log_dir"], optstring))
-    
-
-
-
     update_df, save_df = asl.callbacks.save_update_df(opt)
 
-    callbacks = [asl.print_loss(1000),
+    callbacks = [asl.print_loss(100),
                  every_n(common.plot_empty, 1000),
                  every_n(common.plot_observes, 1000),
                  every_n(common.plot_internals, 1000),
@@ -140,12 +136,12 @@ def trainmodel(opt, model, loss_gen, parameters = None, **trainkwargs):
       callbacks.append(dfcb)
     asl.train(loss_gen,
               optimizer,
-              maxiters=10,
+              maxiters=1000,
               # cont=asl.convergedmin(1000),
               callbacks=callbacks,
               post_callbacks=[save_df],
               log_dir=opt["log_dir"],
               writer = writer,
-              optimize=False,
+              optimize=True,
               **trainkwargs)
-  return model, loss_gen, test_dfs
+  return model, loss_gen

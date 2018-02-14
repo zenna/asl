@@ -1,12 +1,7 @@
-"Stack Data Structure trained from a reference implementation"
+"Queue Reference Implementation"
 import asl
 from collections import deque
 from asl.type import Function
-from asl.archs.convnet import ConvNet
-from asl.modules.modules import ConstantNet, ModuleDict
-from asl.util.misc import cuda
-from torch import nn
-
 
 class Enqueue(Function):
   "Enqueue Function for Stack"
@@ -33,17 +28,4 @@ def list_dequeue(queue):
   item = queue.popleft()
   return (queue, item)
 
-
-def neural_queue(element_type, queue_type):
-  enqueue_img = EnqueueNet(queue_type, element_type)
-  dequeue_img = DequeueNet(queue_type, element_type)
-  empty_queue = ConstantNet(queue_type)
-  neural_ref = ModuleDict({"enqueue": enqueue_img,
-                           "dequeue": dequeue_img,
-                           "empty": empty_queue})
-  cuda(neural_ref)
-  return neural_ref
-
-
-def ref_queue():
-  return {"enqueue": list_enqueue, "dequeue": list_dequeue, "empty": deque()}
+empty_queue = deque()

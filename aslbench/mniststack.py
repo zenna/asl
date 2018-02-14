@@ -15,6 +15,13 @@ from asl.callbacks import every_n
 from multipledispatch import dispatch
 from asl.loss import mean
 
+
+def stack_args(parser):
+  parser.add_argument('--nitems', type=int, default=3, metavar='NI',
+                      help='number of iteems in trace (default: 3)')
+  parser.add_argument('--nrounds', type=int, default=1, metavar='NR',
+                      help='number of rounds in trace')
+
 ## Training
 def train_stack(opt):
   if opt["dataset"] == "omniglot":
