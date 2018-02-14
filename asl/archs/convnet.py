@@ -5,7 +5,7 @@ import torch.nn.functional as F
 import numpy as np
 from asl.archs.packing import split_channel, cat_channels, slither
 from asl.modules.modules import expand_consts
-
+import asl
 
 def channels(sizes):
   total = 0
@@ -64,6 +64,10 @@ class ConvNet(nn.Module):
                conv_init=nn.init.xavier_uniform):
     super(ConvNet, self).__init__()
     # Assumes batch not in size and all in/out same size except channel
+    # biggest_size = 
+    normalized_size = max(in_sizes, key=asl.archs.nelem)
+    normalizers = [asl.archs.normalizer(size, normalized_size)(size, normalized_size) for size in in_sizes]
+    self.size_normalizers = nn.ModuleList(normalizers)
     self.in_sizes = in_sizes
     self.out_sizes = out_sizes
     self.channel_dim = channel_dim
@@ -100,7 +104,8 @@ class ConvNet(nn.Module):
 
   def forward(self, *xs):
     assert len(xs) == len(self.in_sizes), "Wrong # inputs"
-    x = self.combine_inputs(xs)
+    xs_same_size = [self.size_normalizers[i](x) for i, x in enumerate(xs)]
+    x = self.combine_inputs(xs_same_size)
     x = self.conv1(x)
     if self.batch_norm:
       x = self.firstblayer(x)

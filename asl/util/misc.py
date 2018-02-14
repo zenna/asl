@@ -28,6 +28,10 @@ def repl(tpl, index, newval):
   return tuple(tpllist)
 
 
+def addbatchdim(size, batch_size=-1):
+  return (batch_size,) + size
+
+
 def imap(f, itr):
   "Return an iterator which applies f to output of iterator"
   while True:

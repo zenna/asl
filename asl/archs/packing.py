@@ -2,14 +2,15 @@
 from functools import reduce
 import asl
 import torch
+from torch import nn
 
 def nelements(sizes):
   "Total number for elements from set of sizes"
   size = [asl.util.misc.mul_product(size) for size in sizes]
   return sum(size)
 
-def tensor_len(size):
-  "Total number for elements from set of sizes"
+def nelem(size):
+  "Number for elements from in tensor of size `size`"
   return asl.util.misc.mul_product(size)
 
 
@@ -46,7 +47,7 @@ def split_tensor(t, nelements_, slice_dim=1):
 
 
 def splt_reshape_tensors(t, sizes):
-  nelements_ = [tensor_len(size) for size in sizes]
+  nelements_ = [nelem(size) for size in sizes]
   tens = split_tensor(t, nelements_)
   out = [tens[i].contiguous().view(-1, *size) for i, size in enumerate(sizes)]
   return tuple(out)
@@ -137,4 +138,38 @@ def stretch_cat(xs, out_size, same_dim):
   # matrix/tensor multiplication
 
 def cat_channels(xs, channel_dim=1):
+  "Concatenate images in the channel dimension"
   return torch.cat(xs, dim=channel_dim)
+
+from collections import OrderedDict
+
+def ndims(size):
+  "Number of dimensions of size"
+  return len(size)
+
+class LinearNormalizeSize(nn.Module):
+
+  def __init__(self, input_size, normalized_size):
+    super(LinearNormalizeSize, self).__init__()
+    self.normalized_size = normalized_size
+    self.linear = nn.Linear(nelem(input_size),
+                                 nelem(normalized_size))
+
+  def forward(self, x):
+    return self.linear(x).view(asl.util.addbatchdim(self.normalized_size))
+
+class IdentityNormalizeSize(nn.Module):
+  def __init__(self, input_size, normalized_size):
+    nn.Module.__init__(self)
+    # super(IdentityNormalizeSize, self).__init__()
+
+  def forward(self, x):
+    return x
+
+def normalizer(size, normalized_size):
+  if size == normalized_size:  # do nothing
+    return IdentityNormalizeSize
+  elif ndims(size):
+    return LinearNormalizeSize
+  else:
+    raise Exception
