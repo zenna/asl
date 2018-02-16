@@ -4,7 +4,6 @@ from asl.type import Function
 from asl.modules.modules import ConstantNet, ModuleDict
 from asl.archs.convnet import ConvNet
 from asl.util.misc import cuda
-from torch import nn
 
 class Add(asl.Function, asl.Net):
   def __init__(self, SetType, ItemType, name="Add",  **kwargs):

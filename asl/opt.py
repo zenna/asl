@@ -185,12 +185,6 @@ def merge(opt1, opt2):
 
   return opt
 
-def mergedict(d1, d2):
-  "Merge opts, opt1 takes precedence"
-  opt = copy(d1)
-  opt["update"](d2)
-  return opt
-
 def chunks(l, n):
     """Yield successive n-sized chunks from l."""
     for i in range(0, len(l), n):

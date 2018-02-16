@@ -9,6 +9,11 @@ import torch.nn.functional as F
 
 # import matplotlib.pyplot as plt
 # plt.ion()
+def mergedict(d1, d2):
+  "Merge opts, opt1 takes precedence"
+  opt = copy(d1)
+  opt.update(d2)
+  return opt
 
 def invert(d):
   "Assume d is injective"

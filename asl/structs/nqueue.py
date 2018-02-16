@@ -4,15 +4,14 @@ from collections import deque
 from asl.type import Function
 
 class Enqueue(Function):
-  "Enqueue Function for Stack"
+  "Enqueue Function for Queue"
 
   def __init__(self, queue_type, item_type):
     super(Enqueue, self).__init__([queue_type, item_type], [queue_type])
 
 
 class Dequeue(Function):
-  "Dequeue Function for Stack"
-
+  "Dequeue Function for Queue"
   def __init__(self, queue_type, item_type):
     super(Dequeue, self).__init__([queue_type], [queue_type, item_type])
 
