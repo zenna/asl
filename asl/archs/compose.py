@@ -22,23 +22,11 @@ def compose(modulegens, params, rand_in):
     raise ValueError
 
   modules = []
-  # in_sizes = params[0]["in_sizes"]
-  # out_sizes = params[1].get("out_sizes", None)
   for i, modulegen in enumerate(modulegens):
-    # check_all_sizes_match(in_sizes, params[i].get("in_sizes", None))
     extra_params = modulegen.arg_from_sizes()
     module = modulegen(params[i])
-
-    # # Generate random data to test actual sizes
-    # rand_in = [torch.rand(sz) for sz in in_sizes]
     rand_out = module(*rand_in)
-
-    # out_sizes = [out.size() for out in rand_out]
-    # check_all_sizes_match(out_sizes, params[i].get("in_sizes", None))
-
     modules.append(module) # Save the module if all sizes ok
-
-    # Output of layer i is input to layer i + 1
     if i < len(modulegens) - 1:
       in_sizes = out_sizes
       out_sizes = params[i+1].get("out_sizes", None) # or none
@@ -52,11 +40,11 @@ def test_composition():
 
 
   module = compose([archs.CombineNet,
-                    archs.ConvNet,
+                    nn.Reshape,
                     nn.Linear,
                     F.softmax],
                     [{"in_sizes": in_sizes},
-                     {},
+                     {"out_channels": 5},
                      {"out_sizes": out_sizes},
                      {"out_sizes": out_sizes}],
                      rand_in)
