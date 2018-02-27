@@ -2,6 +2,10 @@
 import random
 import argparse
 import asl
+
+import mnist
+import omniglot
+
 from asl.modules.modules import ConstantNet, ModuleDict, expand_to_batch
 from aslbench.clevr.data import clevr_img_dl
 from torch import optim, nn
@@ -12,14 +16,6 @@ from multipledispatch import dispatch
 import numpy as np
 from primitive import Integer, IntegerOneHot1D
 
-
-## datasets
-from clevrimage import clevr_img_size, ClevrImage
-from mnist import mnist_size, Mnist, dist, refresh_mnist
-from omniglot import omniglot_size, OmniGlot, dist, refresh_omniglot
-
-# SMALL_IMG_SIZE = clevr_img_size
-# Image = ClevrImage
 nimages = 2     # NUmber of images in set
 
 def lang_args(parser):
@@ -28,24 +24,17 @@ def lang_args(parser):
 
 
 def train_clevrlang(opt):
-  if opt["dataset"] == "omniglot":
-    sentence_size = asl.util.repl(mnist_size, 0, opt["nchannels"])
-    ImageType = OmniGlot
-    dataloader = asl.util.omniglotloader
-    refresh_data = lambda dl: refresh_omniglot(dl, nocuda=opt["nocuda"])
-  elif opt["dataset"] == "mnist":
-    sentence_size = asl.util.repl(mnist_size, 0, opt["nchannels"])
-    ImageType = Mnist
-    dataloader = asl.util.mnistloader
-    refresh_data = lambda dl: refresh_mnist(dl, nocuda=opt["nocuda"])
-  else:
-    assert False
+  ImageType = opt["dataset"].datatype
+  sentence_size = asl.util.repl(ImageType.typesize, 0, opt["nchannels"])
+  dataloader = opt["dataset"].dataloader
+  refresh_data_ = opt["dataset"].refresh
+  refresh_data = lambda dl: refresh_data_(dl, nocuda=opt["nocuda"])
 
   ## TYPES
   ## =====
   class Sentence(asl.Type):
     "A sentence in a language (describing an image)"
-    typesize = sentence_size # HACK
+    typesize = sentence_size
 
   ## Functions
   ## =========
@@ -63,14 +52,14 @@ def train_clevrlang(opt):
                                   [Integer])
       asl.Net.__init__(self, name, **kwargs)
 
-  describe = Describe(ImageType, arch=opt["arch"], arch_opt=opt["arch_opt"])
-  which_image = WhichImage(ImageType, arch=opt["arch"], arch_opt=opt["arch_opt"])
+  describe = Describe(ImageType, arch=opt["describe_arch"])
+  which_image = WhichImage(ImageType, arch=opt["which_image_arch"])
+
 
   class PermuteTest(asl.Sketch):
     """Generate clevr image from noise"""
 
     def sketch(self, imagesgen, r, runstate):
-      # imgj = images[rand_img_id]
       images = [next(imagesgen) for _ in range(nimages)]
       permutation = list(range(nimages))
       r.shuffle(permutation)
@@ -97,16 +86,12 @@ def train_clevrlang(opt):
   interface = ModuleDict({"describe": describe,
                           "which_image": which_image})
   asl.cuda(interface, opt["nocuda"])
-
-  # Generators CLEVR img generator
   img_dl = dataloader(opt["batch_size"], normalize=False)
-  # chooseimage = infinitesamples[asl.onehot(3, 4, 20)]
 
   # Hack to add random object as input to traces
   def refresh_with_random(x):
     refreshed = refresh_data(x)
     return [refreshed[0], random.Random(0)]
-
 
   # Loss
   loss_gen = asl.ref_loss_gen(permute_test,
@@ -114,4 +99,8 @@ def train_clevrlang(opt):
                               img_dl,
                               refresh_with_random)
   parameters = interface.parameters()
+  res = {"interface": interface,
+         "loss_gen": loss_gen,
+         "parameters": parameters,
+         "opt": opt}
   return common.trainmodel(opt, interface, loss_gen, parameters)

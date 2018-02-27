@@ -3,6 +3,7 @@ from functools import reduce
 import asl
 import torch
 from torch import nn
+from collections import OrderedDict
 
 def nelements(sizes):
   "Total number for elements from set of sizes"
@@ -13,6 +14,9 @@ def nelem(size):
   "Number for elements from in tensor of size `size`"
   return asl.util.misc.mul_product(size)
 
+def ndims(size):
+  "Number of dimensions of size"
+  return len(size)
 
 # Unstacking
 def split_channel(t, sizes, channel_dim=0, slice_dim=1):
@@ -130,46 +134,3 @@ def vec_stretch(args, img_size, same_dim):
       raise ValueError
 
   return list(map(expand, args))
-
-
-def stretch_cat(xs, out_size, same_dim):
-  return cat_channels(vec_stretch(xs, out_size, same_dim))
-  # tile it
-  # matrix/tensor multiplication
-
-def cat_channels(xs, channel_dim=1):
-  "Concatenate images in the channel dimension"
-  return torch.cat(xs, dim=channel_dim)
-
-from collections import OrderedDict
-
-def ndims(size):
-  "Number of dimensions of size"
-  return len(size)
-
-class LinearNormalizeSize(nn.Module):
-
-  def __init__(self, input_size, normalized_size):
-    super(LinearNormalizeSize, self).__init__()
-    self.normalized_size = normalized_size
-    self.linear = nn.Linear(nelem(input_size),
-                                 nelem(normalized_size))
-
-  def forward(self, x):
-    return self.linear(x).view(asl.util.addbatchdim(self.normalized_size))
-
-class IdentityNormalizeSize(nn.Module):
-  def __init__(self, input_size, normalized_size):
-    nn.Module.__init__(self)
-    # super(IdentityNormalizeSize, self).__init__()
-
-  def forward(self, x):
-    return x
-
-def normalizer(size, normalized_size):
-  if size == normalized_size:  # do nothing
-    return IdentityNormalizeSize
-  elif ndims(size):
-    return LinearNormalizeSize
-  else:
-    raise Exception

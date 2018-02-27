@@ -3,7 +3,8 @@ import random
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-from asl.archs.packing import split_channel, cat_channels, slither
+from asl.archs.combine import cat_channels
+from asl.archs.packing import split_channel, slither
 from asl.modules.modules import expand_consts
 import asl
 

@@ -27,7 +27,6 @@ class MLPNet(nn.Module):
                    pact_same=0.5,
                    **kwargs):
     "Sample hyper parameters of MLP"
-    print("\n\n\n\nADJHPKAJJPFJAFJ\n\n\n")
     nin = nelements(in_sizes)
     nout = nelements(out_sizes)
     batch_norm = np.random.rand() > pbatch_norm

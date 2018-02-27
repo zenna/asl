@@ -69,7 +69,7 @@ def plot_internals(i, log, writer, batch=0, **kwargs):
               i)
 
 def trainloadsave(fname, train_fun, morerunoptsgen, custom_args):
-  # Add stack-specific parameters to the cmdlargs
+  # Add custom parameters to the cmdlargs
   cmdrunopt, dispatch_opt = asl.handle_args(custom_args)
   morerunopts = morerunoptsgen(dispatch_opt["nsamples"])
   # Merge each runopt with command line opts (which take precedence)
