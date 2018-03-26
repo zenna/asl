@@ -7,6 +7,7 @@ from common import trainloadsave
 from asl.loss import mean
 from torch import optim
 import torch.nn.functional as F
+torch.set_num_threads(4)
 
 def tracegen1(nitems, nrounds):
   def trace1(items, r, runstate, push, pop, empty):

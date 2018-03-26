@@ -62,7 +62,8 @@ class MLPNet(nn.Module):
                out_sizes,
                batch_norm=True,
                nmids=None,
-               activations=None):
+               activations=None,
+               output_act=lambda x: x):
     super(MLPNet, self).__init__()
     # import pdb; pdb.set_trace()
     self.nin = nelements(in_sizes)
@@ -71,6 +72,7 @@ class MLPNet(nn.Module):
     self.in_sizes = in_sizes
     self.out_sizes = out_sizes
     self.batch_norm = batch_norm
+    self.output_act = output_act
     nhlayers = len(nmids)
 
     # Layers
@@ -94,7 +96,7 @@ class MLPNet(nn.Module):
 
     self.layers = nn.ModuleList(layers)
     if activations is None:
-      self.activations = [F.elu for i in range(nhlayers + 1)]
+      self.activations = [F.elu for i in range(nhlayers)]
     else:
       self.activations = activations
 
@@ -107,7 +109,11 @@ class MLPNet(nn.Module):
       x = layer(x)
       if self.batch_norm:
         x = self.bnlayers[i](x)
-      x = self.activations[i](x)
+      
+      if i == len(self.layers) - 1:
+        x = self.output_act(x)
+      else:
+        x = self.activations[i](x)
 
     # Uncombine inputs
     outxs = splt_reshape_tensors(x, self.out_sizes)
